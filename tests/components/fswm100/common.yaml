@@ -1,2 +1,11 @@
-fswm100:
-  my_required_key: test
+# fswm100:
+# my_required_key: test
+# fswm100:
+#   # - platform: water_flow_sensor
+#   name: Water Flow Sensor Name
+
+sensor:
+  - platform: fswm100
+    name: Water Flow Sensor Name
+    # water_flow_sensor:
+    # - platform: water_flow_sensor
