@@ -1,16 +1,8 @@
-# fswm100:
-# my_required_key: test
-# fswm100:
-#   # - platform: water_flow_sensor
-#   name: Water Flow Sensor Name
-
 sensor:
   - platform: fswm100
     flow:
       name: Water Flow
-    # pulse:
-    #   name: Water Meter Pulse
-    # pressure:
-    #   name: Water Pressure
-    # water_flow_sensor:
-    # - platform: water_flow_sensor
+    pulse:
+      name: Water Meter Pulse
+    pressure:
+      name: Water Pressure

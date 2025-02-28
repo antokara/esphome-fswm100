@@ -20,14 +20,7 @@ UNIT_PSI = "psi"
 CONF_PULSE = "pulse"
 
 # CONF_MY_REQUIRED_KEY = "my_required_key"
-# CONF_MY_OPTIONAL_KEY = "my_optional_key"
-
-# CONFIG_SCHEMA = cv.Schema(
-#     {
-#         cv.Required(CONF_MY_REQUIRED_KEY): cv.string,
-#         cv.Optional(CONF_MY_OPTIONAL_KEY, default=10): cv.int_,
-#     }
-# ).extend(cv.COMPONENT_SCHEMA)
+CONF_PULSE_SENSOR_GPIO_PIN_KEY = "pulse_sensor_gpio_pin"
 
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
 FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
@@ -53,6 +46,7 @@ CONFIG_SCHEMA = cv.Schema(
             accuracy_decimals=2,
             device_class=DEVICE_CLASS_PRESSURE,
         ),
+        cv.Optional(CONF_PULSE_SENSOR_GPIO_PIN_KEY, default=2): cv.int_,
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -75,3 +69,4 @@ async def to_code(config):
     if pressure_config := config.get(CONF_PRESSURE):
         sens = await sensor.new_sensor(pressure_config)
         cg.add(var.set_pressure_sensor(sens))
+    cg.add(var.set_pulse_sensor_gpio_pin(config[CONF_PULSE_SENSOR_GPIO_PIN_KEY]))

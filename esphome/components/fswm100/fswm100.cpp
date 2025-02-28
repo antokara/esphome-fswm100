@@ -6,13 +6,17 @@ namespace fswm100 {
 
 static const char *TAG = "fswm100";
 
+void FSWM100::setup() { pinMode(this->pulse_sensor_gpio_pin_, INPUT); }
+
 void FSWM100::loop() {
   const uint32_t now = millis();
+  bool pulse_sensor_value = digitalRead(this->pulse_sensor_gpio_pin_);
+
   if (now - this->last_transmission_ >= 5000) {
     this->last_transmission_ = now;
     this->pressure_sensor_->publish_state(1.23f);
     this->flow_sensor_->publish_state(2.34f);
-    this->pulse_sensor_->publish_state(true);
+    this->pulse_sensor_->publish_state(pulse_sensor_value);
   }
 
   // this->status_set_warning();

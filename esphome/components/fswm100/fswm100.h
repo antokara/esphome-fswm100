@@ -32,6 +32,15 @@ class FSWM100 : public Component {
    */
   void set_pressure_sensor(sensor::Sensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
 
+  /**
+   * @brief Set the pulse sensor gpio pin
+   * @see sensor.py:to_code(config)
+   *
+   * @param pulse_sensor_gpio_pin
+   */
+  void set_pulse_sensor_gpio_pin(int8_t pulse_sensor_gpio_pin) { this->pulse_sensor_gpio_pin_ = pulse_sensor_gpio_pin; }
+
+  void setup() override;
   void loop() override;
   void dump_config() override;
 
@@ -61,6 +70,13 @@ class FSWM100 : public Component {
    *
    */
   sensor::Sensor *pressure_sensor_{nullptr};
+
+  /**
+   * @brief the GPIO pin number to use,
+   * in order to read the digital value of the pulse sensor
+   *
+   */
+  uint8_t pulse_sensor_gpio_pin_;
 
   uint32_t last_transmission_{0};
 };
