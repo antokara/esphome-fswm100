@@ -35,6 +35,14 @@ class FSWM100 : public Component {
   void loop() override;
   void dump_config() override;
 
+  /**
+   * @brief Get the setup priority object. It affects the order/priority,
+   *        that this component, should get initialized by ESPHome.
+   *
+   * @return float
+   */
+  float get_setup_priority() const override;
+
  protected:
   /**
    * @brief the flow sensor
