@@ -6,6 +6,11 @@
 
 sensor:
   - platform: fswm100
-    name: Water Flow Sensor Name
+    flow:
+      name: Water Flow
+    pulse:
+      name: Water Meter Pulse
+    pressure:
+      name: Water Pressure
     # water_flow_sensor:
     # - platform: water_flow_sensor

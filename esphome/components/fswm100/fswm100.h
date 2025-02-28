@@ -4,14 +4,14 @@
 #include "esphome/core/component.h"
 
 namespace esphome {
-namespace water_flow_sensor {
+namespace fswm100 {
 
-class WaterFlowSensor : public sensor::Sensor, public PollingComponent {
-  void setup() override;
+class FSWM100 : public Component {
+  // void setup() override;
   void loop() override;
-  void update() override;
+  // void update() override;
   void dump_config() override;
 };
 
-}  // namespace water_flow_sensor
+}  // namespace fswm100
 }  // namespace esphome

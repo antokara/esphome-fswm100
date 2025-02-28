@@ -1,10 +1,23 @@
 import esphome.codegen as cg
 from esphome.components import sensor
 import esphome.config_validation as cv
-from esphome.const import DEVICE_CLASS_VOLUME_FLOW_RATE, ICON_WATER
+from esphome.const import (
+    CONF_FLOW,
+    CONF_ID,
+    CONF_PRESSURE,
+    DEVICE_CLASS_EMPTY,
+    DEVICE_CLASS_PRESSURE,
+    DEVICE_CLASS_VOLUME_FLOW_RATE,
+    ICON_GAUGE,
+    ICON_PULSE,
+    ICON_WATER,
+    UNIT_EMPTY,
+)
 
 # @see https://github.com/elupus/home-assistant/blob/ffc5f436eedbbc4920fe16b809681d83cfddb3af/homeassistant/const.py#L1045
 GALLONS_PER_MINUTE = "gal/min"
+UNIT_PSI = "psi"
+CONF_PULSE = "pulse"
 
 # CONF_MY_REQUIRED_KEY = "my_required_key"
 # CONF_MY_OPTIONAL_KEY = "my_optional_key"
@@ -16,18 +29,32 @@ GALLONS_PER_MINUTE = "gal/min"
 #     }
 # ).extend(cv.COMPONENT_SCHEMA)
 
-water_flow_sensor_ns = cg.esphome_ns.namespace("water_flow_sensor")
-WaterFlowSensor = water_flow_sensor_ns.class_(
-    "WaterFlowSensor", sensor.Sensor, cg.PollingComponent
-)
+fswm100_ns = cg.esphome_ns.namespace("fswm100")
+FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
 
-CONFIG_SCHEMA = sensor.sensor_schema(
-    WaterFlowSensor,
-    unit_of_measurement=GALLONS_PER_MINUTE,
-    icon=ICON_WATER,
-    accuracy_decimals=2,
-    device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
-).extend(cv.polling_component_schema("60000ms"))
+CONFIG_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(FSWM100Component),
+        cv.Optional(CONF_FLOW): sensor.sensor_schema(
+            unit_of_measurement=GALLONS_PER_MINUTE,
+            icon=ICON_WATER,
+            accuracy_decimals=2,
+            device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
+        ),
+        cv.Optional(CONF_PULSE): sensor.sensor_schema(
+            unit_of_measurement=UNIT_EMPTY,
+            icon=ICON_PULSE,
+            accuracy_decimals=0,
+            device_class=DEVICE_CLASS_EMPTY,
+        ),
+        cv.Optional(CONF_PRESSURE): sensor.sensor_schema(
+            unit_of_measurement=UNIT_PSI,
+            icon=ICON_GAUGE,
+            accuracy_decimals=2,
+            device_class=DEVICE_CLASS_PRESSURE,
+        ),
+    }
+).extend(cv.COMPONENT_SCHEMA)
 
 # async def to_code(config):
 #     var = cg.new_Pvariable(config[CONF_ID])
@@ -36,5 +63,5 @@ CONFIG_SCHEMA = sensor.sensor_schema(
 
 
 async def to_code(config):
-    var = await sensor.new_sensor(config)
+    var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
