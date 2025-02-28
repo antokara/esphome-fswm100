@@ -3,6 +3,16 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/core/component.h"
 
+// number of pulses per gallon (Pulse/Gallon)
+// #define PULSE_RATE 1.0
+
+/**
+ * @brief frequency in milliseconds, to debounce the pulses.
+ * in case the pulse switch toggles too fast for some reason within the defined
+ * period, it will be ignored.
+ */
+#define PULSE_DEBOUNCE_FREQUENCY 250
+
 namespace esphome {
 namespace fswm100 {
 
@@ -77,6 +87,25 @@ class FSWM100 : public Component {
    *
    */
   uint8_t pulse_sensor_gpio_pin_;
+
+  /**
+   * @brief the previous value of the pulse sensor read
+   *
+   */
+  // bool pulse_sensor_prev_value;
+
+  /**
+   * @brief if the pulse sensor is considered active (after debounce)
+   *
+   */
+  bool pulse_sensor_active;
+
+  /**
+   * @brief the time (millis)
+   * when the "pulse_sensor_value" was last toggled
+   *
+   */
+  uint32_t pulse_sensor_active_time_{0};
 
   uint32_t last_transmission_{0};
 };

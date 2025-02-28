@@ -6,7 +6,7 @@ namespace fswm100 {
 
 static const char *TAG = "fswm100";
 
-void FSWM100::setup() { pinMode(this->pulse_sensor_gpio_pin_, INPUT); }
+void FSWM100::setup() { pinMode(this->pulse_sensor_gpio_pin_, INPUT_PULLUP); }
 
 void FSWM100::loop() {
   const uint32_t now = millis();
@@ -16,7 +16,23 @@ void FSWM100::loop() {
     this->last_transmission_ = now;
     this->pressure_sensor_->publish_state(1.23f);
     this->flow_sensor_->publish_state(2.34f);
-    this->pulse_sensor_->publish_state(pulse_sensor_value);
+    // this->pulse_sensor_->publish_state(pulse_sensor_value);
+  }
+
+  if (digitalRead(this->pulse_sensor_gpio_pin_) == LOW) {
+    // when the pulse sensor is in active state
+    if (!this->pulse_sensor_active &&
+        abs(long(millis() - this->pulse_sensor_active_time_)) > PULSE_DEBOUNCE_FREQUENCY) {
+      // and it just turned active
+      this->pulse_sensor_active = true;
+      // update the time it was last active
+      this->pulse_sensor_active_time_ = now;
+      this->pulse_sensor_->publish_state(true);
+    }
+  } else if (this->pulse_sensor_active) {
+    // it just turned inactive
+    this->pulse_sensor_active = false;
+    this->pulse_sensor_->publish_state(false);
   }
 
   // this->status_set_warning();
