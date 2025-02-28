@@ -1,7 +1,10 @@
 import esphome.codegen as cg
 from esphome.components import sensor
 import esphome.config_validation as cv
-from esphome.const import ICON_EMPTY, UNIT_EMPTY
+from esphome.const import DEVICE_CLASS_VOLUME_FLOW_RATE, ICON_WATER
+
+# @see https://github.com/elupus/home-assistant/blob/ffc5f436eedbbc4920fe16b809681d83cfddb3af/homeassistant/const.py#L1045
+GALLONS_PER_MINUTE = "gal/min"
 
 # CONF_MY_REQUIRED_KEY = "my_required_key"
 # CONF_MY_OPTIONAL_KEY = "my_optional_key"
@@ -20,9 +23,10 @@ WaterFlowSensor = water_flow_sensor_ns.class_(
 
 CONFIG_SCHEMA = sensor.sensor_schema(
     WaterFlowSensor,
-    unit_of_measurement=UNIT_EMPTY,
-    icon=ICON_EMPTY,
+    unit_of_measurement=GALLONS_PER_MINUTE,
+    icon=ICON_WATER,
     accuracy_decimals=2,
+    device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
 ).extend(cv.polling_component_schema("60000ms"))
 
 # async def to_code(config):
