@@ -56,7 +56,6 @@ class FSWM100 : public Component {
    * @param pulse_sensor_gpio_pin
    */
   void set_pulse_sensor_gpio_pin(GPIOPin *pulse_sensor_gpio_pin) {
-    this->pulse_sensor_gpio_pin_ = pulse_sensor_gpio_pin;
     this->pulse_sensor_->set_pin(pulse_sensor_gpio_pin);
   }
 
@@ -90,13 +89,6 @@ class FSWM100 : public Component {
    *
    */
   // sensor::Sensor *pressure_sensor_{nullptr};
-
-  /**
-   * @brief the GPIO pin number to use,
-   * in order to read the digital value of the pulse sensor
-   *
-   */
-  GPIOPin *pulse_sensor_gpio_pin_;
 
   /**
    * @brief the previous value of the pulse sensor read

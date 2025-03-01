@@ -20,11 +20,10 @@ void FSWM100::loop() {
     this->last_transmission_ = now;
     // this->pressure_sensor_->publish_state(1.23f);
     this->flow_sensor_->publish_state(2.34f);
-    ESP_LOGE(TAG, "Binary sensor pin", this->pulse_sensor_->get_pin());
     // this->pulse_sensor_->publish_state(pulse_sensor_value);
   }
 
-  if (this->pulse_sensor_->get_state()) {
+  if (!this->pulse_sensor_->get_state()) {
     // when the pulse sensor is in active state
     if (!this->pulse_sensor_active && abs(long(now - this->pulse_sensor_active_time_)) > PULSE_DEBOUNCE_FREQUENCY) {
       // and it just turned active
