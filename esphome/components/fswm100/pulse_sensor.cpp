@@ -9,7 +9,7 @@ static const char *const TAG = "pulse_sensor";
 void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
   ESP_LOGCONFIG(TAG, "Setting up PulseSensor...");
   pin_ = pulse_sensor_gpio_pin;
-  pin_->pin_mode(gpio::Flags::FLAG_PULLUP);
+  pin_->pin_mode(gpio::Flags::FLAG_INPUT);
 }
 
 void PulseSensor::dump_config() {
