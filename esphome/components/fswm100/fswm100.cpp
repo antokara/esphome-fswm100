@@ -19,7 +19,7 @@ void FSWM100::loop() {
   if (now - this->last_transmission_ >= 5000) {
     this->last_transmission_ = now;
     // this->pressure_sensor_->publish_state(1.23f);
-    // this->flow_sensor_->publish_state(2.34f);
+    this->flow_sensor_->publish_state(2.34f);
     // this->pulse_sensor_->publish_state(pulse_sensor_value);
   }
 

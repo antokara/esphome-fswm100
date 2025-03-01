@@ -1,7 +1,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
-// #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/sensor/sensor.h"
 #include "pulse_sensor.h"
 
 // #include "esphome/core/hal.h"
@@ -30,7 +30,7 @@ class FSWM100 : public Component {
    *
    * @param flow_sensor
    */
-  // void set_flow_sensor(sensor::Sensor *flow_sensor) { flow_sensor_ = flow_sensor; }
+  void set_flow_sensor(sensor::Sensor *flow_sensor) { flow_sensor_ = flow_sensor; }
 
   /**
    * @brief Set the pulse sensor object
@@ -77,7 +77,7 @@ class FSWM100 : public Component {
    * @brief the flow sensor
    *
    */
-  // sensor::Sensor *flow_sensor_{nullptr};
+  sensor::Sensor *flow_sensor_{nullptr};
 
   /**
    * @brief the pulse sensor

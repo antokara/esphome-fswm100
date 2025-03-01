@@ -14,8 +14,8 @@ from esphome.const import (
     ICON_WATER,
 )
 
-# AUTO_LOAD = ["sensor", "binary_sensor"]
-AUTO_LOAD = ["binary_sensor"]
+AUTO_LOAD = ["sensor", "binary_sensor"]
+# AUTO_LOAD = ["binary_sensor"]
 
 # makes it required in config
 # DEPENDENCIES = ["binary_sensor"]
@@ -74,10 +74,11 @@ async def to_code(config):
     )
     cg.add(var.set_pulse_sensor_gpio_pin(pulse_sensor_pin))
 
+    if flow_config := config.get(CONF_FLOW):
+        sens = await sensor.new_sensor(flow_config)
+        cg.add(var.set_flow_sensor(sens))
 
-# if flow_config := config.get(CONF_FLOW):
-#     sens = await sensor.new_sensor(flow_config)
-#     cg.add(var.set_flow_sensor(sens))
+
 # if pressure_config := config.get(CONF_PRESSURE):
 #     sens = await sensor.new_sensor(pressure_config)
 #     cg.add(var.set_pressure_sensor(sens))
