@@ -20,7 +20,7 @@ UNIT_PSI = "psi"
 CONF_PULSE = "pulse"
 
 # CONF_MY_REQUIRED_KEY = "my_required_key"
-CONF_PULSE_SENSOR_GPIO_PIN_KEY = "pulse_sensor_gpio_pin"
+CONF_GPIO_PIN_KEY = "gpio_pin"
 
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
 FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
@@ -39,6 +39,10 @@ CONFIG_SCHEMA = cv.Schema(
             icon=ICON_PULSE,
             accuracy_decimals=0,
             device_class=DEVICE_CLASS_EMPTY,
+        ).extend(
+            {
+                cv.Optional(CONF_GPIO_PIN_KEY, default=34): cv.int_,
+            }
         ),
         cv.Optional(CONF_PRESSURE): sensor.sensor_schema(
             unit_of_measurement=UNIT_PSI,
@@ -46,7 +50,6 @@ CONFIG_SCHEMA = cv.Schema(
             accuracy_decimals=2,
             device_class=DEVICE_CLASS_PRESSURE,
         ),
-        cv.Optional(CONF_PULSE_SENSOR_GPIO_PIN_KEY, default=2): cv.int_,
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -54,6 +57,22 @@ CONFIG_SCHEMA = cv.Schema(
 #     var = cg.new_Pvariable(config[CONF_ID])
 #     await cg.register_component(var, config)
 #     cg.add(var.set_my_required_key(config[CONF_MY_REQUIRED_KEY]))
+
+
+#
+# TODO:
+# add editable - pressure test - drop threshold
+# add editable - pressure test - duration
+# add pressure gradient calculation (internal)
+# add editable - gallons counter
+# add I2C pins/address in config
+# add pressure min/max PSI in config
+# add editable - pressure sensor calibration multiplier
+# add config - pressure send delta
+# add config - pressure send interval
+# add config - pressure send while testing interval
+# add config - pressure send delta while testing interval
+#
 
 
 async def to_code(config):
@@ -69,4 +88,4 @@ async def to_code(config):
     if pressure_config := config.get(CONF_PRESSURE):
         sens = await sensor.new_sensor(pressure_config)
         cg.add(var.set_pressure_sensor(sens))
-    cg.add(var.set_pulse_sensor_gpio_pin(config[CONF_PULSE_SENSOR_GPIO_PIN_KEY]))
+    cg.add(var.set_pulse_sensor_gpio_pin(config[CONF_PULSE][CONF_GPIO_PIN_KEY]))

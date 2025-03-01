@@ -4,5 +4,6 @@ sensor:
       name: Water Flow
     pulse:
       name: Water Meter Pulse
+      gpio_pin: 34
     pressure:
       name: Water Pressure
