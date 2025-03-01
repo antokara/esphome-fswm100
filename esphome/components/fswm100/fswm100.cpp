@@ -1,16 +1,11 @@
 #include "fswm100.h"
 #include "esphome/core/log.h"
-#include <esp_timer.h>
+#include "esphome/core/application.h"
 
 namespace esphome {
 namespace fswm100 {
 
 static const char *TAG = "fswm100";
-
-uint32_t get_millis() {
-  uint64_t microseconds = esp_timer_get_time();
-  return static_cast<uint32_t>(microseconds / 1000);
-}
 
 void FSWM100::setup() {
   ESP_LOGCONFIG(TAG, "Setting up FSWM100...");
@@ -19,7 +14,7 @@ void FSWM100::setup() {
 };
 
 void FSWM100::loop() {
-  const uint32_t now = get_millis();
+  const uint32_t now = millis();
 
   if (now - this->last_transmission_ >= 5000) {
     this->last_transmission_ = now;
