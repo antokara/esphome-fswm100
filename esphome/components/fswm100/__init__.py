@@ -47,7 +47,7 @@ CONFIG_SCHEMA = cv.Schema(
             {
                 cv.GenerateID(): cv.declare_id(PulseSensor),
                 cv.Optional(
-                    CONF_GPIO_PIN_KEY, default=1
+                    CONF_GPIO_PIN_KEY, default=5
                 ): pins.gpio_input_pullup_pin_schema,
             }
         ),

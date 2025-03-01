@@ -3,6 +3,6 @@ fswm100:
     name: Water Flow
   pulse:
     name: Water Meter Pulse
-    gpio_pin: GPIO01
+    gpio_pin: GPIO5
   pressure:
     name: Water Pressure
