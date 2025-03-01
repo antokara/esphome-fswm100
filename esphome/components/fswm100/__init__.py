@@ -87,4 +87,3 @@ async def to_code(config):
     if pressure_config := config.get(CONF_PRESSURE):
         sens = await sensor.new_sensor(pressure_config)
         cg.add(var.set_pressure_sensor(sens))
-    cg.add(var.set_pulse_sensor_gpio_pin(config[CONF_PULSE][CONF_GPIO_PIN_KEY]))
