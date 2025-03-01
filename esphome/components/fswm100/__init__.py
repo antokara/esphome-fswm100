@@ -65,14 +65,19 @@ CONFIG_SCHEMA = cv.Schema(
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
+    pulse_sensor_pin = await cg.gpio_pin_expression(
+        config[CONF_PULSE][CONF_GPIO_PIN_KEY]
+    )
+    cg.add(var.set_pulse_sensor_gpio_pin(pulse_sensor_pin))
 
-    # if flow_config := config.get(CONF_FLOW):
-    #     sens = await sensor.new_sensor(flow_config)
-    #     cg.add(var.set_flow_sensor(sens))
-    # if pulse_config := config.get(CONF_PULSE):
-    #     sens = await sensor.new_sensor(pulse_config)
-    #     cg.add(var.set_pulse_sensor(sens))
-    # if pressure_config := config.get(CONF_PRESSURE):
-    #     sens = await sensor.new_sensor(pressure_config)
-    #     cg.add(var.set_pressure_sensor(sens))
-    # cg.add(var.set_pulse_sensor_gpio_pin(config[CONF_PULSE][CONF_GPIO_PIN_KEY]))
+
+# if flow_config := config.get(CONF_FLOW):
+#     sens = await sensor.new_sensor(flow_config)
+#     cg.add(var.set_flow_sensor(sens))
+# if pulse_config := config.get(CONF_PULSE):
+#     sens = await sensor.new_sensor(pulse_config)
+#     cg.add(var.set_pulse_sensor(sens))
+# if pressure_config := config.get(CONF_PRESSURE):
+#     sens = await sensor.new_sensor(pressure_config)
+#     cg.add(var.set_pressure_sensor(sens))
+# cg.add(var.set_pulse_sensor_gpio_pin(config[CONF_PULSE][CONF_GPIO_PIN_KEY]))

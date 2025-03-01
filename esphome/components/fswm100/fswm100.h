@@ -53,9 +53,9 @@ class FSWM100 : public Component {
    *
    * @param pulse_sensor_gpio_pin
    */
-  // void set_pulse_sensor_gpio_pin(GPIOPin *pulse_sensor_gpio_pin) {
-  //   this->pulse_sensor_gpio_pin_ = pulse_sensor_gpio_pin;
-  // }
+  void set_pulse_sensor_gpio_pin(GPIOPin *pulse_sensor_gpio_pin) {
+    this->pulse_sensor_gpio_pin_ = pulse_sensor_gpio_pin;
+  }
 
   void setup() override;
   void loop() override;
