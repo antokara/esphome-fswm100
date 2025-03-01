@@ -1,6 +1,6 @@
 from esphome import pins
 import esphome.codegen as cg
-from esphome.components import sensor
+from esphome.components import binary_sensor, sensor
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_FLOW,
@@ -12,9 +12,9 @@ from esphome.const import (
     ICON_GAUGE,
     ICON_PULSE,
     ICON_WATER,
-    UNIT_EMPTY,
 )
 
+# AUTO_LOAD = ["sensor", "binary_sensor"]
 AUTO_LOAD = ["binary_sensor"]
 
 # makes it required in config
@@ -30,6 +30,7 @@ CONF_GPIO_PIN_KEY = "gpio_pin"
 
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
 FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
+PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -40,10 +41,8 @@ CONFIG_SCHEMA = cv.Schema(
             accuracy_decimals=2,
             device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
         ),
-        cv.Optional(CONF_PULSE): sensor.sensor_schema(
-            unit_of_measurement=UNIT_EMPTY,
+        cv.Optional(CONF_PULSE): binary_sensor.binary_sensor_schema(
             icon=ICON_PULSE,
-            accuracy_decimals=0,
             device_class=DEVICE_CLASS_EMPTY,
         ).extend(
             {
@@ -65,6 +64,11 @@ CONFIG_SCHEMA = cv.Schema(
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
+
+    # if pulse_config := config.get(CONF_PULSE):
+    #     sens = await PulseSensor(pulse_config)
+    # #     cg.add(var.set_pulse_sensor(sens))
+
     pulse_sensor_pin = await cg.gpio_pin_expression(
         config[CONF_PULSE][CONF_GPIO_PIN_KEY]
     )
@@ -74,9 +78,6 @@ async def to_code(config):
 # if flow_config := config.get(CONF_FLOW):
 #     sens = await sensor.new_sensor(flow_config)
 #     cg.add(var.set_flow_sensor(sens))
-# if pulse_config := config.get(CONF_PULSE):
-#     sens = await sensor.new_sensor(pulse_config)
-#     cg.add(var.set_pulse_sensor(sens))
 # if pressure_config := config.get(CONF_PRESSURE):
 #     sens = await sensor.new_sensor(pressure_config)
 #     cg.add(var.set_pressure_sensor(sens))

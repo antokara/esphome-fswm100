@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
+// #include "esphome/components/sensor/sensor.h"
 #include "pulse_sensor.h"
 
 // #include "esphome/core/hal.h"
@@ -69,7 +70,7 @@ class FSWM100 : public Component {
    */
   float get_setup_priority() const override;
 
-  void set_binary_sensor(PulseSensor *binary_sensor) { pulse_sensor_ = binary_sensor; }
+  void set_pulse_sensor(PulseSensor *binary_sensor) { pulse_sensor_ = binary_sensor; }
 
  protected:
   /**
@@ -82,7 +83,7 @@ class FSWM100 : public Component {
    * @brief the pulse sensor
    *
    */
-  // sensor::Sensor *pulse_sensor_{nullptr};
+  PulseSensor *pulse_sensor_{nullptr};
 
   /**
    * @brief the pressure sensor
@@ -117,8 +118,6 @@ class FSWM100 : public Component {
   uint32_t pulse_sensor_active_time_{0};
 
   uint32_t last_transmission_{0};
-
-  PulseSensor *pulse_sensor_ = nullptr;
 };
 
 }  // namespace fswm100
