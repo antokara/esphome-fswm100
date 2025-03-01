@@ -1,6 +1,6 @@
 #include "fswm100.h"
 #include "esphome/core/log.h"
-#include "esp_timer.h"
+#include <esp_timer.h>
 
 namespace esphome {
 namespace fswm100 {

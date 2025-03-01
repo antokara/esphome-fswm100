@@ -2,7 +2,7 @@
 
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/core/component.h"
-#include "driver/gpio.h"
+#include <driver/gpio.h>
 
 // number of pulses per gallon (Pulse/Gallon)
 // #define PULSE_RATE 1.0
