@@ -23,7 +23,7 @@ void FSWM100::loop() {
     // this->pulse_sensor_->publish_state(pulse_sensor_value);
   }
 
-  if (!this->pulse_sensor_->get_state()) {
+  if (this->pulse_sensor_->get_state()) {
     // when the pulse sensor is in active state
     if (!this->pulse_sensor_active && abs(long(now - this->pulse_sensor_active_time_)) > PULSE_DEBOUNCE_FREQUENCY) {
       // and it just turned active
