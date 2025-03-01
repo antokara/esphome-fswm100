@@ -24,6 +24,7 @@ bool PulseSensor::get_state() {
   if (pin_ != nullptr) {
     return pin_->digital_read();
   }
+  ESP_LOGE(TAG, "Binary sensor pin not set!");
   return false;  // Return false if pin is not set.
 }
 

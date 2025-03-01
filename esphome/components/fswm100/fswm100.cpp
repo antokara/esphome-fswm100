@@ -20,6 +20,7 @@ void FSWM100::loop() {
     this->last_transmission_ = now;
     // this->pressure_sensor_->publish_state(1.23f);
     this->flow_sensor_->publish_state(2.34f);
+    ESP_LOGE(TAG, "Binary sensor pin", this->pulse_sensor_->get_pin());
     // this->pulse_sensor_->publish_state(pulse_sensor_value);
   }
 
