@@ -2,6 +2,7 @@
 
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/core/component.h"
+#include "driver/gpio.h"
 
 // number of pulses per gallon (Pulse/Gallon)
 // #define PULSE_RATE 1.0
@@ -48,7 +49,9 @@ class FSWM100 : public Component {
    *
    * @param pulse_sensor_gpio_pin
    */
-  void set_pulse_sensor_gpio_pin(int8_t pulse_sensor_gpio_pin) { this->pulse_sensor_gpio_pin_ = pulse_sensor_gpio_pin; }
+  void set_pulse_sensor_gpio_pin(int pulse_sensor_gpio_pin) {
+    this->pulse_sensor_gpio_pin_ = static_cast<gpio_num_t>(pulse_sensor_gpio_pin);
+  }
 
   void setup() override;
   void loop() override;
@@ -86,7 +89,7 @@ class FSWM100 : public Component {
    * in order to read the digital value of the pulse sensor
    *
    */
-  uint8_t pulse_sensor_gpio_pin_;
+  gpio_num_t pulse_sensor_gpio_pin_;
 
   /**
    * @brief the previous value of the pulse sensor read

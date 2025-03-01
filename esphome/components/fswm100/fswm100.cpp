@@ -1,16 +1,25 @@
 #include "fswm100.h"
 #include "esphome/core/log.h"
+#include "esp_timer.h"
 
 namespace esphome {
 namespace fswm100 {
 
 static const char *TAG = "fswm100";
 
-void FSWM100::setup() { pinMode(this->pulse_sensor_gpio_pin_, INPUT_PULLUP); }
+uint32_t get_millis() {
+  uint64_t microseconds = esp_timer_get_time();
+  return static_cast<uint32_t>(microseconds / 1000);
+}
+
+void FSWM100::setup() {
+  gpio_reset_pin(this->pulse_sensor_gpio_pin_);
+  gpio_set_direction(this->pulse_sensor_gpio_pin_, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(this->pulse_sensor_gpio_pin_, GPIO_PULLUP_ONLY);
+};
 
 void FSWM100::loop() {
-  const uint32_t now = millis();
-  bool pulse_sensor_value = digitalRead(this->pulse_sensor_gpio_pin_);
+  const uint32_t now = get_millis();
 
   if (now - this->last_transmission_ >= 5000) {
     this->last_transmission_ = now;
@@ -19,10 +28,9 @@ void FSWM100::loop() {
     // this->pulse_sensor_->publish_state(pulse_sensor_value);
   }
 
-  if (digitalRead(this->pulse_sensor_gpio_pin_) == LOW) {
+  if (gpio_get_level(this->pulse_sensor_gpio_pin_) == 0) {
     // when the pulse sensor is in active state
-    if (!this->pulse_sensor_active &&
-        abs(long(millis() - this->pulse_sensor_active_time_)) > PULSE_DEBOUNCE_FREQUENCY) {
+    if (!this->pulse_sensor_active && abs(long(now - this->pulse_sensor_active_time_)) > PULSE_DEBOUNCE_FREQUENCY) {
       // and it just turned active
       this->pulse_sensor_active = true;
       // update the time it was last active
