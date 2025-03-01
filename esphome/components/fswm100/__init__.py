@@ -15,7 +15,6 @@ from esphome.const import (
 )
 
 AUTO_LOAD = ["sensor", "binary_sensor"]
-# AUTO_LOAD = ["binary_sensor"]
 
 # makes it required in config
 # DEPENDENCIES = ["binary_sensor"]
@@ -35,12 +34,14 @@ PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(FSWM100Component),
+        # Flow Sensor
         cv.Optional(CONF_FLOW): sensor.sensor_schema(
             unit_of_measurement=GALLONS_PER_MINUTE,
             icon=ICON_WATER,
             accuracy_decimals=2,
             device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
         ),
+        # Pulse Sensor
         cv.Optional(CONF_PULSE): binary_sensor.binary_sensor_schema(
             PulseSensor, icon=ICON_PULSE, device_class=DEVICE_CLASS_EMPTY
         ).extend(
@@ -51,6 +52,7 @@ CONFIG_SCHEMA = cv.Schema(
                 ): pins.gpio_input_pullup_pin_schema,
             }
         ),
+        # Pressure Sensor
         cv.Optional(CONF_PRESSURE): sensor.sensor_schema(
             unit_of_measurement=UNIT_PSI,
             icon=ICON_GAUGE,
@@ -65,25 +67,24 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
 
+    # Pulse
     if pulse_config := config.get(CONF_PULSE):
         # Create an instance of the custom binary sensor class
         sens = cg.new_Pvariable(config[CONF_PULSE][CONF_ID])
         await binary_sensor.register_binary_sensor(sens, pulse_config)
-        # sens = await binary_sensor.new_binary_sensor(pulse_config)
         cg.add(var.set_pulse_sensor(sens))
-
         pulse_sensor_pin = await cg.gpio_pin_expression(
             config[CONF_PULSE][CONF_GPIO_PIN_KEY]
         )
         cg.add(var.set_pulse_sensor_gpio_pin(pulse_sensor_pin))
-        sens.set_pin(pulse_sensor_pin)
 
+    # Flow
     if flow_config := config.get(CONF_FLOW):
         sens = await sensor.new_sensor(flow_config)
         cg.add(var.set_flow_sensor(sens))
 
-
-# if pressure_config := config.get(CONF_PRESSURE):
-#     sens = await sensor.new_sensor(pressure_config)
-#     cg.add(var.set_pressure_sensor(sens))
-# cg.add(var.set_pulse_sensor_gpio_pin(config[CONF_PULSE][CONF_GPIO_PIN_KEY]))
+    # Pressure
+    if pressure_config := config.get(CONF_PRESSURE):
+        sens = await sensor.new_sensor(pressure_config)
+        cg.add(var.set_pressure_sensor(sens))
+    cg.add(var.set_pulse_sensor_gpio_pin(config[CONF_PULSE][CONF_GPIO_PIN_KEY]))

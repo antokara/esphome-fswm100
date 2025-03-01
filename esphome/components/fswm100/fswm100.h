@@ -39,7 +39,6 @@ class FSWM100 : public Component {
    * @param pulse_sensor
    */
   void set_pulse_sensor(PulseSensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
-  // void set_pulse_sensor(PulseSensor *binary_sensor) { pulse_sensor_ = binary_sensor; }
 
   /**
    * @brief Set the pressure sensor object
@@ -47,7 +46,7 @@ class FSWM100 : public Component {
    *
    * @param pressure_sensor
    */
-  // void set_pressure_sensor(sensor::Sensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
+  void set_pressure_sensor(sensor::Sensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
 
   /**
    * @brief Set the pulse sensor gpio pin
@@ -86,13 +85,7 @@ class FSWM100 : public Component {
    * @brief the pressure sensor
    *
    */
-  // sensor::Sensor *pressure_sensor_{nullptr};
-
-  /**
-   * @brief the previous value of the pulse sensor read
-   *
-   */
-  // bool pulse_sensor_prev_value;
+  sensor::Sensor *pressure_sensor_{nullptr};
 
   /**
    * @brief if the pulse sensor is considered active (after debounce)
@@ -107,6 +100,7 @@ class FSWM100 : public Component {
    */
   uint32_t pulse_sensor_active_time_{0};
 
+  // TODO: remove
   uint32_t last_transmission_{0};
 };
 

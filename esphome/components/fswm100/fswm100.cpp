@@ -7,22 +7,18 @@ namespace fswm100 {
 
 static const char *TAG = "fswm100";
 
-void FSWM100::setup() {
-  ESP_LOGCONFIG(TAG, "Setting up FSWM100...");
-  // this->pulse_sensor_ = new PulseSensor();
-  // this->pulse_sensor_->set_pin(this->pulse_sensor_gpio_pin_);
-};
+void FSWM100::setup() { ESP_LOGCONFIG(TAG, "Setting up FSWM100..."); };
 
 void FSWM100::loop() {
   const uint32_t now = millis();
 
-  if (now - this->last_transmission_ >= 5000) {
+  if (now - this->last_transmission_ >= 15000) {
     this->last_transmission_ = now;
-    // this->pressure_sensor_->publish_state(1.23f);
+    this->pressure_sensor_->publish_state(1.23f);
     this->flow_sensor_->publish_state(2.34f);
-    // this->pulse_sensor_->publish_state(pulse_sensor_value);
   }
 
+  // check the pulse sensor
   if (this->pulse_sensor_->get_state()) {
     // when the pulse sensor is in active state
     if (!this->pulse_sensor_active && abs(long(now - this->pulse_sensor_active_time_)) > PULSE_DEBOUNCE_FREQUENCY) {

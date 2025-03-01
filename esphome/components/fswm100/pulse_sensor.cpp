@@ -4,7 +4,7 @@
 namespace esphome {
 namespace fswm100 {
 
-static const char *const TAG = "pulse_sensor";
+static const char *TAG = "fswm100";
 
 void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
   ESP_LOGCONFIG(TAG, "Setting up PulseSensor...");
@@ -13,7 +13,7 @@ void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
 }
 
 void PulseSensor::dump_config() {
-  ESP_LOGCONFIG(TAG, "MyCustomBinarySensor:");
+  ESP_LOGCONFIG(TAG, "PulseSensor:");
   LOG_PIN("  Pin:", this->pin_);
 }
 
