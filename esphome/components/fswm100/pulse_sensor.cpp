@@ -6,13 +6,10 @@ namespace fswm100 {
 
 static const char *const TAG = "pulse_sensor";
 
-void PulseSensor::setup() {
+void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
   ESP_LOGCONFIG(TAG, "Setting up PulseSensor...");
-  if (pin_ != nullptr) {
-    pin_->pin_mode(gpio::Flags::FLAG_PULLUP);
-  } else {
-    ESP_LOGE(TAG, "Binary sensor pin not set!");
-  }
+  pin_ = pulse_sensor_gpio_pin;
+  pin_->pin_mode(gpio::Flags::FLAG_PULLUP);
 }
 
 void PulseSensor::dump_config() {
