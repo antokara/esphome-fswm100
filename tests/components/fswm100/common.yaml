@@ -1,9 +1,8 @@
-sensor:
-  - platform: fswm100
-    flow:
-      name: Water Flow
-    pulse:
-      name: Water Meter Pulse
-      gpio_pin: 34
-    pressure:
-      name: Water Pressure
+fswm100:
+  flow:
+    name: Water Flow
+  pulse:
+    name: Water Meter Pulse
+    gpio_pin: GPIO01
+  pressure:
+    name: Water Pressure

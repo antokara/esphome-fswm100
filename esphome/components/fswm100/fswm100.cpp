@@ -13,9 +13,9 @@ uint32_t get_millis() {
 }
 
 void FSWM100::setup() {
-  gpio_reset_pin(this->pulse_sensor_gpio_pin_);
-  gpio_set_direction(this->pulse_sensor_gpio_pin_, GPIO_MODE_INPUT);
-  gpio_set_pull_mode(this->pulse_sensor_gpio_pin_, GPIO_PULLUP_ONLY);
+  ESP_LOGCONFIG(TAG, "Setting up FSWM100...");
+  this->pulse_sensor_ = new PulseSensor();
+  this->pulse_sensor_->set_pin(this->pulse_sensor_gpio_pin_);
 };
 
 void FSWM100::loop() {
@@ -23,12 +23,12 @@ void FSWM100::loop() {
 
   if (now - this->last_transmission_ >= 5000) {
     this->last_transmission_ = now;
-    this->pressure_sensor_->publish_state(1.23f);
-    this->flow_sensor_->publish_state(2.34f);
+    // this->pressure_sensor_->publish_state(1.23f);
+    // this->flow_sensor_->publish_state(2.34f);
     // this->pulse_sensor_->publish_state(pulse_sensor_value);
   }
 
-  if (gpio_get_level(this->pulse_sensor_gpio_pin_) == 0) {
+  if (this->pulse_sensor_->get_state()) {
     // when the pulse sensor is in active state
     if (!this->pulse_sensor_active && abs(long(now - this->pulse_sensor_active_time_)) > PULSE_DEBOUNCE_FREQUENCY) {
       // and it just turned active
@@ -43,22 +43,22 @@ void FSWM100::loop() {
     this->pulse_sensor_->publish_state(false);
   }
 
-  // this->status_set_warning();
-  //  this->status_clear_warning();
-  // ESP_LOGE(TAG, "error log!");
-  // ESP_LOGE - error
-  // ESP_LOGW - warning
-  // ESP_LOGI - info
-  // ESP_LOGD - debug
-  // ESP_LOGV - verbose
-  // ESP_LOGVV - very verbose
-  // ESP_LOGCONFIG - config log
-  //   #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERY_VERBOSE
-  //   {
-  //     std::string s = format_hex_pretty(this->raw_data_, sizeof(this->raw_data_));
-  //     ESP_LOGVV(TAG, "Raw data: %s", s.c_str());
-  //   }
-  // #endif
+  //   // this->status_set_warning();
+  //   //  this->status_clear_warning();
+  //   // ESP_LOGE(TAG, "error log!");
+  //   // ESP_LOGE - error
+  //   // ESP_LOGW - warning
+  //   // ESP_LOGI - info
+  //   // ESP_LOGD - debug
+  //   // ESP_LOGV - verbose
+  //   // ESP_LOGVV - very verbose
+  //   // ESP_LOGCONFIG - config log
+  //   //   #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERY_VERBOSE
+  //   //   {
+  //   //     std::string s = format_hex_pretty(this->raw_data_, sizeof(this->raw_data_));
+  //   //     ESP_LOGVV(TAG, "Raw data: %s", s.c_str());
+  //   //   }
+  //   // #endif
 }
 void FSWM100::dump_config() { ESP_LOGCONFIG(TAG, "FSWM100..."); }
 float FSWM100::get_setup_priority() const { return setup_priority::DATA; }

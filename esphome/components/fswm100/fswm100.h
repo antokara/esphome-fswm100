@@ -1,8 +1,12 @@
 #pragma once
 
-#include "esphome/components/sensor/sensor.h"
 #include "esphome/core/component.h"
-#include <driver/gpio.h>
+#include "pulse_sensor.h"
+
+// #include "esphome/core/hal.h"
+// #include "esphome/components/binary_sensor/binary_sensor.h"
+
+// #include <vector>
 
 // number of pulses per gallon (Pulse/Gallon)
 // #define PULSE_RATE 1.0
@@ -25,7 +29,7 @@ class FSWM100 : public Component {
    *
    * @param flow_sensor
    */
-  void set_flow_sensor(sensor::Sensor *flow_sensor) { flow_sensor_ = flow_sensor; }
+  // void set_flow_sensor(sensor::Sensor *flow_sensor) { flow_sensor_ = flow_sensor; }
 
   /**
    * @brief Set the pulse sensor object
@@ -33,7 +37,7 @@ class FSWM100 : public Component {
    *
    * @param pulse_sensor
    */
-  void set_pulse_sensor(sensor::Sensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
+  // void set_pulse_sensor(sensor::Sensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
 
   /**
    * @brief Set the pressure sensor object
@@ -41,7 +45,7 @@ class FSWM100 : public Component {
    *
    * @param pressure_sensor
    */
-  void set_pressure_sensor(sensor::Sensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
+  // void set_pressure_sensor(sensor::Sensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
 
   /**
    * @brief Set the pulse sensor gpio pin
@@ -49,9 +53,9 @@ class FSWM100 : public Component {
    *
    * @param pulse_sensor_gpio_pin
    */
-  void set_pulse_sensor_gpio_pin(int pulse_sensor_gpio_pin) {
-    this->pulse_sensor_gpio_pin_ = static_cast<gpio_num_t>(pulse_sensor_gpio_pin);
-  }
+  // void set_pulse_sensor_gpio_pin(GPIOPin *pulse_sensor_gpio_pin) {
+  //   this->pulse_sensor_gpio_pin_ = pulse_sensor_gpio_pin;
+  // }
 
   void setup() override;
   void loop() override;
@@ -65,31 +69,33 @@ class FSWM100 : public Component {
    */
   float get_setup_priority() const override;
 
+  void set_binary_sensor(PulseSensor *binary_sensor) { pulse_sensor_ = binary_sensor; }
+
  protected:
   /**
    * @brief the flow sensor
    *
    */
-  sensor::Sensor *flow_sensor_{nullptr};
+  // sensor::Sensor *flow_sensor_{nullptr};
 
   /**
    * @brief the pulse sensor
    *
    */
-  sensor::Sensor *pulse_sensor_{nullptr};
+  // sensor::Sensor *pulse_sensor_{nullptr};
 
   /**
    * @brief the pressure sensor
    *
    */
-  sensor::Sensor *pressure_sensor_{nullptr};
+  // sensor::Sensor *pressure_sensor_{nullptr};
 
   /**
    * @brief the GPIO pin number to use,
    * in order to read the digital value of the pulse sensor
    *
    */
-  gpio_num_t pulse_sensor_gpio_pin_;
+  GPIOPin *pulse_sensor_gpio_pin_;
 
   /**
    * @brief the previous value of the pulse sensor read
@@ -111,6 +117,8 @@ class FSWM100 : public Component {
   uint32_t pulse_sensor_active_time_{0};
 
   uint32_t last_transmission_{0};
+
+  PulseSensor *pulse_sensor_ = nullptr;
 };
 
 }  // namespace fswm100
