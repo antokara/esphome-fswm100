@@ -42,10 +42,10 @@ CONFIG_SCHEMA = cv.Schema(
             device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
         ),
         cv.Optional(CONF_PULSE): binary_sensor.binary_sensor_schema(
-            icon=ICON_PULSE,
-            device_class=DEVICE_CLASS_EMPTY,
+            PulseSensor, icon=ICON_PULSE, device_class=DEVICE_CLASS_EMPTY
         ).extend(
             {
+                cv.GenerateID(): cv.declare_id(PulseSensor),
                 cv.Optional(
                     CONF_GPIO_PIN_KEY, default=1
                 ): pins.gpio_input_pullup_pin_schema,
@@ -65,9 +65,12 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
 
-    # if pulse_config := config.get(CONF_PULSE):
-    #     sens = await PulseSensor(pulse_config)
-    # #     cg.add(var.set_pulse_sensor(sens))
+    if pulse_config := config.get(CONF_PULSE):
+        # Create an instance of the custom binary sensor class
+        sens = cg.new_Pvariable(config[CONF_PULSE][CONF_ID])
+        await binary_sensor.register_binary_sensor(sens, pulse_config)
+        # sens = await binary_sensor.new_binary_sensor(pulse_config)
+        cg.add(var.set_pulse_sensor(sens))
 
     pulse_sensor_pin = await cg.gpio_pin_expression(
         config[CONF_PULSE][CONF_GPIO_PIN_KEY]

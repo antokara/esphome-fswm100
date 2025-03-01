@@ -9,7 +9,7 @@ static const char *TAG = "fswm100";
 
 void FSWM100::setup() {
   ESP_LOGCONFIG(TAG, "Setting up FSWM100...");
-  this->pulse_sensor_ = new PulseSensor();
+  // this->pulse_sensor_ = new PulseSensor();
   // this->pulse_sensor_->set_pin(this->pulse_sensor_gpio_pin_);
 };
 

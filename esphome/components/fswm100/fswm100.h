@@ -38,7 +38,8 @@ class FSWM100 : public Component {
    *
    * @param pulse_sensor
    */
-  // void set_pulse_sensor(sensor::Sensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
+  void set_pulse_sensor(PulseSensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
+  // void set_pulse_sensor(PulseSensor *binary_sensor) { pulse_sensor_ = binary_sensor; }
 
   /**
    * @brief Set the pressure sensor object
@@ -69,8 +70,6 @@ class FSWM100 : public Component {
    * @return float
    */
   float get_setup_priority() const override;
-
-  void set_pulse_sensor(PulseSensor *binary_sensor) { pulse_sensor_ = binary_sensor; }
 
  protected:
   /**
