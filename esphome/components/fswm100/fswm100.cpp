@@ -32,6 +32,11 @@ void FSWM100::loop() {
     // it just turned inactive
     this->pulse_sensor_active = false;
     this->pulse_sensor_->publish_state(false);
+  } else if (!this->pulse_sensor_first_transmission) {
+    // sensor is inactive but this is the first transmission
+    // to avoid having unknown state...
+    this->pulse_sensor_first_transmission = true;
+    this->pulse_sensor_->publish_state(false);
   }
 
   //   // this->status_set_warning();

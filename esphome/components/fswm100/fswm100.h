@@ -94,6 +94,13 @@ class FSWM100 : public Component {
   bool pulse_sensor_active;
 
   /**
+   * @brief if true, then at least one transmission
+   * of the pulse sensor, has taken place
+   *
+   */
+  bool pulse_sensor_first_transmission;
+
+  /**
    * @brief the time (millis)
    * when the "pulse_sensor_value" was last toggled
    *
