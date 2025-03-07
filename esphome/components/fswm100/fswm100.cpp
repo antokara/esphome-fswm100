@@ -11,8 +11,7 @@ static const char *TAG = "fswm100";
 static const uint32_t RESTORE_STATE_VERSION = 0x848EA6ADUL;
 
 void FSWM100::load_state_() {
-  uint32_t myhash = this->get_object_id_hash() ^ RESTORE_STATE_VERSION;
-  this->pref_ = global_preferences->make_preference<State>('test' ^ RESTORE_STATE_VERSION);
+  this->pref_ = global_preferences->make_preference<State>(this->get_object_id_hash() ^ RESTORE_STATE_VERSION);
   State recovered{};
   if (this->pref_.load(&recovered))
     ESP_LOGCONFIG(TAG, "restored testValue", recovered.testValue);
