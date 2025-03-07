@@ -17,6 +17,8 @@ void FSWM100::load_state_() {
     ESP_LOGCONFIG(TAG, "restored testValue", recovered.testValue);
   else
     ESP_LOGCONFIG(TAG, "unabled to restore state");
+  recovered.testValue = 56.78;
+  ESP_LOGCONFIG(TAG, "test testValue", recovered.testValue);
   this->save_state_();
 }
 
@@ -26,7 +28,7 @@ void FSWM100::save_state_() {
   memset(&state, 0, sizeof(State));
   state.testValue = 12.34;
   this->pref_.save(&state);
-  ESP_LOGCONFIG(TAG, "saved state");
+  ESP_LOGCONFIG(TAG, "saved state", state.testValue);
 }
 
 void FSWM100::setup() {
