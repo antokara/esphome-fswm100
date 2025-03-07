@@ -7,7 +7,33 @@ namespace fswm100 {
 
 static const char *TAG = "fswm100";
 
-void FSWM100::setup() { ESP_LOGCONFIG(TAG, "Setting up FSWM100..."); };
+// Random 32bit value; If this changes existing restore preferences are invalidated
+static const uint32_t RESTORE_STATE_VERSION = 0x848EA6ADUL;
+
+void FSWM100::load_state_() {
+  uint32_t myhash = this->get_object_id_hash() ^ RESTORE_STATE_VERSION;
+  this->pref_ = global_preferences->make_preference<State>('test' ^ RESTORE_STATE_VERSION);
+  State recovered{};
+  if (this->pref_.load(&recovered))
+    ESP_LOGCONFIG(TAG, "restored testValue", recovered.testValue);
+  else
+    ESP_LOGCONFIG(TAG, "unabled to restore state");
+  this->save_state_();
+}
+
+void FSWM100::save_state_() {
+  State state{};
+  // initialize as zero to prevent random data on stack triggering erase
+  memset(&state, 0, sizeof(State));
+  state.testValue = 12.34;
+  this->pref_.save(&state);
+  ESP_LOGCONFIG(TAG, "saved state");
+}
+
+void FSWM100::setup() {
+  ESP_LOGCONFIG(TAG, "Setting up FSWM100...");
+  this->load_state_();
+};
 
 void FSWM100::loop() {
   const uint32_t now = millis();

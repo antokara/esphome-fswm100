@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 #include "pulse_sensor.h"
+#include "esphome/core/entity_base.h"
 
 // #include "esphome/core/hal.h"
 // #include "esphome/components/binary_sensor/binary_sensor.h"
@@ -19,10 +20,14 @@
  */
 #define PULSE_DEBOUNCE_FREQUENCY 250
 
+struct State {
+  float testValue;
+};
+
 namespace esphome {
 namespace fswm100 {
 
-class FSWM100 : public Component {
+class FSWM100 : public Component, public EntityBase {
  public:
   /**
    * @brief Sets the flow sensor object.
@@ -109,6 +114,19 @@ class FSWM100 : public Component {
 
   // TODO: remove
   uint32_t last_transmission_{0};
+
+  /**
+   * @brief preferences object.
+   *
+   * It manages perstistent state storage
+   * across device reboots, etc.
+   *
+   * @see esphome/components/climate/climate.cpp::Climate::restore_state_()
+   *
+   */
+  ESPPreferenceObject pref_;
+  void load_state_();
+  void save_state_();
 };
 
 }  // namespace fswm100

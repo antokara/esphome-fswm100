@@ -14,7 +14,7 @@ from esphome.const import (
     ICON_WATER,
 )
 
-AUTO_LOAD = ["sensor", "binary_sensor"]
+AUTO_LOAD = ["sensor", "binary_sensor", "number"]
 
 # makes it required in config
 # DEPENDENCIES = ["binary_sensor"]
