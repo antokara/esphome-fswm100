@@ -22,7 +22,7 @@
 
 struct State {
   float testValue;
-};
+} __attribute__((packed));
 
 namespace esphome {
 namespace fswm100 {
