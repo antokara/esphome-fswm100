@@ -7,9 +7,10 @@ namespace fswm100 {
 static const char *TAG = "fswm100";
 
 void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
-  ESP_LOGCONFIG(TAG, "Setting up PulseSensor...");
+  ESP_LOGCONFIG(TAG, "PulseSensor setup start.");
   pin_ = pulse_sensor_gpio_pin;
   pin_->pin_mode(gpio::Flags::FLAG_INPUT);
+  ESP_LOGCONFIG(TAG, "PulseSensor setup complete.");
 }
 
 void PulseSensor::dump_config() {

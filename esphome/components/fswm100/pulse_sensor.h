@@ -10,8 +10,6 @@ class PulseSensor : public binary_sensor::BinarySensor {
  public:
   void setup(GPIOPin *pulse_sensor_gpio_pin);
   void dump_config();
-  void set_pin(GPIOPin *pin) { pin_ = pin; }
-  GPIOPin *get_pin() { return pin_; }
   bool get_state();
 
  private:
