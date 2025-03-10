@@ -16,10 +16,8 @@ void FSWM100::load_state_() {
   if (this->pref_.load(&recovered))
     ESP_LOGCONFIG(TAG, "restored testValue %.2f", recovered.testValue);
   else
-    ESP_LOGCONFIG(TAG, "unabled to restore state");
-  recovered.testValue = 56.78;
-  ESP_LOGCONFIG(TAG, "test testValue %.2f", recovered.testValue);
-  this->save_state_();
+    ESP_LOGCONFIG(TAG, "unable to restore state");
+  // this->save_state_();
 }
 
 void FSWM100::save_state_() {

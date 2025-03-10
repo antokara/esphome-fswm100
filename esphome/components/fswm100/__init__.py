@@ -69,10 +69,12 @@ async def to_code(config):
 
     # Pulse
     if pulse_config := config.get(CONF_PULSE):
-        # Create an instance of the custom binary sensor class
+        # create an instance of the custom binary sensor class
         sens = cg.new_Pvariable(config[CONF_PULSE][CONF_ID])
         await binary_sensor.register_binary_sensor(sens, pulse_config)
+        # set it to the main class
         cg.add(var.set_pulse_sensor(sens))
+        # get the configuration and apply it
         pulse_sensor_pin = await cg.gpio_pin_expression(
             config[CONF_PULSE][CONF_GPIO_PIN_KEY]
         )
