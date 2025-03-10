@@ -76,7 +76,7 @@ async def to_code(config):
         pulse_sensor_pin = await cg.gpio_pin_expression(
             config[CONF_PULSE][CONF_GPIO_PIN_KEY]
         )
-        cg.add(var.set_pulse_sensor_gpio_pin(pulse_sensor_pin))
+        cg.add(sens.setup(pulse_sensor_pin))
 
     # Flow
     if flow_config := config.get(CONF_FLOW):
