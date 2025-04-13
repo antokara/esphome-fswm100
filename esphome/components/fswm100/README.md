@@ -8,7 +8,13 @@
 
 ## quick start
 
-1. `docker pull ghcr.io/esphome/esphome`
+1. install python3
+1. create a virtual environment to contain ESPHome and it’s dependencies.
+    1. `python3 -m venv venv`
+    1. `source venv/bin/activate`
+    1. You may or may not see (venv) at the beginning of your prompt depending on your shell configuration. This indicates that you are in the virtual environment.
+1. `pip3 install esphome` or `pip3 install esphome -U` (to upgrade)
+1. `esphome --version`
 1. `esphome wizard my-test-device.yaml`
 1. `esphome config my-test-device.yaml`
 1. `esphome compile my-test-device.yaml`
