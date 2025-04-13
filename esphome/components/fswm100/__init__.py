@@ -35,28 +35,22 @@ CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(FSWM100Component),
         # Flow Sensor
-        cv.Optional(CONF_FLOW): sensor.sensor_schema(
-            unit_of_measurement=GALLONS_PER_MINUTE,  # TODO: make dynamic
+        cv.Required(CONF_FLOW): sensor.sensor_schema(
             icon=ICON_WATER,
-            accuracy_decimals=2,
             device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
         ),
         # Pulse Sensor
-        cv.Optional(CONF_PULSE): binary_sensor.binary_sensor_schema(
+        cv.Required(CONF_PULSE): binary_sensor.binary_sensor_schema(
             PulseSensor, icon=ICON_PULSE, device_class=DEVICE_CLASS_EMPTY
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(PulseSensor),
-                cv.Optional(
-                    CONF_GPIO_PIN_KEY, default=5
-                ): pins.gpio_input_pullup_pin_schema,
+                cv.Required(CONF_GPIO_PIN_KEY): pins.gpio_input_pin_schema,
             }
         ),
         # Pressure Sensor
-        cv.Optional(CONF_PRESSURE): sensor.sensor_schema(
-            unit_of_measurement=UNIT_PSI,
+        cv.Required(CONF_PRESSURE): sensor.sensor_schema(
             icon=ICON_GAUGE,
-            accuracy_decimals=2,
             device_class=DEVICE_CLASS_PRESSURE,
         ),
         # Water Meter (counter)

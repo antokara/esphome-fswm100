@@ -35,7 +35,16 @@ external_components:
 fswm100:
   flow:
     name: Water Flow
+    unit_of_measurement: gal/min
+    accuracy_decimals: 2
   pulse:
     name: Water Meter Pulse
+    gpio_pin:
+      number: GPIO05
+      mode:
+        input: true
+        pullup: true
   pressure:
     name: Water Pressure
+    accuracy_decimals: 2
+    unit_of_measurement: psi
