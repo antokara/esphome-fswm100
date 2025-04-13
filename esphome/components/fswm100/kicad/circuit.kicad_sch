@@ -6,8 +6,8 @@
 	(paper "USLetter")
 	(title_block
 		(title "FSWM100")
-		(date "2025-02-26")
-		(rev "1.0.0")
+		(date "2025-04-13")
+		(rev "1.0.1")
 		(company "Antonios Karagiannis")
 		(comment 1 "both L7805 need heatsinks 25x34x12mm+")
 		(comment 2 "we use 2xL7805 for separation of Analog/Digital circuits and less noise potential")
@@ -3337,12 +3337,6 @@
 		(uuid "4072e360-71e8-469d-99f5-bb1458ebdaa5")
 	)
 	(junction
-		(at 210.82 64.77)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "60b6fff5-20ac-48a0-bc48-e44e9357d82e")
-	)
-	(junction
 		(at 140.97 71.12)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3401,6 +3395,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "d6211236-1087-4f6a-aa57-2ccfa858d6af")
+	)
+	(junction
+		(at 224.79 69.85)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "dfb3e9b8-329b-4c22-88e4-74ea683b6e6e")
 	)
 	(junction
 		(at 66.04 74.93)
@@ -3576,6 +3576,16 @@
 	)
 	(wire
 		(pts
+			(xy 224.79 69.85) (xy 233.68 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2f47dddb-6133-4f58-b6b5-019b1897c8e3")
+	)
+	(wire
+		(pts
 			(xy 90.17 59.69) (xy 104.14 59.69)
 		)
 		(stroke
@@ -3593,16 +3603,6 @@
 			(type default)
 		)
 		(uuid "35851dec-b1f3-4260-8061-53c766c95bb5")
-	)
-	(wire
-		(pts
-			(xy 222.25 64.77) (xy 233.68 64.77)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "38bd4eee-7187-4a05-b8ef-df1a3eee57bb")
 	)
 	(wire
 		(pts
@@ -3706,6 +3706,16 @@
 	)
 	(wire
 		(pts
+			(xy 200.66 64.77) (xy 224.79 64.77)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5728205e-1097-4ef2-b515-00a9e8fe2a38")
+	)
+	(wire
+		(pts
 			(xy 157.48 45.72) (xy 90.17 45.72)
 		)
 		(stroke
@@ -3713,16 +3723,6 @@
 			(type default)
 		)
 		(uuid "60905552-5f25-4d9b-8f6f-348a8fdd6d7d")
-	)
-	(wire
-		(pts
-			(xy 210.82 64.77) (xy 200.66 64.77)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6176130e-b764-4f5a-b260-478b0d3e14d4")
 	)
 	(wire
 		(pts
@@ -3736,6 +3736,16 @@
 	)
 	(wire
 		(pts
+			(xy 222.25 69.85) (xy 224.79 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "695a3a1d-1629-4f2a-82ae-bec42ba1e650")
+	)
+	(wire
+		(pts
 			(xy 158.75 99.06) (xy 170.18 99.06)
 		)
 		(stroke
@@ -3743,16 +3753,6 @@
 			(type default)
 		)
 		(uuid "69dc8cbf-b4b4-42ec-a045-dc4fb91120ca")
-	)
-	(wire
-		(pts
-			(xy 210.82 62.23) (xy 210.82 64.77)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "72f63a14-e48f-4139-be62-9a10d535a66e")
 	)
 	(wire
 		(pts
@@ -3846,7 +3846,7 @@
 	)
 	(wire
 		(pts
-			(xy 214.63 64.77) (xy 210.82 64.77)
+			(xy 214.63 69.85) (xy 210.82 69.85)
 		)
 		(stroke
 			(width 0)
@@ -4013,6 +4013,16 @@
 			(type default)
 		)
 		(uuid "b1e691fd-95ac-42eb-8383-91e852ef8b3f")
+	)
+	(wire
+		(pts
+			(xy 210.82 62.23) (xy 210.82 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b3270173-5f6b-46af-bdef-4afda38f554f")
 	)
 	(wire
 		(pts
@@ -4243,6 +4253,16 @@
 			(type default)
 		)
 		(uuid "eee6032d-1361-4969-a029-e26dcbcd3b46")
+	)
+	(wire
+		(pts
+			(xy 224.79 64.77) (xy 224.79 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f1228b25-dab7-459f-a71b-3b16e88e0cc9")
 	)
 	(wire
 		(pts
@@ -4535,7 +4555,7 @@
 	)
 	(symbol
 		(lib_id "Device:R_US")
-		(at 218.44 64.77 270)
+		(at 218.44 69.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -4543,7 +4563,7 @@
 		(dnp no)
 		(uuid "1c292e76-5d13-468b-811e-d1806c80fb98")
 		(property "Reference" "R3"
-			(at 218.44 71.12 90)
+			(at 218.44 76.2 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4551,7 +4571,7 @@
 			)
 		)
 		(property "Value" "10KΩhm"
-			(at 218.44 68.072 90)
+			(at 218.44 73.152 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4559,7 +4579,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 218.186 65.786 90)
+			(at 218.186 70.866 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4568,7 +4588,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 218.44 64.77 0)
+			(at 218.44 69.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4577,7 +4597,7 @@
 			)
 		)
 		(property "Description" "Resistor, US symbol"
-			(at 218.44 64.77 0)
+			(at 218.44 69.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)

@@ -40,7 +40,7 @@ fswm100:
   pulse:
     name: Water Meter Pulse
     gpio_pin:
-      number: GPIO05
+      number: GPIO04
       mode:
         input: true
         pullup: true
