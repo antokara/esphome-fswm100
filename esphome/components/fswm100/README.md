@@ -31,6 +31,6 @@
 1. enter python virtual `source venv/bin/activate`
 1. ensure esphome is available `esphome version`
 1. make changes to code/yaml/etc.
-1. upload with `esphome run my-test-device.yaml`
+1. compile, upload and log, with `esphome run my-test-device.yaml`
     1. this will prompt after successful compile, how to flash (USB or OTA)
     1. to skip the prompt, use `esphome run my-test-device.yaml --device=/dev/ttyUSB0`

@@ -1,0 +1,41 @@
+esphome:
+  name: test-device
+  friendly_name: Test Device
+
+esp32:
+  board: esp32dev
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+external_components:
+  - source:
+      # type: git
+      # url: https://github.com/antokara/esphome-fswm100
+      # ref: test-1
+      type: local
+      path: ./esphome/components
+    components: [fswm100]
+    refresh: 0.5min
+
+# demo with fsw100
+fswm100:
+  flow:
+    name: Water Flow
+  pulse:
+    name: Water Meter Pulse
+  pressure:
+    name: Water Pressure
