@@ -6,6 +6,14 @@
 1. https://esphome.io/components/external_components
 1. https://esphome.io/guides/getting_started_command_line.html
 
+## quick start
+
+1. `docker pull ghcr.io/esphome/esphome`
+1. `esphome wizard my-test-device.yaml`
+1. `esphome config my-test-device.yaml`
+1. `esphome compile my-test-device.yaml`
+1. `esphome upload my-test-device.yaml`
+
 ## test config and quick compile
 
 1. edit `tests/components/fswm100/common.yaml`, code, etc.
