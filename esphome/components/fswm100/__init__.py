@@ -37,6 +37,7 @@ CONFIG_SCHEMA = cv.Schema(
         # Flow Sensor
         cv.Required(CONF_FLOW): sensor.sensor_schema(
             icon=ICON_WATER,
+            unit_of_measurement=GALLONS_PER_MINUTE,
             device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
         ),
         # Pulse Sensor
@@ -51,6 +52,7 @@ CONFIG_SCHEMA = cv.Schema(
         # Pressure Sensor
         cv.Required(CONF_PRESSURE): sensor.sensor_schema(
             icon=ICON_GAUGE,
+            unit_of_measurement=UNIT_PSI,
             device_class=DEVICE_CLASS_PRESSURE,
         ),
         # Water Meter (counter)
