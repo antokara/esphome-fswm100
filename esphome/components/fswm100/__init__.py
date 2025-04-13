@@ -36,7 +36,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(): cv.declare_id(FSWM100Component),
         # Flow Sensor
         cv.Optional(CONF_FLOW): sensor.sensor_schema(
-            unit_of_measurement=GALLONS_PER_MINUTE,
+            unit_of_measurement=GALLONS_PER_MINUTE,  # TODO: make dynamic
             icon=ICON_WATER,
             accuracy_decimals=2,
             device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
@@ -59,6 +59,7 @@ CONFIG_SCHEMA = cv.Schema(
             accuracy_decimals=2,
             device_class=DEVICE_CLASS_PRESSURE,
         ),
+        # Water Meter (counter)
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
