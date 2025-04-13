@@ -34,4 +34,8 @@
 1. compile, upload and log, with `esphome run my-test-device.yaml`
     1. this will prompt after successful compile, how to flash (USB or OTA)
     1. to skip the prompt, use `esphome run my-test-device.yaml --device=/dev/ttyUSB0`
-        1. `--no-logs` to prevent automatic log out after upload
+        1. `--no-logs` to prevent automatic logs after upload
+
+## connect to view logs
+
+`esphome logs my-test-device.yaml --device=/dev/ttyUSB0`
