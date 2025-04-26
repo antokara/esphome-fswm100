@@ -14,10 +14,10 @@ from esphome.const import (
     ICON_WATER,
 )
 
-AUTO_LOAD = ["sensor", "binary_sensor", "number", "i2c"]
+AUTO_LOAD = ["sensor", "binary_sensor", "number"]
 
 # makes it required in config
-# DEPENDENCIES = ["binary_sensor"]
+DEPENDENCIES = ["i2c"]
 
 # @see https://github.com/elupus/home-assistant/blob/ffc5f436eedbbc4920fe16b809681d83cfddb3af/homeassistant/const.py#L1045
 GALLONS_PER_MINUTE = "gal/min"
