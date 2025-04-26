@@ -32,12 +32,8 @@ UNIT_PSI = "psi"
 # configuration keys
 CONF_PULSE = "pulse"
 
-
 # CONF_MY_REQUIRED_KEY = "my_required_key"
 CONF_GPIO_PIN_KEY = "gpio_pin"
-
-# flow config keys
-CONF_MULTIPLEXER_KEY = "multiplexer"
 
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
 FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
