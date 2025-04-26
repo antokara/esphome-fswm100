@@ -32,6 +32,9 @@ void FSWM100::save_state_() {
 void FSWM100::setup() {
   ESP_LOGCONFIG(TAG, "Setting up FSWM100...");
   this->load_state_();
+  // TODO: use these to calculate, etc.
+  // this->flow_sensor_->get_unit_of_measurement();
+  // this->pressure_sensor_->get_unit_of_measurement();
 };
 
 void FSWM100::loop() {
