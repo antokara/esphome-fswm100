@@ -37,6 +37,10 @@ fswm100:
     name: Water Flow
     unit_of_measurement: gal/min
     accuracy_decimals: 2
+    multiplexer: "A1_GND"
+    gain: 6.144
+    sample_rate: 860
+    resolution: 16_BITS
   pulse:
     name: Water Meter Pulse
     gpio_pin:
@@ -48,23 +52,10 @@ fswm100:
     name: Water Pressure
     accuracy_decimals: 2
     unit_of_measurement: psi
-    #
-    # multiplexer: "A0_GND"
-    # gain: 6.144
-    # sample_rate: 860
-    # resolution: 16_BITS
-    # update_interval: 1s
-  #
-  # ir:
-  #   multiplexer: "A1_GND"
-  #   gain: 6.144
-  #   sample_rate: 860
-  #   resolution: 16_BITS
-  #   update_interval: 1s
-
-#   ads1115:
-#     - address: 0x48
-#       continuous_mode: true
+    multiplexer: "A0_GND"
+    gain: 6.144
+    sample_rate: 860
+    resolution: 16_BITS
 
 i2c:
   id: bus_a
@@ -72,11 +63,11 @@ i2c:
   scl: GPIO22
   scan: true
   frequency: 100kHz
-# # demo with standard lib
 
-# ads1115:
-#   - address: 0x48
-#     continuous_mode: true
+ads1115:
+  - address: 0x48
+    continuous_mode: true
+# # demo with standard lib
 
 # sensor:
 #   - platform: ads1115
