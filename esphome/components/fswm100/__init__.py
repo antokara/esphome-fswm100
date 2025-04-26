@@ -1,11 +1,18 @@
 from esphome import pins
 import esphome.codegen as cg
-from esphome.components import binary_sensor, sensor
+from esphome.components import binary_sensor, i2c, sensor
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_FLOW,
+    CONF_FREQUENCY,
     CONF_ID,
+    CONF_INPUT,
+    CONF_OUTPUT,
     CONF_PRESSURE,
+    CONF_SCAN,
+    CONF_SCL,
+    # I2C Device
+    CONF_SDA,
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_PRESSURE,
     DEVICE_CLASS_VOLUME_FLOW_RATE,
@@ -14,7 +21,7 @@ from esphome.const import (
     ICON_WATER,
 )
 
-AUTO_LOAD = ["sensor", "binary_sensor", "number"]
+AUTO_LOAD = ["sensor", "binary_sensor", "number", "i2c"]
 
 # makes it required in config
 # DEPENDENCIES = ["binary_sensor"]
@@ -22,7 +29,10 @@ AUTO_LOAD = ["sensor", "binary_sensor", "number"]
 # @see https://github.com/elupus/home-assistant/blob/ffc5f436eedbbc4920fe16b809681d83cfddb3af/homeassistant/const.py#L1045
 GALLONS_PER_MINUTE = "gal/min"
 UNIT_PSI = "psi"
+
+# configuration keys
 CONF_PULSE = "pulse"
+CONF_I2C = "i2c"
 
 # CONF_MY_REQUIRED_KEY = "my_required_key"
 CONF_GPIO_PIN_KEY = "gpio_pin"
@@ -30,6 +40,11 @@ CONF_GPIO_PIN_KEY = "gpio_pin"
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
 FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
 PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
+I2CDevice = fswm100_ns.class_("I2C", i2c.I2CDevice)
+
+pin_with_input_and_output_support = pins.internal_gpio_pin_number(
+    {CONF_OUTPUT: True, CONF_INPUT: True}
+)
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -56,6 +71,16 @@ CONFIG_SCHEMA = cv.Schema(
             device_class=DEVICE_CLASS_PRESSURE,
         ),
         # Water Meter (counter)
+        # I2C Device at 0x48 address (default)
+        cv.Required(CONF_I2C): i2c.i2c_device_schema(0x48).extend(
+            {
+                cv.GenerateID(): cv.declare_id(I2CDevice),
+                cv.Required(CONF_SDA): pin_with_input_and_output_support,
+                cv.Required(CONF_SCL): pin_with_input_and_output_support,
+                cv.Optional(CONF_SCAN, default=True): cv.boolean,
+                cv.Optional(CONF_FREQUENCY, default="100kHz"): cv.frequency,
+            }
+        ),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -84,3 +109,10 @@ async def to_code(config):
     if pressure_config := config.get(CONF_PRESSURE):
         sens = await sensor.new_sensor(pressure_config)
         cg.add(var.set_pressure_sensor(sens))
+
+    # I2C Device
+    if i2c_config := config.get(CONF_I2C):
+        dev = cg.new_Pvariable(i2c_config[CONF_ID])
+        await i2c.register_i2c_device(dev, i2c_config)
+        # TODO:
+        # cg.add(var.set_pressure_sensor(dev))

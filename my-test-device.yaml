@@ -49,34 +49,28 @@ fswm100:
     accuracy_decimals: 2
     unit_of_measurement: psi
     #
-    multiplexer: "A0_GND"
-    gain: 6.144
-    sample_rate: 860
-    resolution: 16_BITS
-    update_interval: 1s
+    # multiplexer: "A0_GND"
+    # gain: 6.144
+    # sample_rate: 860
+    # resolution: 16_BITS
+    # update_interval: 1s
   #
-  ir:
-    multiplexer: "A1_GND"
-    gain: 6.144
-    sample_rate: 860
-    resolution: 16_BITS
-    update_interval: 1s
+  # ir:
+  #   multiplexer: "A1_GND"
+  #   gain: 6.144
+  #   sample_rate: 860
+  #   resolution: 16_BITS
+  #   update_interval: 1s
   i2c:
     sda: GPIO21
     scl: GPIO22
     scan: true
-    id: bus_a
     frequency: 100kHz
-  ads1115:
-    - address: 0x48
-      continuous_mode: true
-# demo with standard lib
-# i2c:
-#   sda: GPIO21
-#   scl: GPIO22
-#   scan: true
-#   id: bus_a
-#   frequency: 100kHz
+#   ads1115:
+#     - address: 0x48
+#       continuous_mode: true
+
+# # demo with standard lib
 
 # ads1115:
 #   - address: 0x48
