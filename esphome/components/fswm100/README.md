@@ -5,10 +5,12 @@
 1. https://esphome.io/guides/contributing#contributing-to-esphome
 1. https://esphome.io/components/external_components
 1. https://esphome.io/guides/getting_started_command_line.html
+1. https://learn.microsoft.com/en-us/windows/wsl/connect-usb
 
 ## quick start
 
 1. install python3
+    1. `sudo apt-get install python3-venv`
 1. create a virtual environment to contain ESPHome and it’s dependencies.
     1. `python3 -m venv venv`
     1. `source venv/bin/activate`
@@ -19,6 +21,19 @@
 1. `esphome config my-test-device.yaml`
 1. `esphome compile my-test-device.yaml`
 1. `esphome upload my-test-device.yaml`
+
+## WSL
+
+1. `apt install usbutils` in WSL
+1. https://learn.microsoft.com/en-us/windows/wsl/connect-usb
+1. connect the USB device
+1. `usbipd list` in admin powershell
+1. locate the BUSID you need
+1. `usbipd bind --busid 12-4` in admin powershell
+1. `usbipd attach --wsl --busid 12-4` in powershell
+1. `lsusb` in WSL
+1. `ls /dev/tty*USB*` should show `/dev/ttyUSB0` or similar, that should be the device
+1. to disconnect from WSL `usbipd detach --busid 12-4` in powershell
 
 ## test config and quick compile
 
