@@ -22,6 +22,11 @@
 1. `esphome compile my-test-device.yaml`
 1. `esphome upload my-test-device.yaml`
 
+## VSCode
+
+1. install cpp tools
+1. install platform.io
+
 ## WSL
 
 1. `apt install usbutils` in WSL

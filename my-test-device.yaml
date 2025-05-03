@@ -57,6 +57,7 @@ fswm100:
     sample_rate: 860
     resolution: 16_BITS
 
+# required shared component
 i2c:
   id: bus_a
   sda: GPIO21
@@ -64,9 +65,11 @@ i2c:
   scan: true
   frequency: 100kHz
 
+# required shared component
 ads1115:
   - address: 0x48
     continuous_mode: true
+
 # # demo with standard lib
 
 # sensor:
