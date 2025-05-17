@@ -22,6 +22,12 @@
 1. `esphome compile my-test-device.yaml`
 1. `esphome upload my-test-device.yaml`
 
+## to update ESPHome
+
+1. `pip3 install esphome -U`
+1. compile
+1. upload
+
 ## VSCode
 
 1. install cpp tools

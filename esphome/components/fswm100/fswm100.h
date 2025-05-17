@@ -129,6 +129,9 @@ class FSWM100 : public Component, public EntityBase {
   // TODO: remove
   uint32_t last_transmission_{0};
 
+  // TODO: expose public save state and set state props for the children to use...
+  //       it must allow for queing though... debounce
+
   /**
    * @brief preferences object.
    *

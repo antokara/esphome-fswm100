@@ -62,6 +62,11 @@ void FSWM100::loop() {
   if (now - this->last_transmission_ >= 15000) {
     this->last_transmission_ = now;
     this->flow_sensor_->publish_state(2.34f);
+
+    float new_pressure_sensor_state = this->pressure_sensor_->get_state();
+    if (this->pressure_sensor_state != new_pressure_sensor_state) {
+      this->pressure_sensor_->publish_state(new_pressure_sensor_state);
+    }
   }
 
   // check the pulse sensor
@@ -85,10 +90,6 @@ void FSWM100::loop() {
     this->pulse_sensor_->publish_state(false);
   }
 
-  float new_pressure_sensor_state = this->pressure_sensor_->get_state();
-  if (this->pressure_sensor_state != new_pressure_sensor_state) {
-    this->pressure_sensor_->publish_state(new_pressure_sensor_state);
-  }
   //   // this->status_set_warning();
   //   //  this->status_clear_warning();
   //   // ESP_LOGE(TAG, "error log!");
