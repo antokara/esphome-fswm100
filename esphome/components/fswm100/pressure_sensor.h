@@ -9,12 +9,13 @@ namespace fswm100 {
 
 class PressureSensor : public sensor::Sensor {
  public:
-  void setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution); 
-//   void dump_config();
-//   bool get_state();
+  void setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+             ads1115::ADS1115Resolution resolution);
+  void dump_config();
+  //   bool get_state();
 
  private:
-   /**
+  /**
    * @brief ADS1115 multiplexer
    */
   ads1115::ADS1115Multiplexer multiplexer_;

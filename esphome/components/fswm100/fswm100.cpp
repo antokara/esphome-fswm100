@@ -30,11 +30,19 @@ void FSWM100::save_state_() {
 }
 
 void FSWM100::setup() {
-  ESP_LOGCONFIG(TAG, "Setting up FSWM100...");
+  ESP_LOGCONFIG(TAG, "Setting up FSWM100 started...");
+  // check ADS component
+  if (!this->ads1115_) {
+    ESP_LOGE(TAG, "ADS1115 shared component was not set. Cannot proceed.");
+    this->mark_failed();  // Mark component as failed if prerequisite is missing
+    return;
+  }
+
   this->load_state_();
   // TODO: use these to calculate, etc.
   // this->flow_sensor_->get_unit_of_measurement();
   // this->pressure_sensor_->get_unit_of_measurement();
+  ESP_LOGCONFIG(TAG, "Setting up FSWM100 completed...");
 };
 
 void FSWM100::loop() {
@@ -85,6 +93,10 @@ void FSWM100::loop() {
   //   // #endif
 }
 void FSWM100::dump_config() { ESP_LOGCONFIG(TAG, "FSWM100..."); }
+
+/**
+ * @brief ensure I2C and ADS1115 are initialized first
+ */
 float FSWM100::get_setup_priority() const { return setup_priority::DATA; }
 
 }  // namespace fswm100

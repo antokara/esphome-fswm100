@@ -31,10 +31,10 @@ namespace fswm100 {
 
 class FSWM100 : public Component, public EntityBase {
  public:
- /**
-  * @brief Setter for the shared ADS1115 component
-  */
- void set_ads1115(ads1115::ADS1115Component *ads1115) { this->ads1115_ = ads1115; }
+  /**
+   * @brief Setter for the shared ADS1115 component
+   */
+  void set_ads1115(ads1115::ADS1115Component *ads1115) { this->ads1115_ = ads1115; }
 
   /**
    * @brief Sets the flow sensor object.
