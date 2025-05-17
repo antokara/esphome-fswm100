@@ -64,7 +64,8 @@ void FSWM100::loop() {
     this->flow_sensor_->publish_state(2.34f);
 
     float new_pressure_sensor_state = this->pressure_sensor_->get_state();
-    if (this->pressure_sensor_state != new_pressure_sensor_state) {
+    if (abs(this->pressure_sensor_state - new_pressure_sensor_state) > 0.01) {
+      this->pressure_sensor_state = new_pressure_sensor_state;
       this->pressure_sensor_->publish_state(new_pressure_sensor_state);
     }
   }
