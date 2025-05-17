@@ -121,6 +121,11 @@ class FSWM100 : public Component, public EntityBase {
    */
   uint32_t pulse_sensor_active_time_{0};
 
+  /**
+   * the pressure sensor state value we last sent...
+   */
+  float pressure_sensor_state;
+
   // TODO: remove
   uint32_t last_transmission_{0};
 

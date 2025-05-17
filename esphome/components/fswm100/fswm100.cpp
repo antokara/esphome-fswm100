@@ -55,12 +55,12 @@ void FSWM100::setup() {
   ESP_LOGCONFIG(TAG, "Setting up FSWM100 completed...");
 };
 
+// TODO: refactor to add loop to each sensor and maybe let them access parent and do their thing to publish or not
 void FSWM100::loop() {
   const uint32_t now = millis();
 
   if (now - this->last_transmission_ >= 15000) {
     this->last_transmission_ = now;
-    this->pressure_sensor_->publish_state(1.23f);
     this->flow_sensor_->publish_state(2.34f);
   }
 
@@ -85,6 +85,10 @@ void FSWM100::loop() {
     this->pulse_sensor_->publish_state(false);
   }
 
+  float new_pressure_sensor_state = this->pressure_sensor_->get_state();
+  if (this->pressure_sensor_state != new_pressure_sensor_state) {
+    this->pressure_sensor_->publish_state(new_pressure_sensor_state);
+  }
   //   // this->status_set_warning();
   //   //  this->status_clear_warning();
   //   // ESP_LOGE(TAG, "error log!");

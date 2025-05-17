@@ -33,8 +33,8 @@
 1. https://learn.microsoft.com/en-us/windows/wsl/connect-usb
 1. connect the USB device
 1. `usbipd list` in admin powershell
-1. locate the BUSID you need
-1. `usbipd bind --busid 12-4` in admin powershell
+1. locate the BUSID you need _(e.g. `12-4   10c4:ea60  Silicon Labs CP210x USB to UART Bridge (COM3)`)_
+1. `usbipd bind --busid 12-4` in admin powershell _(this should persist O/S restarts/sessions)_
 1. `usbipd attach --wsl --busid 12-4` in powershell
 1. `lsusb` in WSL
 1. `ls /dev/tty*USB*` should show `/dev/ttyUSB0` or similar, that should be the device
