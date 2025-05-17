@@ -113,19 +113,24 @@ CONFIG_SCHEMA = cv.Schema(
 
 
 async def to_code(config):
+    # our Main (external component) "fswm100" configuration...
+    # instantiate the FSWM100 class and register it as the external component
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
 
-    # Pulse
+    # pulse configuration
     if pulse_config := config.get(CONF_PULSE):
-        # create an instance of the custom binary sensor class
-        sens = cg.new_Pvariable(pulse_config[CONF_ID])
-        await binary_sensor.register_binary_sensor(sens, pulse_config)
-        # set it to the main class
-        cg.add(var.set_pulse_sensor(sens))
-        # get the configuration and apply it
+        # create an instance of our custom binary sensor "PulseSensor" class
+        pulseSensor = cg.new_Pvariable(pulse_config[CONF_ID])
+        # register the sensor class instance
+        await binary_sensor.register_binary_sensor(pulseSensor, pulse_config)
+        # set the PulseSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(var.set_pulse_sensor(pulseSensor))
+        # create a configuration object instance from the "pulse.gpio_pin" config
         pulse_sensor_pin = await cg.gpio_pin_expression(pulse_config[CONF_GPIO_PIN_KEY])
-        cg.add(sens.setup(pulse_sensor_pin))
+        # setup the "pulseSensor" class instance, passing it the config
+        cg.add(pulseSensor.setup(pulse_sensor_pin))
         # TODO:
         # use:
         #   - count_volume (e.g. 1 pulse per unit)
@@ -134,8 +139,8 @@ async def to_code(config):
 
     # Flow
     if flow_config := config.get(CONF_FLOW):
-        sens = await sensor.new_sensor(flow_config)
-        cg.add(var.set_flow_sensor(sens))
+        pulseSensor = await sensor.new_sensor(flow_config)
+        cg.add(var.set_flow_sensor(pulseSensor))
         # TODO: pass the ads1115 properties
         # the flow is to use the pulse+IR, to calculate itself
         # use:
@@ -147,8 +152,8 @@ async def to_code(config):
 
     # Pressure
     if pressure_config := config.get(CONF_PRESSURE):
-        sens = await sensor.new_sensor(pressure_config)
-        cg.add(var.set_pressure_sensor(sens))
+        pulseSensor = await sensor.new_sensor(pressure_config)
+        cg.add(var.set_pressure_sensor(pulseSensor))
         # TODO: pass the ads1115 properties
         # use:
         #  - calibration multiplier
