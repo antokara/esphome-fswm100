@@ -19,8 +19,20 @@ class PulseSensor : public binary_sensor::BinarySensor {
    */
   PulseSensor(FSWM100 *fswm100);
 
+  /**
+   * @brief setup the pulse sensor
+   *
+   * @param pulse_sensor_gpio_pin the GPIO pin to use
+   */
   void setup(GPIOPin *pulse_sensor_gpio_pin);
   void dump_config();
+
+  /**
+   * @brief get the state of the pulse sensor
+   *
+   * @return true if the pulse sensor is active
+   * @return false if the pulse sensor is inactive
+   */
   bool get_state();
 
  private:
@@ -46,32 +58,32 @@ class PulseSensor : public binary_sensor::BinarySensor {
    *          will increase by 1gal, per pulse
    *
    */
-  unsigned count_volume = 1;
+  // unsigned count_volume = 1;
 
-  /**
-   * @brief the frequency in relation to the volume, in Seconds.
-   * @example 60, with Gallons as a Volume Unit and count_volume 1,
-   *          one Pulse will be 1gal/min.
-   *
-   */
-  unsigned int count_frequency = 60;
+  // /**
+  //  * @brief the frequency in relation to the volume, in Seconds.
+  //  * @example 60, with Gallons as a Volume Unit and count_volume 1,
+  //  *          one Pulse will be 1gal/min.
+  //  *
+  //  */
+  // unsigned int count_frequency = 60;
 
-  /**
-   * @brief duration for debouncing pulses, in milliseconds.
-   *        helps in case the pulse switch/sensor,
-   *        toggles with noise too fast.
-   *
-   */
-  unsigned int debounce = 300;
+  // /**
+  //  * @brief duration for debouncing pulses, in milliseconds.
+  //  *        helps in case the pulse switch/sensor,
+  //  *        toggles with noise too fast.
+  //  *
+  //  */
+  // unsigned int debounce = 300;
 
-  /**
-   * @brief minimum Water Flow Volume (in relation to the count_frequency),
-   *        that the Water Meter can detect and therefore, the Pulse Sensor can indicate.
-   * @example For a good Positive Displacement Water Meter, that can detect about 0.1 gal/min.
-   *          we would set this to 0.1, assuming count_frequency was already set to 60.
-   *
-   */
-  float min_flow_volume = 0.1;
+  // /**
+  //  * @brief minimum Water Flow Volume (in relation to the count_frequency),
+  //  *        that the Water Meter can detect and therefore, the Pulse Sensor can indicate.
+  //  * @example For a good Positive Displacement Water Meter, that can detect about 0.1 gal/min.
+  //  *          we would set this to 0.1, assuming count_frequency was already set to 60.
+  //  *
+  //  */
+  // float min_flow_volume = 0.1;
 };
 
 }  // namespace fswm100

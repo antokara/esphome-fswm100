@@ -31,7 +31,7 @@ float PressureSensor::get_state() {
 
   if (std::isnan(voltage)) {
     ESP_LOGW(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
-    return -1;
+    return -1;  // when it fails
   }
 
   ESP_LOGD(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
