@@ -7,14 +7,6 @@
 #include "pulse_sensor.h"
 #include "pressure_sensor.h"
 
-// #include "esphome/core/hal.h"
-// #include "esphome/components/binary_sensor/binary_sensor.h"
-
-// #include <vector>
-
-// number of pulses per gallon (Pulse/Gallon)
-// #define PULSE_RATE 1.0
-
 /**
  * @brief frequency in milliseconds, to debounce the pulses.
  * in case the pulse switch toggles too fast for some reason within the defined
@@ -22,12 +14,21 @@
  */
 #define PULSE_DEBOUNCE_FREQUENCY 250
 
+/**
+ * @brief the state that can be saved/loaded from Flash Memory
+ * which perists device restarts
+ */
 struct State {
   float testValue;
 } __attribute__((packed));
 
 namespace esphome {
 namespace fswm100 {
+
+/**
+ * @brief the log tag for this component
+ */
+static const char *TAG = "fswm100";
 
 class FSWM100 : public Component, public EntityBase {
  public:
@@ -77,7 +78,7 @@ class FSWM100 : public Component, public EntityBase {
    */
   float get_setup_priority() const override;
 
- protected:
+ private:
   /**
    * @brief Pointer to the shared ADS1115 component
    */

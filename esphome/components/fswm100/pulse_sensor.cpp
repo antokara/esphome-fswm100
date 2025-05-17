@@ -1,10 +1,11 @@
 #include "esphome/core/log.h"
+#include "fswm100.h"
 #include "pulse_sensor.h"
 
 namespace esphome {
 namespace fswm100 {
 
-static const char *TAG = "fswm100";
+PulseSensor::PulseSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
 void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
   ESP_LOGCONFIG(TAG, "PulseSensor setup start.");

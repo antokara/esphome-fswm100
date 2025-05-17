@@ -6,13 +6,30 @@
 namespace esphome {
 namespace fswm100 {
 
+/**
+ * @brief forward declaration class, to avoid circular includes.
+ *        the .cpp implementation file must include the actual class.h though.
+ */
+class FSWM100;
+
 class PulseSensor : public binary_sensor::BinarySensor {
  public:
+  /**
+   * @param fswm100 the parent component class
+   */
+  PulseSensor(FSWM100 *fswm100);
+
   void setup(GPIOPin *pulse_sensor_gpio_pin);
   void dump_config();
   bool get_state();
 
  private:
+  /**
+   * @brief the parent component
+   *
+   */
+  FSWM100 *fswm100_{nullptr};
+
   /**
    * @brief the GPIO pin that will be a digital input
    * without any internal pull up/down resistor and

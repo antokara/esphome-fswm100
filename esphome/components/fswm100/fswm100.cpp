@@ -5,8 +5,6 @@
 namespace esphome {
 namespace fswm100 {
 
-static const char *TAG = "fswm100";
-
 // Random 32bit value; If this changes existing restore preferences are invalidated
 static const uint32_t RESTORE_STATE_VERSION = 0x848EA6ADUL;
 

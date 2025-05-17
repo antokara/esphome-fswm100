@@ -127,7 +127,8 @@ async def to_code(config):
     # pulse configuration
     if pulse_config := config.get(CONF_PULSE):
         # create an instance of our custom BinarySensor "PulseSensor" class
-        pulseSensor = cg.new_Pvariable(pulse_config[CONF_ID])
+        # passing the FSWM100 class instance to its constructor
+        pulseSensor = cg.new_Pvariable(pulse_config[CONF_ID], fswm100)
         # register the sensor class instance
         await binary_sensor.register_binary_sensor(pulseSensor, pulse_config)
         # set the PulseSensor class instance reference
@@ -159,6 +160,7 @@ async def to_code(config):
     # Pressure
     if pressure_config := config.get(CONF_PRESSURE):
         # create an instance of our custom Sensor "PressureSensor" class
+        # passing the FSWM100 class instance to its constructor
         pressureSensor = cg.new_Pvariable(pressure_config[CONF_ID], fswm100)
         # register the sensor class instance
         await sensor.register_sensor(pressureSensor, pressure_config)
