@@ -13,15 +13,15 @@ namespace fswm100 {
  */
 class FSWM100;
 
-class PressureSensor : public sensor::Sensor {
+class FlowSensor : public sensor::Sensor {
  public:
   /**
    * @param fswm100 the parent component class
    */
-  PressureSensor(FSWM100 *fswm100);
+  FlowSensor(FSWM100 *fswm100);
 
   /**
-   * setup the pressure sensor
+   * setup the flow sensor
    */
   void setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
              ads1115::ADS1115Resolution resolution);

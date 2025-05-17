@@ -12,7 +12,7 @@ void FSWM100::set_ads1115(ads1115::ADS1115Component *ads1115) { this->ads1115_ =
 
 ads1115::ADS1115Component *FSWM100::get_ads1115() { return this->ads1115_; }
 
-void FSWM100::set_flow_sensor(sensor::Sensor *flow_sensor) { flow_sensor_ = flow_sensor; }
+void FSWM100::set_flow_sensor(FlowSensor *flow_sensor) { flow_sensor_ = flow_sensor; }
 
 void FSWM100::set_pulse_sensor(PulseSensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
 
@@ -59,8 +59,15 @@ void FSWM100::loop() {
 
   if (now - this->last_transmission_ >= 15000) {
     this->last_transmission_ = now;
-    this->flow_sensor_->publish_state(2.34f);
 
+    // flow
+    float new_flow_sensor_state = this->flow_sensor_->get_state();
+    if (abs(this->flow_sensor_state - new_flow_sensor_state) > 0.01) {
+      this->flow_sensor_state = new_flow_sensor_state;
+      this->flow_sensor_->publish_state(new_flow_sensor_state);
+    }
+
+    // pressure
     float new_pressure_sensor_state = this->pressure_sensor_->get_state();
     if (abs(this->pressure_sensor_state - new_pressure_sensor_state) > 0.01) {
       this->pressure_sensor_state = new_pressure_sensor_state;

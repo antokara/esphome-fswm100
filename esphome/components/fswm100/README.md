@@ -41,7 +41,7 @@
 1. `usbipd list` in admin powershell
 1. locate the BUSID you need _(e.g. `12-4   10c4:ea60  Silicon Labs CP210x USB to UART Bridge (COM3)`)_
 1. `usbipd bind --busid 12-4` in admin powershell _(this should persist O/S restarts/sessions)_
-1. `usbipd attach --wsl --busid 12-4` in powershell
+1. `usbipd attach --wsl --busid 12-4` in powershell _(this is required even after O/S suspend/resume)_
 1. `lsusb` in WSL
 1. `ls /dev/tty*USB*` should show `/dev/ttyUSB0` or similar, that should be the device
 1. to disconnect from WSL `usbipd detach --busid 12-4` in powershell

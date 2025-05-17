@@ -35,10 +35,14 @@ CONF_PULSE = "pulse"
 # CONF_MY_REQUIRED_KEY = "my_required_key"
 CONF_GPIO_PIN_KEY = "gpio_pin"
 
+# the nameppace for our component
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
+
+# the C++ class names
 FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
 PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
 PressureSensor = fswm100_ns.class_("PressureSensor", sensor.Sensor)
+FlowSensor = fswm100_ns.class_("FlowSensor", sensor.Sensor)
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -47,17 +51,14 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(ads1115.CONF_ADS1115_ID): cv.use_id(ads1115.ADS1115Component),
         # Flow Sensor
         cv.Required(CONF_FLOW): sensor.sensor_schema(
+            FlowSensor,
             icon=ICON_WATER,
             unit_of_measurement=GALLONS_PER_MINUTE,
             device_class=DEVICE_CLASS_VOLUME_FLOW_RATE,
         ).extend(
             {
-                cv.GenerateID(): cv.declare_id(sensor.Sensor),
+                cv.GenerateID(): cv.declare_id(FlowSensor),
                 # ads1115 properties
-                cv.Optional(CONF_MULTIPLEXER, default="A0_A1"): cv.enum(
-                    MUX, upper=True
-                ),
-                cv.GenerateID(): cv.declare_id(sensor.Sensor),
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Required(CONF_GAIN): cv.enum(GAIN, string=True),
                 cv.Optional(CONF_RESOLUTION, default="16_BITS"): cv.enum(
@@ -146,9 +147,23 @@ async def to_code(config):
 
     # Flow
     if flow_config := config.get(CONF_FLOW):
-        pulseSensor = await sensor.new_sensor(flow_config)
-        cg.add(fswm100.set_flow_sensor(pulseSensor))
-        # TODO: pass the ads1115 properties
+        # create an instance of our custom Sensor "FlowSensor" class
+        # passing the FSWM100 class instance to its constructor
+        flowSensor = cg.new_Pvariable(flow_config[CONF_ID], fswm100)
+        # register the sensor class instance
+        await sensor.register_sensor(flowSensor, flow_config)
+        # set the FlowSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_flow_sensor(flowSensor))
+        # setup the "flowSensor" class instance, passing it the config
+        cg.add(
+            flowSensor.setup(
+                flow_config[CONF_MULTIPLEXER],
+                flow_config[CONF_GAIN],
+                flow_config[CONF_SAMPLE_RATE],
+                flow_config[CONF_RESOLUTION],
+            )
+        )
         # the flow is to use the pulse+IR, to calculate itself
         # use:
         #   - min_flow_volume (e.g. 0.1 GPM)

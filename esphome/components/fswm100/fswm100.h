@@ -6,6 +6,7 @@
 #include "esphome/components/ads1115/ads1115.h"
 #include "pulse_sensor.h"
 #include "pressure_sensor.h"
+#include "flow_sensor.h"
 
 /**
  * @brief frequency in milliseconds, to debounce the pulses.
@@ -48,7 +49,7 @@ class FSWM100 : public Component, public EntityBase {
    *
    * @param flow_sensor
    */
-  void set_flow_sensor(sensor::Sensor *flow_sensor);
+  void set_flow_sensor(FlowSensor *flow_sensor);
 
   /**
    * @brief Set the pulse sensor object
@@ -88,7 +89,7 @@ class FSWM100 : public Component, public EntityBase {
    * @brief the flow sensor
    *
    */
-  sensor::Sensor *flow_sensor_{nullptr};
+  FlowSensor *flow_sensor_{nullptr};
 
   /**
    * @brief the pulse sensor
@@ -125,7 +126,12 @@ class FSWM100 : public Component, public EntityBase {
   /**
    * the pressure sensor state value we last sent...
    */
-  float pressure_sensor_state;
+  float pressure_sensor_state = -1.0f;
+
+  /**
+   * the flow sensor state value we last sent...
+   */
+  float flow_sensor_state = -1.0f;
 
   // TODO: remove
   uint32_t last_transmission_{0};
