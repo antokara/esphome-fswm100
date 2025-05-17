@@ -62,7 +62,7 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.GenerateID(): cv.declare_id(FlowSensor),
                 # ads1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
-                cv.Required(CONF_GAIN): cv.enum(GAIN, string=True),
+                cv.Optional(CONF_GAIN): cv.enum(GAIN, string=True),
                 cv.Optional(CONF_RESOLUTION, default="16_BITS"): cv.enum(
                     RESOLUTION, upper=True, space="_"
                 ),
@@ -95,7 +95,7 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_MAX_PRESSURE, default=100): cv.float_,
                 # ADS1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
-                cv.Required(CONF_GAIN): cv.enum(GAIN, string=True),
+                cv.Optional(CONF_GAIN): cv.enum(GAIN, string=True),
                 cv.Optional(CONF_RESOLUTION, default="16_BITS"): cv.enum(
                     RESOLUTION, upper=True, space="_"
                 ),
