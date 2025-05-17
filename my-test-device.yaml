@@ -38,6 +38,7 @@ fswm100:
     name: Water Flow
     unit_of_measurement: gal/min
     accuracy_decimals: 2
+    # ADS1115
     multiplexer: "A1_GND"
     gain: 6.144
     sample_rate: 860
@@ -53,6 +54,11 @@ fswm100:
     name: Water Pressure
     accuracy_decimals: 2
     unit_of_measurement: psi
+    min_voltage: 0.5
+    max_voltage: 4.5
+    min_pressure: 0
+    max_pressure: 100
+    # ADS1115
     multiplexer: "A0_GND"
     gain: 6.144
     sample_rate: 860

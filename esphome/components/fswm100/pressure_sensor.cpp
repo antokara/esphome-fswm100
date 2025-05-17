@@ -7,9 +7,15 @@ namespace fswm100 {
 
 PressureSensor::PressureSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void PressureSensor::setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
+void PressureSensor::setup(float min_voltage, float max_voltage, float min_pressure, float max_pressure,
+                           ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
                            ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "PressureSensor setup start.");
+  min_voltage_ = min_voltage;
+  max_voltage_ = max_voltage;
+  min_pressure_ = min_pressure;
+  max_pressure_ = max_pressure;
+  // ADS1115
   multiplexer_ = multiplexer;
   gain_ = gain;
   sample_rate_ = sample_rate;

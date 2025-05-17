@@ -31,9 +31,11 @@ UNIT_PSI = "psi"
 
 # configuration keys
 CONF_PULSE = "pulse"
-
-# CONF_MY_REQUIRED_KEY = "my_required_key"
 CONF_GPIO_PIN_KEY = "gpio_pin"
+CONF_MIN_VOLTAGE = "min_voltage"
+CONF_MAX_VOLTAGE = "max_voltage"
+CONF_MIN_PRESSURE = "min_pressure"
+CONF_MAX_PRESSURE = "max_pressure"
 
 # the nameppace for our component
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
@@ -87,6 +89,10 @@ CONFIG_SCHEMA = cv.Schema(
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(PressureSensor),
+                cv.Optional(CONF_MIN_VOLTAGE, default=0.5): cv.float_,
+                cv.Optional(CONF_MAX_VOLTAGE, default=4.5): cv.float_,
+                cv.Optional(CONF_MIN_PRESSURE, default=0): cv.float_,
+                cv.Optional(CONF_MAX_PRESSURE, default=100): cv.float_,
                 # ADS1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Required(CONF_GAIN): cv.enum(GAIN, string=True),
@@ -95,6 +101,9 @@ CONFIG_SCHEMA = cv.Schema(
                 ),
                 cv.Optional(CONF_SAMPLE_RATE, default="860"): cv.enum(
                     SAMPLERATE, string=True
+                ),
+                cv.Optional(CONF_RESOLUTION, default="16_BITS"): cv.enum(
+                    RESOLUTION, upper=True, space="_"
                 ),
             }
         ),
@@ -185,6 +194,11 @@ async def to_code(config):
         # setup the "pressureSensor" class instance, passing it the config
         cg.add(
             pressureSensor.setup(
+                pressure_config[CONF_MIN_VOLTAGE],
+                pressure_config[CONF_MAX_VOLTAGE],
+                pressure_config[CONF_MIN_PRESSURE],
+                pressure_config[CONF_MAX_PRESSURE],
+                # ADS1115 properties
                 pressure_config[CONF_MULTIPLEXER],
                 pressure_config[CONF_GAIN],
                 pressure_config[CONF_SAMPLE_RATE],

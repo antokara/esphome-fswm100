@@ -23,7 +23,8 @@ class PressureSensor : public sensor::Sensor {
   /**
    * setup the pressure sensor
    */
-  void setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+  void setup(float min_voltage, float max_voltage, float min_pressure, float max_pressure,
+             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
              ads1115::ADS1115Resolution resolution);
 
   void dump_config();
@@ -52,6 +53,30 @@ class PressureSensor : public sensor::Sensor {
    * @brief ADS1115 resolution
    */
   ads1115::ADS1115Resolution resolution_;
+
+  /**
+   * @brief the minimum voltage that the
+   * Pressure Transducer Sensor can output
+   */
+  float min_voltage_;
+
+  /**
+   * @brief the maximum voltage that the
+   * Pressure Transducer Sensor can output
+   */
+  float max_voltage_;
+
+  /**
+   * @brief the minimum pressure that the
+   * Pressure Transducer Sensor can sense
+   */
+  float min_pressure_;
+
+  /**
+   * @brief the maximum pressure that the
+   * Pressure Transducer Sensor can sense
+   */
+  float max_pressure_;
 };
 
 }  // namespace fswm100
