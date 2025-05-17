@@ -4,6 +4,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "pulse_sensor.h"
 #include "esphome/core/entity_base.h"
+#include "esphome/components/ads1115/ads1115.h"
 
 // #include "esphome/core/hal.h"
 // #include "esphome/components/binary_sensor/binary_sensor.h"
@@ -29,6 +30,11 @@ namespace fswm100 {
 
 class FSWM100 : public Component, public EntityBase {
  public:
+ /**
+  * @brief Setter for the shared ADS1115 component
+  */
+ void set_ads1115(ads1115::ADS1115Component *ads1115) { this->ads1115_ = ads1115; }
+
   /**
    * @brief Sets the flow sensor object.
    * @see sensor.py:to_code(config)
@@ -66,6 +72,16 @@ class FSWM100 : public Component, public EntityBase {
   float get_setup_priority() const override;
 
  protected:
+  /**
+   * @brief Pointer to the shared ADS1115 component
+   */
+  ads1115::ADS1115Component *ads1115_{nullptr};
+
+  /**
+   * @brief Which ADS1115 channel to read
+   */
+  ads1115::ADS1115Multiplexer channel_;
+
   /**
    * @brief the flow sensor
    *

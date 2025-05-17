@@ -33,6 +33,7 @@ external_components:
 
 # demo with fsw100
 fswm100:
+  ads1115_id: ads1115_a
   flow:
     name: Water Flow
     unit_of_measurement: gal/min
@@ -59,7 +60,7 @@ fswm100:
 
 # required (shared) component by fsw100
 i2c:
-  id: bus_a
+  id: i2c_a
   sda: GPIO21
   scl: GPIO22
   scan: true
@@ -67,8 +68,10 @@ i2c:
 
 # required (shared) component by fsw100
 ads1115:
-  - address: 0x48
-    continuous_mode: true
+  id: ads1115_a
+  i2c_id: i2c_a
+  address: 0x48
+  continuous_mode: true
 
 # # demo with standard lib
 

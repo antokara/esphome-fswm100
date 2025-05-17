@@ -1,6 +1,6 @@
 from esphome import pins
 import esphome.codegen as cg
-from esphome.components import binary_sensor, sensor
+from esphome.components import ads1115, binary_sensor, sensor
 from esphome.components.ads1115.sensor import GAIN, MUX, RESOLUTION, SAMPLERATE
 import esphome.config_validation as cv
 from esphome.const import (
@@ -42,6 +42,8 @@ PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(FSWM100Component),
+        # Require the ID of an existing ads1115 component
+        cv.GenerateID(ads1115.CONF_ADS1115_ID): cv.use_id(ads1115.ADS1115Component),
         # Flow Sensor
         cv.Required(CONF_FLOW): sensor.sensor_schema(
             icon=ICON_WATER,
@@ -82,11 +84,7 @@ CONFIG_SCHEMA = cv.Schema(
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(sensor.Sensor),
-                # ads1115 properties
-                cv.Optional(CONF_MULTIPLEXER, default="A0_A1"): cv.enum(
-                    MUX, upper=True
-                ),
-                cv.GenerateID(): cv.declare_id(sensor.Sensor),
+                # ADS1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Required(CONF_GAIN): cv.enum(GAIN, string=True),
                 cv.Optional(CONF_RESOLUTION, default="16_BITS"): cv.enum(
@@ -114,9 +112,15 @@ CONFIG_SCHEMA = cv.Schema(
 
 async def to_code(config):
     # our Main (external component) "fswm100" configuration...
-    # instantiate the FSWM100 class and register it as the external component
+    # instantiate the FSWM100 class
     var = cg.new_Pvariable(config[CONF_ID])
+    # register it as a component with ESPHome
     await cg.register_component(var, config)
+
+    # Get a C++ variable representing the shared ADS1115 component
+    shared_ads1115 = await cg.get_variable(config[ads1115.CONF_ADS1115_ID])
+    # Call the C++ method to set the ADS1115 parent
+    cg.add(var.set_ads1115(shared_ads1115))
 
     # pulse configuration
     if pulse_config := config.get(CONF_PULSE):
