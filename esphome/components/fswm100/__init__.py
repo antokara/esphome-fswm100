@@ -38,6 +38,7 @@ CONF_GPIO_PIN_KEY = "gpio_pin"
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
 FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
 PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
+PressureSensor = fswm100_ns.class_("PressureSensor", sensor.Sensor)
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -78,12 +79,13 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         # Pressure Sensor
         cv.Required(CONF_PRESSURE): sensor.sensor_schema(
+            PressureSensor,
             icon=ICON_GAUGE,
             unit_of_measurement=UNIT_PSI,
             device_class=DEVICE_CLASS_PRESSURE,
         ).extend(
             {
-                cv.GenerateID(): cv.declare_id(sensor.Sensor),
+                cv.GenerateID(): cv.declare_id(PressureSensor),
                 # ADS1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Required(CONF_GAIN): cv.enum(GAIN, string=True),
@@ -113,24 +115,24 @@ CONFIG_SCHEMA = cv.Schema(
 async def to_code(config):
     # our Main (external component) "fswm100" configuration...
     # instantiate the FSWM100 class
-    var = cg.new_Pvariable(config[CONF_ID])
+    fswm100 = cg.new_Pvariable(config[CONF_ID])
     # register it as a component with ESPHome
-    await cg.register_component(var, config)
+    await cg.register_component(fswm100, config)
 
     # Get a C++ variable representing the shared ADS1115 component
     shared_ads1115 = await cg.get_variable(config[ads1115.CONF_ADS1115_ID])
     # Call the C++ method to set the ADS1115 parent
-    cg.add(var.set_ads1115(shared_ads1115))
+    cg.add(fswm100.set_ads1115(shared_ads1115))
 
     # pulse configuration
     if pulse_config := config.get(CONF_PULSE):
-        # create an instance of our custom binary sensor "PulseSensor" class
+        # create an instance of our custom BinarySensor "PulseSensor" class
         pulseSensor = cg.new_Pvariable(pulse_config[CONF_ID])
         # register the sensor class instance
         await binary_sensor.register_binary_sensor(pulseSensor, pulse_config)
         # set the PulseSensor class instance reference
         # to the FSWM100 class instance
-        cg.add(var.set_pulse_sensor(pulseSensor))
+        cg.add(fswm100.set_pulse_sensor(pulseSensor))
         # create a configuration object instance from the "pulse.gpio_pin" config
         pulse_sensor_pin = await cg.gpio_pin_expression(pulse_config[CONF_GPIO_PIN_KEY])
         # setup the "pulseSensor" class instance, passing it the config
@@ -144,7 +146,7 @@ async def to_code(config):
     # Flow
     if flow_config := config.get(CONF_FLOW):
         pulseSensor = await sensor.new_sensor(flow_config)
-        cg.add(var.set_flow_sensor(pulseSensor))
+        cg.add(fswm100.set_flow_sensor(pulseSensor))
         # TODO: pass the ads1115 properties
         # the flow is to use the pulse+IR, to calculate itself
         # use:
@@ -156,8 +158,23 @@ async def to_code(config):
 
     # Pressure
     if pressure_config := config.get(CONF_PRESSURE):
-        pulseSensor = await sensor.new_sensor(pressure_config)
-        cg.add(var.set_pressure_sensor(pulseSensor))
+        # create an instance of our custom Sensor "PressureSensor" class
+        pressureSensor = cg.new_Pvariable(pressure_config[CONF_ID])
+        # register the sensor class instance
+        await sensor.register_sensor(pressureSensor, pressure_config)
+        # set the PressureSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_pressure_sensor(pressureSensor))
+        # setup the "pressureSensor" class instance, passing it the config
+        cg.add(
+            pressureSensor.setup(
+                pressure_config[CONF_MULTIPLEXER],
+                pressure_config[CONF_GAIN],
+                pressure_config[CONF_SAMPLE_RATE],
+                pressure_config[CONF_RESOLUTION],
+            )
+        )
+
         # TODO: pass the ads1115 properties
         # use:
         #  - calibration multiplier

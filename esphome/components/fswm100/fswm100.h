@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 #include "pulse_sensor.h"
+#include "pressure_sensor.h"
 #include "esphome/core/entity_base.h"
 #include "esphome/components/ads1115/ads1115.h"
 
@@ -57,7 +58,7 @@ class FSWM100 : public Component, public EntityBase {
    *
    * @param pressure_sensor
    */
-  void set_pressure_sensor(sensor::Sensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
+  void set_pressure_sensor(PressureSensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
 
   void setup() override;
   void loop() override;
@@ -78,11 +79,6 @@ class FSWM100 : public Component, public EntityBase {
   ads1115::ADS1115Component *ads1115_{nullptr};
 
   /**
-   * @brief Which ADS1115 channel to read
-   */
-  ads1115::ADS1115Multiplexer channel_;
-
-  /**
    * @brief the flow sensor
    *
    */
@@ -98,7 +94,7 @@ class FSWM100 : public Component, public EntityBase {
    * @brief the pressure sensor
    *
    */
-  sensor::Sensor *pressure_sensor_{nullptr};
+  PressureSensor *pressure_sensor_{nullptr};
 
   /**
    * @brief if the pulse sensor is considered active (after debounce)

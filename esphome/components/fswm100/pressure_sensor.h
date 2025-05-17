@@ -2,59 +2,34 @@
 
 #include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/ads1115/ads1115.h"
 
 namespace esphome {
 namespace fswm100 {
 
 class PressureSensor : public sensor::Sensor {
  public:
-  void setup(GPIOPin *pulse_sensor_gpio_pin);
-  void dump_config();
-  bool get_state();
+  void setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution); 
+//   void dump_config();
+//   bool get_state();
 
  private:
-  /**
-   * @brief the GPIO pin that will be a digital input
-   * without any internal pull up/down resistor and
-   * when HIGH, a pulse from the Water Meter will be counted.
-   *
-   * This must be connected to the Reed Switch of the Water Meter.
-   *
+   /**
+   * @brief ADS1115 multiplexer
    */
-  GPIOPin *pin_ = nullptr;
-
+  ads1115::ADS1115Multiplexer multiplexer_;
   /**
-   * @brief how much to increase the Water Meter Counter by
-   * @example 1, with Gallons as a Volume Unit,
-   *          will increase by 1gal, per pulse
-   *
+   * @brief ADS1115 gain
    */
-  unsigned count_volume = 1;
-
+  ads1115::ADS1115Gain gain_;
   /**
-   * @brief the frequency in relation to the volume, in Seconds.
-   * @example 60, with Gallons as a Volume Unit and count_volume 1,
-   *          one Pulse will be 1gal/min.
-   *
+   * @brief ADS1115 sample rate
    */
-  unsigned int count_frequency = 60;
-
+  ads1115::ADS1115Samplerate sample_rate_;
   /**
-   * @brief duration for debouncing pulses, in milliseconds.
-   *        helps in case the pulse switch/sensor,
-   *        toggles with noise too fast.
-   *
+   * @brief ADS1115 resolution
    */
-  unsigned int debounce = 300;
-
-  /**
-   * @brief minimum Water Flow Volume (in relation to the count_frequency),
-   *        that the Water Meter can detect and therefore, the Pulse Sensor can indicate.
-   * @example For a good Positive Displacement Water Meter, that can detect about 0.1 gal/min.
-   *          we would set this to 0.1, assuming count_frequency was already set to 60.
-   *
-   */
-  float min_flow_volume = 0.1;
+  ads1115::ADS1115Resolution resolution_;
 };
 
 }  // namespace fswm100
