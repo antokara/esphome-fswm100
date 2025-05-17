@@ -7,14 +7,35 @@
 namespace esphome {
 namespace fswm100 {
 
+/**
+ * @brief forward declaration class, to avoid circular includes.
+ *        the .cpp implementation file must include the actual class.h though.
+ */
+class FSWM100;
+
 class PressureSensor : public sensor::Sensor {
  public:
+  /**
+   * @param fswm100 the parent component class
+   */
+  PressureSensor(FSWM100 *fswm100);
+
+  /**
+   * setup the pressure sensor
+   */
   void setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
              ads1115::ADS1115Resolution resolution);
+
   void dump_config();
-  //   bool get_state();
+  float get_state();
 
  private:
+  /**
+   * @brief the parent component
+   *
+   */
+  FSWM100 *fswm100_{nullptr};
+
   /**
    * @brief ADS1115 multiplexer
    */
@@ -31,6 +52,9 @@ class PressureSensor : public sensor::Sensor {
    * @brief ADS1115 resolution
    */
   ads1115::ADS1115Resolution resolution_;
+
+  uint32_t internal_schedule_interval_{60000};  // Default to 60 seconds if manual loop control is on
+  uint32_t last_internal_scheduled_update_{0};
 };
 
 }  // namespace fswm100

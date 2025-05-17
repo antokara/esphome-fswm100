@@ -1,5 +1,5 @@
-#include "pulse_sensor.h"
 #include "esphome/core/log.h"
+#include "pulse_sensor.h"
 
 namespace esphome {
 namespace fswm100 {

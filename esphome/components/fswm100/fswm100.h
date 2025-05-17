@@ -2,10 +2,10 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
-#include "pulse_sensor.h"
-#include "pressure_sensor.h"
 #include "esphome/core/entity_base.h"
 #include "esphome/components/ads1115/ads1115.h"
+#include "pulse_sensor.h"
+#include "pressure_sensor.h"
 
 // #include "esphome/core/hal.h"
 // #include "esphome/components/binary_sensor/binary_sensor.h"
@@ -34,7 +34,12 @@ class FSWM100 : public Component, public EntityBase {
   /**
    * @brief Setter for the shared ADS1115 component
    */
-  void set_ads1115(ads1115::ADS1115Component *ads1115) { this->ads1115_ = ads1115; }
+  void set_ads1115(ads1115::ADS1115Component *ads1115);
+
+  /**
+   * @brief getter for the shared ADS1115 component
+   */
+  ads1115::ADS1115Component *get_ads1115();
 
   /**
    * @brief Sets the flow sensor object.
@@ -42,7 +47,7 @@ class FSWM100 : public Component, public EntityBase {
    *
    * @param flow_sensor
    */
-  void set_flow_sensor(sensor::Sensor *flow_sensor) { flow_sensor_ = flow_sensor; }
+  void set_flow_sensor(sensor::Sensor *flow_sensor);
 
   /**
    * @brief Set the pulse sensor object
@@ -50,7 +55,7 @@ class FSWM100 : public Component, public EntityBase {
    *
    * @param pulse_sensor
    */
-  void set_pulse_sensor(PulseSensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
+  void set_pulse_sensor(PulseSensor *pulse_sensor);
 
   /**
    * @brief Set the pressure sensor object
@@ -58,7 +63,7 @@ class FSWM100 : public Component, public EntityBase {
    *
    * @param pressure_sensor
    */
-  void set_pressure_sensor(PressureSensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
+  void set_pressure_sensor(PressureSensor *pressure_sensor);
 
   void setup() override;
   void loop() override;

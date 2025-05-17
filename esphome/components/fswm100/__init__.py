@@ -159,7 +159,7 @@ async def to_code(config):
     # Pressure
     if pressure_config := config.get(CONF_PRESSURE):
         # create an instance of our custom Sensor "PressureSensor" class
-        pressureSensor = cg.new_Pvariable(pressure_config[CONF_ID])
+        pressureSensor = cg.new_Pvariable(pressure_config[CONF_ID], fswm100)
         # register the sensor class instance
         await sensor.register_sensor(pressureSensor, pressure_config)
         # set the PressureSensor class instance reference
