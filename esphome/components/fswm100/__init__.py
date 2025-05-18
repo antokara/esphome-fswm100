@@ -6,19 +6,12 @@ import esphome.config_validation as cv
 from esphome.const import (
     CONF_FLOW,
     CONF_GAIN,
-    CONF_ICON,
     CONF_ID,
-    CONF_INITIAL_VALUE,
-    CONF_MAX_VALUE,
-    CONF_MIN_VALUE,
     CONF_MODE,
     CONF_MULTIPLEXER,
-    CONF_NAME,
     CONF_PRESSURE,
     CONF_RESOLUTION,
     CONF_SAMPLE_RATE,
-    CONF_STEP,
-    CONF_VALUE,
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_PRESSURE,
     DEVICE_CLASS_VOLUME_FLOW_RATE,
@@ -118,7 +111,6 @@ CONFIG_SCHEMA = cv.Schema(
                         cv.Optional(CONF_MODE, default="BOX"): cv.enum(
                             number.NUMBER_MODES
                         ),
-                        cv.Optional(CONF_VALUE, default=1.0): cv.float_,
                     }
                 ),
                 # cv.Optional(CONF_CALIBRATION, default=1): number.NUMBER_SCHEMA.extend(
@@ -259,6 +251,7 @@ async def to_code(config):
                 max_value=2.0,
                 step=0.1,
             )
+            cg.add(pressureSensorCalibration.setup())
         # set the PressureSensor class instance reference
         # to the FSWM100 class instance
         # cg.add(fswm100.set_pressure_sensor(pressureSensor))

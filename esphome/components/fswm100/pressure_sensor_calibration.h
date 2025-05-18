@@ -4,6 +4,8 @@
 #include "esphome/core/component.h"
 #include "esphome/components/number/number.h"
 
+#define PRESSURE_SENSOR_DEFAULT_VALUE 1.0f
+
 namespace esphome {
 namespace fswm100 {
 
@@ -19,12 +21,6 @@ class PressureSensorCalibration : public number::Number, public Component {
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
-  // Setter for initial value, called from generated code (number.py)
-  void set_initial_value(float value) {
-    this->initial_value_ = value;
-    this->has_initial_value_ = true;
-  }
-
   // Called when Home Assistant (or other service) sends a command to change the number value
   void control(float value) override;
 
@@ -36,8 +32,6 @@ class PressureSensorCalibration : public number::Number, public Component {
 
  protected:
   // MyCustomDeviceMain *hub_{nullptr}; // Example if linked to a hub
-  float initial_value_{0.0f};
-  bool has_initial_value_{false};
 };
 
 }  // namespace fswm100
