@@ -33,7 +33,9 @@ void FSWM100::load_state_() {
                   recovered.pressure_sensor_calibration_multiplier);
     ESP_LOGCONFIG(TAG, "restored pressure_sensor_test_flag %", recovered.pressure_sensor_test_flag);
   } else {
-    ESP_LOGCONFIG(TAG, "unable to restore state");
+    ESP_LOGCONFIG(TAG, "unable to restore state. setting to defaults");
+    recovered.pressure_sensor_calibration_multiplier = PRESSURE_SENSOR_DEFAULT_VALUE;
+    recovered.pressure_sensor_test_flag = false;
   }
   // set the component properties using the restored state
   this->pressure_sensor_calibration_->publish_state(recovered.pressure_sensor_calibration_multiplier);
@@ -96,6 +98,9 @@ void FSWM100::loop() {
       this->flow_sensor_state = new_flow_sensor_state;
       this->flow_sensor_->publish_state(new_flow_sensor_state);
     }
+
+    // TODO: there MUST be a delay between the 2 calls, otherwise, only the first one
+    //       gets the proper value and the second one is flaky
 
     // pressure
     float new_pressure_sensor_state = this->pressure_sensor_->get_state();

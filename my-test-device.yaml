@@ -59,7 +59,7 @@ fswm100:
     min_pressure: 0
     max_pressure: 100
     # ADS1115
-    multiplexer: "A2_GND"
+    multiplexer: "A0_GND"
     gain: 6.144
     sample_rate: 860
     resolution: 16_BITS
