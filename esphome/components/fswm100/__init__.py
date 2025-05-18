@@ -1,22 +1,32 @@
 from esphome import pins
 import esphome.codegen as cg
-from esphome.components import ads1115, binary_sensor, sensor
+from esphome.components import ads1115, binary_sensor, number, sensor
 from esphome.components.ads1115.sensor import GAIN, MUX, RESOLUTION, SAMPLERATE
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_FLOW,
     CONF_GAIN,
+    CONF_ICON,
     CONF_ID,
+    CONF_INITIAL_VALUE,
+    CONF_MAX_VALUE,
+    CONF_MIN_VALUE,
+    CONF_MODE,
     CONF_MULTIPLEXER,
+    CONF_NAME,
     CONF_PRESSURE,
     CONF_RESOLUTION,
     CONF_SAMPLE_RATE,
+    CONF_STEP,
+    CONF_VALUE,
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_PRESSURE,
     DEVICE_CLASS_VOLUME_FLOW_RATE,
+    ENTITY_CATEGORY_CONFIG,
     ICON_GAUGE,
     ICON_PULSE,
     ICON_WATER,
+    UNIT_EMPTY,
 )
 
 AUTO_LOAD = ["sensor", "binary_sensor", "number"]
@@ -36,6 +46,7 @@ CONF_MIN_VOLTAGE = "min_voltage"
 CONF_MAX_VOLTAGE = "max_voltage"
 CONF_MIN_PRESSURE = "min_pressure"
 CONF_MAX_PRESSURE = "max_pressure"
+CONF_CALIBRATION = "calibration"
 
 # the nameppace for our component
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
@@ -45,6 +56,9 @@ FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
 PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
 PressureSensor = fswm100_ns.class_("PressureSensor", sensor.Sensor)
 FlowSensor = fswm100_ns.class_("FlowSensor", sensor.Sensor)
+PressureSensorCalibration = fswm100_ns.class_(
+    "PressureSensorCalibration", number.Number, cg.Component
+)
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -93,6 +107,33 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_MAX_VOLTAGE, default=4.5): cv.float_,
                 cv.Optional(CONF_MIN_PRESSURE, default=0): cv.float_,
                 cv.Optional(CONF_MAX_PRESSURE, default=100): cv.float_,
+                cv.Optional(CONF_CALIBRATION, default=1.0): number.number_schema(
+                    PressureSensorCalibration,
+                    icon=ICON_GAUGE,
+                    unit_of_measurement=UNIT_EMPTY,
+                    device_class=DEVICE_CLASS_EMPTY,
+                    entity_category=ENTITY_CATEGORY_CONFIG,
+                ).extend(
+                    {
+                        cv.Optional(CONF_MODE, default="BOX"): cv.enum(
+                            number.NUMBER_MODES
+                        ),
+                        cv.Optional(CONF_VALUE, default=1.0): cv.float_,
+                    }
+                ),
+                # cv.Optional(CONF_CALIBRATION, default=1): number.NUMBER_SCHEMA.extend(
+                # {
+                #     cv.GenerateID(): cv.declare_id(PressureSensorCalibration), # ID for the number entity itself
+                #     # cv.Optional(CONF_NAME): cv.string_strict,
+                #     cv.Optional(CONF_MIN_VALUE): cv.float_,
+                #     cv.Optional(CONF_MAX_VALUE): cv.float_,
+                #     cv.Optional(CONF_STEP): cv.positive_float,
+                #     cv.Optional(CONF_INITIAL_VALUE): cv.float_,
+                #     cv.Optional(CONF_MODE, default="auto"): cv.enum(number.NUMBER_MODES, lower=True),
+                #     cv.Optional(CONF_UNIT_OF_MEASUREMENT, default=""): cv.string_strict,
+                #     cv.Optional(CONF_ICON, default="mdi:ray-vertex"): cv.icon,
+                #     cv.Optional(CONF_ENTITY_CATEGORY, default=ENTITY_CATEGORY_CONFIG): cv.entity_category,
+                # }
                 # ADS1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Optional(CONF_GAIN): cv.enum(GAIN, string=True),
@@ -205,6 +246,22 @@ async def to_code(config):
                 pressure_config[CONF_RESOLUTION],
             )
         )
+        # pressure calibration configuration
+        if pressure_calibration_config := pressure_config.get(CONF_CALIBRATION):
+            pressureSensorCalibration = cg.new_Pvariable(
+                pressure_calibration_config[CONF_ID]
+            )
+            # register the sensor class instance
+            await number.register_number(
+                pressureSensorCalibration,
+                pressure_calibration_config,
+                min_value=0.1,
+                max_value=2.0,
+                step=0.1,
+            )
+        # set the PressureSensor class instance reference
+        # to the FSWM100 class instance
+        # cg.add(fswm100.set_pressure_sensor(pressureSensor))
 
         # TODO: pass the ads1115 properties
         # use:
