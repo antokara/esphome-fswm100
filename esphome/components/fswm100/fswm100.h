@@ -7,6 +7,7 @@
 #include "pulse_sensor.h"
 #include "pressure_sensor.h"
 #include "pressure_sensor_calibration.h"
+#include "pressure_sensor_test.h"
 #include "flow_sensor.h"
 
 /**
@@ -28,6 +29,7 @@
  */
 struct State {
   float pressure_sensor_calibration_multiplier;
+  bool pressure_sensor_test_flag;
 } __attribute__((packed));
 
 namespace esphome {
@@ -83,9 +85,22 @@ class FSWM100 : public Component, public EntityBase {
   void set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration);
 
   /**
+   * @brief Set the pressure sensor calibration object
+   *  @see __init__.py
+   *
+   * @param pressure_sensor_test
+   */
+  void set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test);
+
+  /**
    * @brief returns the pressure sensor calibration multiplier
    */
   float get_pressure_sensor_calibration_multiplier();
+
+  /**
+   * @brief returns the pressure sensor test flag
+   */
+  bool get_pressure_sensor_test_flag();
 
   void setup() override;
 
@@ -142,6 +157,11 @@ class FSWM100 : public Component, public EntityBase {
    * @brief the pressure sensor calibration number
    */
   PressureSensorCalibration *pressure_sensor_calibration_{nullptr};
+
+  /**
+   * @brief the pressure sensor test flag
+   */
+  PressureSensorTest *pressure_sensor_test_{nullptr};
 
   /**
    * @brief if the pulse sensor is considered active (after debounce)

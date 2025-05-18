@@ -1,6 +1,6 @@
 from esphome import pins
 import esphome.codegen as cg
-from esphome.components import ads1115, binary_sensor, number, sensor
+from esphome.components import ads1115, binary_sensor, number, sensor, switch
 from esphome.components.ads1115.sensor import GAIN, MUX, RESOLUTION, SAMPLERATE
 import esphome.config_validation as cv
 from esphome.const import (
@@ -19,11 +19,18 @@ from esphome.const import (
     ENTITY_CATEGORY_CONFIG,
     ICON_GAUGE,
     ICON_PULSE,
+    ICON_TIMELAPSE,
     ICON_WATER,
     UNIT_EMPTY,
 )
 
-AUTO_LOAD = ["sensor", "binary_sensor", "number"]
+#
+# Make sure to autload the required components.
+# Otherwise, the code will not compile and
+# it will complain. For example:
+#  fatal error: esphome/components/switch/switch.h: No such file or directory
+#
+AUTO_LOAD = ["sensor", "binary_sensor", "number", "switch"]
 
 # makes them required in the config
 # since those are shared components...
@@ -41,6 +48,7 @@ CONF_MAX_VOLTAGE = "max_voltage"
 CONF_MIN_PRESSURE = "min_pressure"
 CONF_MAX_PRESSURE = "max_pressure"
 CONF_CALIBRATION = "calibration"
+CONF_TEST = "test"
 
 # the nameppace for our component
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
@@ -52,6 +60,9 @@ PressureSensor = fswm100_ns.class_("PressureSensor", sensor.Sensor)
 FlowSensor = fswm100_ns.class_("FlowSensor", sensor.Sensor)
 PressureSensorCalibration = fswm100_ns.class_(
     "PressureSensorCalibration", number.Number, cg.Component
+)
+PressureSensorTest = fswm100_ns.class_(
+    "PressureSensorTest", switch.Switch, cg.Component
 )
 
 CONFIG_SCHEMA = cv.Schema(
@@ -118,6 +129,16 @@ CONFIG_SCHEMA = cv.Schema(
                             number.NUMBER_MODES
                         ),
                     }
+                ),
+                cv.Optional(
+                    CONF_TEST,
+                    default={
+                        CONF_NAME: "Pressure Sensor Test",
+                    },
+                ): switch.switch_schema(
+                    PressureSensorTest,
+                    icon=ICON_TIMELAPSE,
+                    entity_category=ENTITY_CATEGORY_CONFIG,
                 ),
                 # ADS1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
@@ -246,9 +267,24 @@ async def to_code(config):
                 step=0.01,
             )
             cg.add(pressureSensorCalibration.setup())
-        # set the PressureSensor class instance reference
-        # to the FSWM100 class instance
-        cg.add(fswm100.set_pressure_sensor_calibration(pressureSensorCalibration))
+            # set the PressureSensorCalibration class instance reference
+            # to the FSWM100 class instance
+            cg.add(fswm100.set_pressure_sensor_calibration(pressureSensorCalibration))
+        # pressure test configuration
+        if pressure_test_config := pressure_config.get(CONF_TEST):
+            pressureSensorTest = cg.new_Pvariable(
+                pressure_test_config[CONF_ID],
+                fswm100,
+            )
+            # register the sensor class instance
+            await switch.register_switch(
+                pressureSensorTest,
+                pressure_test_config,
+            )
+            cg.add(pressureSensorTest.setup())
+            # set the PressureSensorTest class instance reference
+            # to the FSWM100 class instance
+            cg.add(fswm100.set_pressure_sensor_test(pressureSensorTest))
 
         # TODO: pass the ads1115 properties
         # use:

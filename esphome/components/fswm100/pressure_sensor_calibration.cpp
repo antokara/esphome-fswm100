@@ -26,7 +26,6 @@ void PressureSensorCalibration::dump_config() {
   ESP_LOGCONFIG(TAG, "    Step: %.2f", this->traits.get_step());
 }
 
-// This method is called when Home Assistant or another service changes the number's value.
 void PressureSensorCalibration::control(float value) {
   ESP_LOGI(TAG, "PressureSensorCalibration received control with value: %.2f", value);
 

@@ -6,29 +6,38 @@ namespace esphome {
 namespace fswm100 {
 
 // Random 32bit value; If this changes existing restore preferences are invalidated
-static const uint32_t RESTORE_STATE_VERSION = 0x111EA6ADUL;
+static const uint32_t RESTORE_STATE_VERSION = 0x112EA6ADUL;
 
+// setters
 void FSWM100::set_ads1115(ads1115::ADS1115Component *ads1115) { this->ads1115_ = ads1115; }
 ads1115::ADS1115Component *FSWM100::get_ads1115() { return this->ads1115_; }
-
 void FSWM100::set_flow_sensor(FlowSensor *flow_sensor) { flow_sensor_ = flow_sensor; }
 void FSWM100::set_pulse_sensor(PulseSensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
 void FSWM100::set_pressure_sensor(PressureSensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
 void FSWM100::set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration) {
   pressure_sensor_calibration_ = pressure_sensor_calibration;
 }
+void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test) {
+  pressure_sensor_test_ = pressure_sensor_test;
+}
+
+// getters
+float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
+bool FSWM100::get_pressure_sensor_test_flag() { return this->pressure_sensor_test_->state; }
 
 void FSWM100::load_state_() {
   this->pref_ = global_preferences->make_preference<State>(this->get_object_id_hash() ^ RESTORE_STATE_VERSION);
   State recovered{};
-  if (this->pref_.load(&recovered))
+  if (this->pref_.load(&recovered)) {
     ESP_LOGCONFIG(TAG, "restored pressure_sensor_calibration_multiplier %.2f",
                   recovered.pressure_sensor_calibration_multiplier);
-  else
+    ESP_LOGCONFIG(TAG, "restored pressure_sensor_test_flag %", recovered.pressure_sensor_test_flag);
+  } else {
     ESP_LOGCONFIG(TAG, "unable to restore state");
-
+  }
   // set the component properties using the restored state
   this->pressure_sensor_calibration_->publish_state(recovered.pressure_sensor_calibration_multiplier);
+  this->pressure_sensor_test_->publish_state(recovered.pressure_sensor_test_flag);
 }
 
 void FSWM100::save_state_() {
@@ -38,9 +47,11 @@ void FSWM100::save_state_() {
   memset(&state, 0, sizeof(State));
   // set the state usign the component properties
   state.pressure_sensor_calibration_multiplier = this->pressure_sensor_calibration_->state;
+  state.pressure_sensor_test_flag = this->pressure_sensor_test_->state;
   this->pref_.save(&state);
   ESP_LOGD(TAG, "Saved state:");
   ESP_LOGD(TAG, " - pressure_sensor_calibration_multiplier %.2f", state.pressure_sensor_calibration_multiplier);
+  ESP_LOGD(TAG, " - pressure_sensor_test_flag %", state.pressure_sensor_test_flag);
 }
 
 void FSWM100::save_state() {
@@ -138,8 +149,6 @@ void FSWM100::dump_config() { ESP_LOGCONFIG(TAG, "FSWM100..."); }
  * @brief ensure I2C and ADS1115 are initialized first
  */
 float FSWM100::get_setup_priority() const { return setup_priority::DATA; }
-
-float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
 
 }  // namespace fswm100
 }  // namespace esphome
