@@ -39,8 +39,8 @@ void FSWM100::save_state_() {
   // set the state usign the component properties
   state.pressure_sensor_calibration_multiplier = this->pressure_sensor_calibration_->state;
   this->pref_.save(&state);
-  ESP_LOGD(TAG, "Saved state.");
-  ESP_LOGD(TAG, "pressure_sensor_calibration_multiplier %.2f", state.pressure_sensor_calibration_multiplier);
+  ESP_LOGD(TAG, "Saved state:");
+  ESP_LOGD(TAG, " - pressure_sensor_calibration_multiplier %.2f", state.pressure_sensor_calibration_multiplier);
 }
 
 void FSWM100::save_state() {
