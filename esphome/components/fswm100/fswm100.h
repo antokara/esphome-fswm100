@@ -6,6 +6,7 @@
 #include "esphome/components/ads1115/ads1115.h"
 #include "pulse_sensor.h"
 #include "pressure_sensor.h"
+#include "pressure_sensor_calibration.h"
 #include "flow_sensor.h"
 
 /**
@@ -45,7 +46,7 @@ class FSWM100 : public Component, public EntityBase {
 
   /**
    * @brief Sets the flow sensor object.
-   * @see sensor.py:to_code(config)
+   * @see __init__.py
    *
    * @param flow_sensor
    */
@@ -53,7 +54,7 @@ class FSWM100 : public Component, public EntityBase {
 
   /**
    * @brief Set the pulse sensor object
-   * @see sensor.py:to_code(config)
+   * @see __init__.py
    *
    * @param pulse_sensor
    */
@@ -61,11 +62,19 @@ class FSWM100 : public Component, public EntityBase {
 
   /**
    * @brief Set the pressure sensor object
-   * @see sensor.py:to_code(config)
+   * @see __init__.py
    *
    * @param pressure_sensor
    */
   void set_pressure_sensor(PressureSensor *pressure_sensor);
+
+  /**
+   * @brief Set the pressure sensor calibration object
+   *  @see __init__.py
+   *
+   * @param pressure_sensor_calibration
+   */
+  void set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration);
 
   void setup() override;
   void loop() override;
@@ -102,6 +111,11 @@ class FSWM100 : public Component, public EntityBase {
    *
    */
   PressureSensor *pressure_sensor_{nullptr};
+
+  /**
+   * @brief the pressure sensor calibration number
+   */
+  PressureSensorCalibration *pressure_sensor_calibration_{nullptr};
 
   /**
    * @brief if the pulse sensor is considered active (after debounce)

@@ -234,7 +234,8 @@ async def to_code(config):
         # pressure calibration configuration
         if pressure_calibration_config := pressure_config.get(CONF_CALIBRATION):
             pressureSensorCalibration = cg.new_Pvariable(
-                pressure_calibration_config[CONF_ID]
+                pressure_calibration_config[CONF_ID],
+                fswm100,
             )
             # register the sensor class instance
             await number.register_number(
@@ -242,12 +243,12 @@ async def to_code(config):
                 pressure_calibration_config,
                 min_value=0.1,
                 max_value=2.0,
-                step=0.1,
+                step=0.01,
             )
             cg.add(pressureSensorCalibration.setup())
         # set the PressureSensor class instance reference
         # to the FSWM100 class instance
-        # cg.add(fswm100.set_pressure_sensor(pressureSensor))
+        cg.add(fswm100.set_pressure_sensor_calibration(pressureSensorCalibration))
 
         # TODO: pass the ads1115 properties
         # use:
