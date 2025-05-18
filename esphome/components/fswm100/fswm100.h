@@ -77,6 +77,14 @@ class FSWM100 : public Component, public EntityBase {
   void set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration);
 
   void setup() override;
+
+  /**
+   * @brief loop method
+   *
+   * This method is called repeatedly.
+   * Analogous to Arduino's loop(). setup() is guaranteed to be called before this.
+   * Important: this must not take more than 30ms to execute.
+   */
   void loop() override;
   void dump_config() override;
 
