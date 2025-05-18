@@ -119,19 +119,6 @@ CONFIG_SCHEMA = cv.Schema(
                         ),
                     }
                 ),
-                # cv.Optional(CONF_CALIBRATION, default=1): number.NUMBER_SCHEMA.extend(
-                # {
-                #     cv.GenerateID(): cv.declare_id(PressureSensorCalibration), # ID for the number entity itself
-                #     # cv.Optional(CONF_NAME): cv.string_strict,
-                #     cv.Optional(CONF_MIN_VALUE): cv.float_,
-                #     cv.Optional(CONF_MAX_VALUE): cv.float_,
-                #     cv.Optional(CONF_STEP): cv.positive_float,
-                #     cv.Optional(CONF_INITIAL_VALUE): cv.float_,
-                #     cv.Optional(CONF_MODE, default="auto"): cv.enum(number.NUMBER_MODES, lower=True),
-                #     cv.Optional(CONF_UNIT_OF_MEASUREMENT, default=""): cv.string_strict,
-                #     cv.Optional(CONF_ICON, default="mdi:ray-vertex"): cv.icon,
-                #     cv.Optional(CONF_ENTITY_CATEGORY, default=ENTITY_CATEGORY_CONFIG): cv.entity_category,
-                # }
                 # ADS1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Optional(CONF_GAIN): cv.enum(GAIN, string=True),
