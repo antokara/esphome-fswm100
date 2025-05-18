@@ -58,8 +58,6 @@ fswm100:
     max_voltage: 4.5
     min_pressure: 0
     max_pressure: 100
-    calibration:
-      name: Water Pressure Calibration
     # ADS1115
     multiplexer: "A0_GND"
     gain: 6.144

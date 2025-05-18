@@ -9,6 +9,7 @@ from esphome.const import (
     CONF_ID,
     CONF_MODE,
     CONF_MULTIPLEXER,
+    CONF_NAME,
     CONF_PRESSURE,
     CONF_RESOLUTION,
     CONF_SAMPLE_RATE,
@@ -100,7 +101,12 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_MAX_VOLTAGE, default=4.5): cv.float_,
                 cv.Optional(CONF_MIN_PRESSURE, default=0): cv.float_,
                 cv.Optional(CONF_MAX_PRESSURE, default=100): cv.float_,
-                cv.Optional(CONF_CALIBRATION, default=1.0): number.number_schema(
+                cv.Optional(
+                    CONF_CALIBRATION,
+                    default={
+                        CONF_NAME: "Pressure Sensor Calibration",
+                    },
+                ): number.number_schema(
                     PressureSensorCalibration,
                     icon=ICON_GAUGE,
                     unit_of_measurement=UNIT_EMPTY,
