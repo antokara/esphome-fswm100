@@ -1,3 +1,7 @@
+# kicad lock files
+*.lck
+
+# ESPHome configuration files with secrets
 secrets.yaml
 
 # Byte-compiled / optimized / DLL files

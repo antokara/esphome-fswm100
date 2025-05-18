@@ -120,5 +120,7 @@ void FSWM100::dump_config() { ESP_LOGCONFIG(TAG, "FSWM100..."); }
  */
 float FSWM100::get_setup_priority() const { return setup_priority::DATA; }
 
+float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
+
 }  // namespace fswm100
 }  // namespace esphome

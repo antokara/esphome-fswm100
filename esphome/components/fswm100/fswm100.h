@@ -76,6 +76,11 @@ class FSWM100 : public Component, public EntityBase {
    */
   void set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration);
 
+  /**
+   * @brief returns the pressure sensor calibration multiplier
+   */
+  float get_pressure_sensor_calibration_multiplier();
+
   void setup() override;
 
   /**

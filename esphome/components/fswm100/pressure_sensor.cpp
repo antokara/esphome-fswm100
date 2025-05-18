@@ -15,6 +15,7 @@ void PressureSensor::setup(float min_voltage, float max_voltage, float min_press
   max_voltage_ = max_voltage;
   min_pressure_ = min_pressure;
   max_pressure_ = max_pressure;
+  voltage_factor_ = (max_pressure - min_pressure) / (max_voltage - min_voltage);
   // ADS1115
   multiplexer_ = multiplexer;
   gain_ = gain;
@@ -25,6 +26,11 @@ void PressureSensor::setup(float min_voltage, float max_voltage, float min_press
 
 void PressureSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "PressureSensor:");
+  ESP_LOGCONFIG(TAG, "  min voltage:", this->min_voltage_);
+  ESP_LOGCONFIG(TAG, "  max voltage:", this->max_voltage_);
+  ESP_LOGCONFIG(TAG, "  min pressure:", this->min_pressure_);
+  ESP_LOGCONFIG(TAG, "  max pressure:", this->max_pressure_);
+  ESP_LOGCONFIG(TAG, "  voltage factor:", this->voltage_factor_);
   ESP_LOGCONFIG(TAG, "  multiplexer:", this->multiplexer_);
   ESP_LOGCONFIG(TAG, "  gain:", this->gain_);
   ESP_LOGCONFIG(TAG, "  sample rate:", this->sample_rate_);
@@ -32,6 +38,12 @@ void PressureSensor::dump_config() {
 }
 
 float PressureSensor::get_state() {
+  /**
+   * the voltage has already been adjusted for gain and resolution.
+   * meaning, we get the proper min/max voltage for the range it can provide.
+   *
+   * @example 0-4.96 (V) for the IC L7805
+   */
   float voltage = abs(this->fswm100_->get_ads1115()->request_measurement(this->multiplexer_, this->gain_,
                                                                          this->resolution_, this->sample_rate_));
 
@@ -43,7 +55,20 @@ float PressureSensor::get_state() {
   ESP_LOGD(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
            static_cast<int>(this->multiplexer_), voltage);
 
-  return voltage;
+  float pressure = this->voltage_to_pressure(voltage) * this->fswm100_->get_pressure_sensor_calibration_multiplier();
+  ESP_LOGD(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
+
+  if (pressure < this->min_pressure_) {
+    return this->min_pressure_;
+  }
+  if (pressure > this->max_pressure_) {
+    return this->max_pressure_;
+  }
+  return pressure;
+}
+
+float PressureSensor::voltage_to_pressure(float voltage) {
+  return (voltage - this->min_voltage_) * this->voltage_factor_ + this->min_pressure_;
 }
 
 }  // namespace fswm100

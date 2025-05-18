@@ -77,6 +77,32 @@ class PressureSensor : public sensor::Sensor {
    * Pressure Transducer Sensor can sense
    */
   float max_pressure_;
+
+  /**
+   * @brief the voltage factor
+   *
+   * This is used to convert the voltage to pressure.
+   * It is calculated as follows:
+   * voltage_factor = (max_pressure - min_pressure) / (max_voltage - min_voltage)
+   *
+   * @see setup()
+   */
+  float voltage_factor_;
+
+  /**
+   * @brief converts voltage to pressure,
+   * using all the parameters set in setup() plus
+   * the pressure sensor calibration (multiplier).
+   *
+   * Warning: It does not restrict the pressure to the min/max range but
+   * it uses the min/maxs to calculate the pressure. Meaning,
+   * if the voltage is outside the expected min/max voltage range,
+   * the pressure will be outside the expected min/max pressure range.
+   *
+   * @param voltage the voltage to convert
+   * @return the converted pressure
+   */
+  float voltage_to_pressure(float voltage);
 };
 
 }  // namespace fswm100
