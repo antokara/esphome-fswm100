@@ -15,8 +15,6 @@ void PressureSensorCalibration::setup() {
     ESP_LOGW(TAG, "  Initial value is invalid, setting to default: %.2f", PRESSURE_SENSOR_DEFAULT_VALUE);
     this->publish_state(PRESSURE_SENSOR_DEFAULT_VALUE);
   }
-  ESP_LOGI(TAG, "  Publishing initial value from YAML: %.2f", this->state);
-  this->publish_state(this->state);  // Publish initial state set via YAML
   ESP_LOGCONFIG(TAG, "PressureSensorCalibration setup complete.");
 }
 
@@ -35,6 +33,9 @@ void PressureSensorCalibration::control(float value) {
   // This updates the "state" property of this class and
   // the Home Assistant entity's state, to the new value.
   this->publish_state(value);
+
+  // save the new value
+  this->fswm100_->save_state();
 }
 
 }  // namespace fswm100

@@ -10,6 +10,12 @@
 #include "flow_sensor.h"
 
 /**
+ * @brief the milliseconds that the component will wait
+ * before actually saving the state, after each call to save_state().
+ */
+#define SAVE_STATE_DEBOUNCE_FREQUENCY 15000
+
+/**
  * @brief frequency in milliseconds, to debounce the pulses.
  * in case the pulse switch toggles too fast for some reason within the defined
  * period, it will be ignored.
@@ -21,7 +27,7 @@
  * which perists device restarts
  */
 struct State {
-  float testValue;
+  float pressure_sensor_calibration_multiplier;
 } __attribute__((packed));
 
 namespace esphome {
@@ -101,6 +107,13 @@ class FSWM100 : public Component, public EntityBase {
    */
   float get_setup_priority() const override;
 
+  /**
+   * @brief saves the state of the component using a debouncer
+   * to avoid too frequent writes to the flash memory.
+   * it will only save once, at the end of the debounce period.
+   */
+  void save_state();
+
  private:
   /**
    * @brief Pointer to the shared ADS1115 component
@@ -163,8 +176,16 @@ class FSWM100 : public Component, public EntityBase {
   // TODO: remove
   uint32_t last_transmission_{0};
 
-  // TODO: expose public save state and set state props for the children to use...
-  //       it must allow for queing though... debounce
+  /**
+   * @brief the time (millis) when the last save_state() was called
+   */
+  uint32_t last_save_state_call_{0};
+
+  /**
+   * @brief if true, there's a pending save_state() call
+   *        that should be executed after the debounce period
+   */
+  bool save_state_debounced_{false};
 
   /**
    * @brief preferences object.
@@ -176,8 +197,26 @@ class FSWM100 : public Component, public EntityBase {
    *
    */
   ESPPreferenceObject pref_;
+
+  /**
+   * @brief loads the state from the flash memory and
+   * sets the appropriate values to the component with it.
+   */
   void load_state_();
+
+  /**
+   * @brief saves the state to the flash memory using
+   * the appropriate component values.
+   */
   void save_state_();
+
+  /**
+   * @brief checks if there's a pending save_state() call
+   *        and executes it if the debounce period has passed.
+   *
+   * @see loop()
+   */
+  void save_state_pending_check_();
 };
 
 }  // namespace fswm100
