@@ -67,11 +67,11 @@ float PressureSensor::get_state() {
     return -1;  // when it fails
   }
 
-  ESP_LOGD(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
-           static_cast<int>(this->multiplexer_), voltage);
+  // ESP_LOGD(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
+  //          static_cast<int>(this->multiplexer_), voltage);
 
   float pressure = this->voltage_to_pressure(voltage) * this->fswm100_->get_pressure_sensor_calibration_multiplier();
-  ESP_LOGD(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
+  // ESP_LOGD(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
 
   if (pressure < this->min_pressure_) {
     return this->min_pressure_;
@@ -84,6 +84,21 @@ float PressureSensor::get_state() {
 
 float PressureSensor::voltage_to_pressure(float voltage) {
   return (voltage - this->min_voltage_) * this->voltage_factor_ + this->min_pressure_;
+}
+
+void PressureSensor::loop() {
+  uint32_t time_since_publish = millis() - this->last_publish_time_;
+  // has enough time passed to get the state?
+  if ((this->fswm100_->get_pressure_sensor_test_flag() && time_since_publish > this->publish_frequency_test_) ||
+      (!this->fswm100_->get_pressure_sensor_test_flag() && time_since_publish > this->publish_frequency_)) {
+    // has the state changed enough to publish?
+    float new_pressure_sensor_state = this->get_state();
+    if (abs(this->last_publish_state_ - new_pressure_sensor_state) > this->publish_delta_) {
+      this->last_publish_time_ = millis();
+      this->last_publish_state_ = new_pressure_sensor_state;
+      this->publish_state(new_pressure_sensor_state);
+    }
+  }
 }
 
 }  // namespace fswm100

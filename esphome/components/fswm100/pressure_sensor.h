@@ -29,7 +29,23 @@ class PressureSensor : public sensor::Sensor {
              ads1115::ADS1115Resolution resolution);
 
   void dump_config();
+
+  /**
+   * @brief get the state of the pressure sensor
+   *
+   * @return float the pressure sensor state
+   */
   float get_state();
+
+  /**
+   * @brief to be called in the loop() method of the parent component
+   * it checks if the state has changed and if it should be published.
+   * if yes, it publishes the state.
+   *
+   * it takes into account the publish frequency, delta values and
+   * whether the test is enabled or not.
+   */
+  void loop();
 
  private:
   /**
@@ -128,6 +144,16 @@ class PressureSensor : public sensor::Sensor {
    * @return the converted pressure
    */
   float voltage_to_pressure(float voltage);
+
+  /**
+   * @brief the last time we published the state
+   */
+  uint32_t last_publish_time_{0};
+
+  /**
+   * @brief the published state
+   */
+  float last_publish_state_{0};
 };
 
 }  // namespace fswm100

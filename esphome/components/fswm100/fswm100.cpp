@@ -103,14 +103,9 @@ void FSWM100::loop() {
     // we must ensure that the ADS1115 is not in "continuous mode". otherwise,
     // we need to introduce a delay to allow the ADS1115 to stabilize,
     // after switching multiplexer channels.
-
-    // pressure
-    float new_pressure_sensor_state = this->pressure_sensor_->get_state();
-    if (abs(this->pressure_sensor_state - new_pressure_sensor_state) > 0.01) {
-      this->pressure_sensor_state = new_pressure_sensor_state;
-      this->pressure_sensor_->publish_state(new_pressure_sensor_state);
-    }
   }
+
+  this->pressure_sensor_->loop();
 
   // check the pulse sensor
   if (this->pulse_sensor_->get_state()) {
