@@ -115,7 +115,7 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(
                     CONF_CALIBRATION,
                     default={
-                        CONF_NAME: "Pressure Sensor Calibration",
+                        CONF_NAME: "Pressure Calibration",
                     },
                 ): number.number_schema(
                     PressureSensorCalibration,
@@ -133,7 +133,7 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(
                     CONF_TEST,
                     default={
-                        CONF_NAME: "Pressure Sensor Test",
+                        CONF_NAME: "Pressure Test",
                     },
                 ): switch.switch_schema(
                     PressureSensorTest,

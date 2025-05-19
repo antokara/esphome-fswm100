@@ -99,8 +99,10 @@ void FSWM100::loop() {
       this->flow_sensor_->publish_state(new_flow_sensor_state);
     }
 
-    // TODO: there MUST be a delay between the 2 calls, otherwise, only the first one
-    //       gets the proper value and the second one is flaky
+    // if we get flactuations in the values after the first sensor read in the loop,
+    // we must ensure that the ADS1115 is not in "continuous mode". otherwise,
+    // we need to introduce a delay to allow the ADS1115 to stabilize,
+    // after switching multiplexer channels.
 
     // pressure
     float new_pressure_sensor_state = this->pressure_sensor_->get_state();

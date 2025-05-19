@@ -77,7 +77,8 @@ ads1115:
   id: ads1115_a
   i2c_id: i2c_a
   address: 0x48
-  continuous_mode: true
+  # important. must be set to false
+  continuous_mode: false
 
 # # demo with standard lib
 
