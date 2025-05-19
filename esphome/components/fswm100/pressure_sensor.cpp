@@ -8,13 +8,21 @@ namespace fswm100 {
 PressureSensor::PressureSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
 void PressureSensor::setup(float min_voltage, float max_voltage, float min_pressure, float max_pressure,
-                           ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-                           ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
+                           float publish_delta, float publish_frequency, float publish_delta_test,
+                           float publish_frequency_test, ads1115::ADS1115Multiplexer multiplexer,
+                           ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+                           ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "PressureSensor setup start.");
   min_voltage_ = min_voltage;
   max_voltage_ = max_voltage;
   min_pressure_ = min_pressure;
   max_pressure_ = max_pressure;
+  // publish
+  publish_delta_ = publish_delta;
+  publish_frequency_ = publish_frequency;
+  publish_delta_test_ = publish_delta_test;
+  publish_frequency_test_ = publish_frequency_test;
+  // calculate
   voltage_factor_ = (max_pressure - min_pressure) / (max_voltage - min_voltage);
   // ADS1115
   multiplexer_ = multiplexer;
@@ -30,7 +38,14 @@ void PressureSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  max voltage:", this->max_voltage_);
   ESP_LOGCONFIG(TAG, "  min pressure:", this->min_pressure_);
   ESP_LOGCONFIG(TAG, "  max pressure:", this->max_pressure_);
+  // publish
+  ESP_LOGCONFIG(TAG, "  publish delta:", this->publish_delta_);
+  ESP_LOGCONFIG(TAG, "  publish frequency:", this->publish_frequency_);
+  ESP_LOGCONFIG(TAG, "  publish delta test:", this->publish_delta_test_);
+  ESP_LOGCONFIG(TAG, "  publish frequency test:", this->publish_frequency_test_);
+  // calculated
   ESP_LOGCONFIG(TAG, "  voltage factor:", this->voltage_factor_);
+  // ADS1115
   ESP_LOGCONFIG(TAG, "  multiplexer:", this->multiplexer_);
   ESP_LOGCONFIG(TAG, "  gain:", this->gain_);
   ESP_LOGCONFIG(TAG, "  sample rate:", this->sample_rate_);

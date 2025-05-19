@@ -58,6 +58,12 @@ fswm100:
     max_voltage: 4.5
     min_pressure: 0
     max_pressure: 100
+    # under normal operation (test inactive)
+    publish_delta: 2
+    publish_frequency: 15000
+    # while the test is active
+    publish_delta_test: 0.1
+    publish_frequency_test: 5000
     # ADS1115
     multiplexer: "A0_GND"
     gain: 6.144
