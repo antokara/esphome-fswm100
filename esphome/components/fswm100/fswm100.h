@@ -17,13 +17,6 @@
 #define SAVE_STATE_DEBOUNCE_FREQUENCY 15000
 
 /**
- * @brief frequency in milliseconds, to debounce the pulses.
- * in case the pulse switch toggles too fast for some reason within the defined
- * period, it will be ignored.
- */
-#define PULSE_DEBOUNCE_FREQUENCY 250
-
-/**
  * @brief the state that can be saved/loaded from Flash Memory
  * which perists device restarts
  */

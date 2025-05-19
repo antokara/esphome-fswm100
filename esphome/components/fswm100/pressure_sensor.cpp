@@ -67,11 +67,11 @@ float PressureSensor::get_state() {
     return -1;  // when it fails
   }
 
-  // ESP_LOGD(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
-  //          static_cast<int>(this->multiplexer_), voltage);
+  ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
+            static_cast<int>(this->multiplexer_), voltage);
 
   float pressure = this->voltage_to_pressure(voltage) * this->fswm100_->get_pressure_sensor_calibration_multiplier();
-  // ESP_LOGD(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
+  ESP_LOGVV(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
 
   if (pressure < this->min_pressure_) {
     return this->min_pressure_;

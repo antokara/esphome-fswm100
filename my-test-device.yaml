@@ -45,6 +45,7 @@ fswm100:
     resolution: 16_BITS
   pulse:
     name: Water Meter Pulse
+    publish_frequency: 250
     gpio_pin:
       number: GPIO04
       mode:

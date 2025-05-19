@@ -24,7 +24,7 @@ class PulseSensor : public binary_sensor::BinarySensor {
    *
    * @param pulse_sensor_gpio_pin the GPIO pin to use
    */
-  void setup(GPIOPin *pulse_sensor_gpio_pin);
+  void setup(GPIOPin *pulse_sensor_gpio_pin, float publish_frequency);
   void dump_config();
 
   /**
@@ -34,6 +34,13 @@ class PulseSensor : public binary_sensor::BinarySensor {
    * @return false if the pulse sensor is inactive
    */
   bool get_state();
+
+  /**
+   * @brief to be called in the loop() method of the parent component
+   * it checks if the state has changed and if it should be published.
+   * if yes, it publishes the state.
+   */
+  void loop();
 
  private:
   /**
@@ -51,6 +58,22 @@ class PulseSensor : public binary_sensor::BinarySensor {
    *
    */
   GPIOPin *pin_ = nullptr;
+
+  /**
+   * @brief the frequency to publish
+   * the pressure sensor state
+   */
+  float publish_frequency_;
+
+  /**
+   * @brief the last time we published the state
+   */
+  uint32_t last_publish_time_{0};
+
+  /**
+   * @brief the published state
+   */
+  bool last_publish_state_{false};
 
   /**
    * @brief how much to increase the Water Meter Counter by

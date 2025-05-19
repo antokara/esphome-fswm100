@@ -105,28 +105,8 @@ void FSWM100::loop() {
     // after switching multiplexer channels.
   }
 
+  this->pulse_sensor_->loop();
   this->pressure_sensor_->loop();
-
-  // check the pulse sensor
-  if (this->pulse_sensor_->get_state()) {
-    // when the pulse sensor is in active state
-    if (!this->pulse_sensor_active && abs(long(now - this->pulse_sensor_active_time_)) > PULSE_DEBOUNCE_FREQUENCY) {
-      // and it just turned active
-      this->pulse_sensor_active = true;
-      // update the time it was last active
-      this->pulse_sensor_active_time_ = now;
-      this->pulse_sensor_->publish_state(true);
-    }
-  } else if (this->pulse_sensor_active) {
-    // it just turned inactive
-    this->pulse_sensor_active = false;
-    this->pulse_sensor_->publish_state(false);
-  } else if (!this->pulse_sensor_first_transmission) {
-    // sensor is inactive but this is the first transmission
-    // to avoid having unknown state...
-    this->pulse_sensor_first_transmission = true;
-    this->pulse_sensor_->publish_state(false);
-  }
 
   //   // this->status_set_warning();
   //   //  this->status_clear_warning();
