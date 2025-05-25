@@ -15,6 +15,7 @@ void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
   }
   pin_ = pulse_sensor_gpio_pin;
   pin_->pin_mode(gpio::Flags::FLAG_INPUT);
+  this->publish_state(false);
   ESP_LOGCONFIG(TAG, "PulseSensor setup complete.");
 }
 

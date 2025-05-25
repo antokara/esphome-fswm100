@@ -22,7 +22,6 @@
  */
 struct State {
   float pressure_sensor_calibration_multiplier;
-  bool pressure_sensor_test_flag;
 } __attribute__((packed));
 
 namespace esphome {

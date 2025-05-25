@@ -9,6 +9,7 @@ PressureSensorTest::PressureSensorTest(FSWM100 *fswm100) { fswm100_ = fswm100; }
 
 void PressureSensorTest::setup() {
   ESP_LOGCONFIG(TAG, "PressureSensorTest setup start.");
+  this->publish_state(false);
   ESP_LOGCONFIG(TAG, "PressureSensorTest setup complete.");
 }
 
@@ -23,9 +24,6 @@ void PressureSensorTest::write_state(bool state) {
   // This updates the "state" property of this class and
   // the Home Assistant entity's state, to the new value.
   this->publish_state(state);
-
-  // save the new value
-  this->fswm100_->save_state();
 }
 
 }  // namespace fswm100

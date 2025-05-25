@@ -31,15 +31,12 @@ void FSWM100::load_state_() {
   if (this->pref_.load(&recovered)) {
     ESP_LOGCONFIG(TAG, "restored pressure_sensor_calibration_multiplier %.2f",
                   recovered.pressure_sensor_calibration_multiplier);
-    ESP_LOGCONFIG(TAG, "restored pressure_sensor_test_flag %", recovered.pressure_sensor_test_flag);
   } else {
     ESP_LOGCONFIG(TAG, "unable to restore state. setting to defaults");
     recovered.pressure_sensor_calibration_multiplier = PRESSURE_SENSOR_DEFAULT_VALUE;
-    recovered.pressure_sensor_test_flag = false;
   }
   // set the component properties using the restored state
   this->pressure_sensor_calibration_->publish_state(recovered.pressure_sensor_calibration_multiplier);
-  this->pressure_sensor_test_->publish_state(recovered.pressure_sensor_test_flag);
 }
 
 void FSWM100::save_state_() {
@@ -49,11 +46,9 @@ void FSWM100::save_state_() {
   memset(&state, 0, sizeof(State));
   // set the state usign the component properties
   state.pressure_sensor_calibration_multiplier = this->pressure_sensor_calibration_->state;
-  state.pressure_sensor_test_flag = this->pressure_sensor_test_->state;
   this->pref_.save(&state);
   ESP_LOGD(TAG, "Saved state:");
   ESP_LOGD(TAG, " - pressure_sensor_calibration_multiplier %.2f", state.pressure_sensor_calibration_multiplier);
-  ESP_LOGD(TAG, " - pressure_sensor_test_flag %", state.pressure_sensor_test_flag);
 }
 
 void FSWM100::save_state() {
