@@ -29,6 +29,8 @@ void PressureSensor::setup(float min_voltage, float max_voltage, float min_press
   gain_ = gain;
   sample_rate_ = sample_rate;
   resolution_ = resolution;
+  // initial state publish
+  this->publish_state(this->last_publish_state_);
   ESP_LOGCONFIG(TAG, "PressureSensor setup complete.");
 }
 

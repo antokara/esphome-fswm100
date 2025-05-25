@@ -9,7 +9,8 @@ PressureSensorTest::PressureSensorTest(FSWM100 *fswm100) { fswm100_ = fswm100; }
 
 void PressureSensorTest::setup() {
   ESP_LOGCONFIG(TAG, "PressureSensorTest setup start.");
-  this->publish_state(false);
+  // initial state publish
+  this->publish_state(this->state);
   ESP_LOGCONFIG(TAG, "PressureSensorTest setup complete.");
 }
 

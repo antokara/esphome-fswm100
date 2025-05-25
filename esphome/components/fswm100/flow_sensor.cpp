@@ -14,6 +14,8 @@ void FlowSensor::setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115
   gain_ = gain;
   sample_rate_ = sample_rate;
   resolution_ = resolution;
+  // initial state publish
+  this->publish_state(this->last_publish_state_);
   ESP_LOGCONFIG(TAG, "FlowSensor setup complete.");
 }
 
