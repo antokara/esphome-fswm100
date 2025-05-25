@@ -45,12 +45,13 @@ fswm100:
     resolution: 16_BITS
   pulse:
     name: Water Meter Pulse
-    publish_frequency: 250
     gpio_pin:
       number: GPIO04
       mode:
         input: true
         pullup: true
+    filters:
+      - delayed_off: 250ms
   pressure:
     name: Water Pressure
     accuracy_decimals: 2

@@ -24,7 +24,7 @@ class PulseSensor : public binary_sensor::BinarySensor {
    *
    * @param pulse_sensor_gpio_pin the GPIO pin to use
    */
-  void setup(GPIOPin *pulse_sensor_gpio_pin, float publish_frequency);
+  void setup(GPIOPin *pulse_sensor_gpio_pin);
   void dump_config();
 
   /**
@@ -58,17 +58,6 @@ class PulseSensor : public binary_sensor::BinarySensor {
    *
    */
   GPIOPin *pin_ = nullptr;
-
-  /**
-   * @brief the frequency to publish
-   * the pressure sensor state
-   */
-  float publish_frequency_;
-
-  /**
-   * @brief the last time we published the state
-   */
-  uint32_t last_publish_time_{0};
 
   /**
    * @brief the published state

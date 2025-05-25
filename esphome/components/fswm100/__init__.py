@@ -101,7 +101,6 @@ CONFIG_SCHEMA = cv.Schema(
             {
                 cv.GenerateID(): cv.declare_id(PulseSensor),
                 cv.Required(CONF_GPIO_PIN_KEY): pins.gpio_input_pin_schema,
-                cv.Optional(CONF_PUBLISH_FREQUENCY, default=250): cv.float_,
             }
         ),
         # Pressure Sensor
@@ -203,12 +202,7 @@ async def to_code(config):
         # create a configuration object instance from the "pulse.gpio_pin" config
         pulse_sensor_pin = await cg.gpio_pin_expression(pulse_config[CONF_GPIO_PIN_KEY])
         # setup the "pulseSensor" class instance, passing it the config
-        cg.add(
-            pulseSensor.setup(
-                pulse_sensor_pin,
-                pulse_config[CONF_PUBLISH_FREQUENCY],
-            )
-        )
+        cg.add(pulseSensor.setup(pulse_sensor_pin))
         # TODO:
         # use:
         #   - count_volume (e.g. 1 pulse per unit)
