@@ -157,39 +157,6 @@ class FSWM100 : public Component, public EntityBase {
   PressureSensorTest *pressure_sensor_test_{nullptr};
 
   /**
-   * @brief if the pulse sensor is considered active (after debounce)
-   *
-   */
-  bool pulse_sensor_active;
-
-  /**
-   * @brief if true, then at least one transmission
-   * of the pulse sensor, has taken place
-   *
-   */
-  bool pulse_sensor_first_transmission;
-
-  /**
-   * @brief the time (millis)
-   * when the "pulse_sensor_value" was last toggled
-   *
-   */
-  uint32_t pulse_sensor_active_time_{0};
-
-  /**
-   * the pressure sensor state value we last sent...
-   */
-  float pressure_sensor_state = -1.0f;
-
-  /**
-   * the flow sensor state value we last sent...
-   */
-  float flow_sensor_state = -1.0f;
-
-  // TODO: remove
-  uint32_t last_transmission_{0};
-
-  /**
    * @brief the time (millis) when the last save_state() was called
    */
   uint32_t last_save_state_call_{0};

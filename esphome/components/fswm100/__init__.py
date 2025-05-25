@@ -207,7 +207,6 @@ async def to_code(config):
         # use:
         #   - count_volume (e.g. 1 pulse per unit)
         #   - count_frequency (e.g. 1 pulse every 60 seconds)
-        #   - debounce   (e.g. 250 millis)
 
     # Flow
     if flow_config := config.get(CONF_FLOW):

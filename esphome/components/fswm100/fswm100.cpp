@@ -86,26 +86,10 @@ void FSWM100::setup() {
 
 // TODO: refactor to add loop to each sensor and maybe let them access parent and do their thing to publish or not
 void FSWM100::loop() {
-  const uint32_t now = millis();
   save_state_pending_check_();
 
-  if (now - this->last_transmission_ >= 15000) {
-    this->last_transmission_ = now;
-
-    // flow
-    float new_flow_sensor_state = this->flow_sensor_->get_state();
-    if (abs(this->flow_sensor_state - new_flow_sensor_state) > 0.01) {
-      this->flow_sensor_state = new_flow_sensor_state;
-      this->flow_sensor_->publish_state(new_flow_sensor_state);
-    }
-
-    // if we get flactuations in the values after the first sensor read in the loop,
-    // we must ensure that the ADS1115 is not in "continuous mode". otherwise,
-    // we need to introduce a delay to allow the ADS1115 to stabilize,
-    // after switching multiplexer channels.
-  }
-
   this->pulse_sensor_->loop();
+  this->flow_sensor_->loop();
   this->pressure_sensor_->loop();
 
   //   // this->status_set_warning();

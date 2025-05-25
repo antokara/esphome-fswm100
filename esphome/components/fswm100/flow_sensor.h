@@ -26,8 +26,22 @@ class FlowSensor : public sensor::Sensor {
   void setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
              ads1115::ADS1115Resolution resolution);
 
-  void dump_config();
+  /**
+   * @brief get the state of the flow sensor
+   *
+   * @return float the voltage read from the ADS1115 channel
+   *               that corresponds to the flow sensor.
+   */
   float get_state();
+
+  /**
+   * @brief to be called in the loop() method of the parent component
+   * it checks if the state has changed and if it should be published.
+   * if yes, it publishes the state.
+   */
+  void loop();
+
+  void dump_config();
 
  private:
   /**
@@ -52,6 +66,11 @@ class FlowSensor : public sensor::Sensor {
    * @brief ADS1115 resolution
    */
   ads1115::ADS1115Resolution resolution_;
+
+  /**
+   * @brief the published state
+   */
+  float last_publish_state_{0};
 };
 
 }  // namespace fswm100

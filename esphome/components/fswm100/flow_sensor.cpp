@@ -26,18 +26,41 @@ void FlowSensor::dump_config() {
 }
 
 float FlowSensor::get_state() {
+  /**
+   *  - Black Surface/Low reflection leads to
+   *    decreased phototransistor conductivity,
+   *    causing the output voltage to be higher, closer to Vcc.
+   *
+   *  - White Surface/High reflection leads to
+   *    increased phototransistor conductivity,
+   *    causing the output voltage to be lower, closer to GND.
+   */
   float voltage = abs(this->fswm100_->get_ads1115()->request_measurement(this->multiplexer_, this->gain_,
                                                                          this->resolution_, this->sample_rate_));
 
   if (std::isnan(voltage)) {
-    ESP_LOGW(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
+    ESP_LOGVV(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
     return -1;  // when it fails
   }
 
-  ESP_LOGD(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
-           static_cast<int>(this->multiplexer_), voltage);
+  // TODO: detect deltas
+
+  ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
+            static_cast<int>(this->multiplexer_), voltage);
 
   return voltage;
+}
+
+void FlowSensor::loop() {
+  // has the state changed enough to publish?
+  float delta = 0.01;  // TODO: make this configurable with a self-calibration and user editable number... same for the
+                       // number of counts/period. the period needs to be determined by the minimum flow and the meter's
+                       // capabilities
+  float new_pressure_sensor_state = this->get_state();
+  if (abs(this->last_publish_state_ - new_pressure_sensor_state) > delta) {
+    this->last_publish_state_ = new_pressure_sensor_state;
+    this->publish_state(new_pressure_sensor_state);
+  }
 }
 
 }  // namespace fswm100
