@@ -34,6 +34,11 @@ float FlowSensor::get_state() {
    *  - White Surface/High reflection leads to
    *    increased phototransistor conductivity,
    *    causing the output voltage to be lower, closer to GND.
+   *
+   * The precision we can achieve with our circuit
+   * (power supply, ADS1115 and the TCR5000) is about 0.05V.
+   * This means that any voltage flactuation below 0.05V
+   * should be ignored...
    */
   float voltage = abs(this->fswm100_->get_ads1115()->request_measurement(this->multiplexer_, this->gain_,
                                                                          this->resolution_, this->sample_rate_));
@@ -53,7 +58,7 @@ float FlowSensor::get_state() {
 
 void FlowSensor::loop() {
   // has the state changed enough to publish?
-  float delta = 0.01;  // TODO: make this configurable with a self-calibration and user editable number... same for the
+  float delta = 0.05;  // TODO: make this configurable with a self-calibration and user editable number... same for the
                        // number of counts/period. the period needs to be determined by the minimum flow and the meter's
                        // capabilities
   float new_pressure_sensor_state = this->get_state();
