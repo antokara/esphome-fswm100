@@ -53,8 +53,6 @@ float FlowSensor::get_state() {
     return -1;  // when it fails
   }
 
-  // TODO: detect deltas
-
   ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
             static_cast<int>(this->multiplexer_), voltage);
 
