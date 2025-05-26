@@ -34,10 +34,12 @@ external_components:
 # demo with fsw100
 fswm100:
   ads1115_id: ads1115_a
+
   flow:
     name: Water Flow
     unit_of_measurement: gal/min
     accuracy_decimals: 2
+    effective_noise_floor: 0.05
     # ADS1115
     multiplexer: "A1_GND"
     gain: 6.144

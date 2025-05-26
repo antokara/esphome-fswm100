@@ -53,6 +53,7 @@ CONF_MIN_PRESSURE = "min_pressure"
 CONF_MAX_PRESSURE = "max_pressure"
 CONF_CALIBRATION = "calibration"
 CONF_TEST = "test"
+CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
 
 # the nameppace for our component
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
@@ -83,6 +84,7 @@ CONFIG_SCHEMA = cv.Schema(
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(FlowSensor),
+                cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
                 # ads1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Optional(CONF_GAIN): cv.enum(GAIN, string=True),
@@ -93,6 +95,7 @@ CONFIG_SCHEMA = cv.Schema(
                     SAMPLERATE, string=True
                 ),
             }
+            # add sensitivity property (the effective noise floor)
         ),
         # Pulse Sensor
         cv.Required(CONF_PULSE): binary_sensor.binary_sensor_schema(
@@ -221,6 +224,7 @@ async def to_code(config):
         # setup the "flowSensor" class instance, passing it the config
         cg.add(
             flowSensor.setup(
+                flow_config[CONF_EFFECTIVE_NOISE_FLOOR],
                 flow_config[CONF_MULTIPLEXER],
                 flow_config[CONF_GAIN],
                 flow_config[CONF_SAMPLE_RATE],

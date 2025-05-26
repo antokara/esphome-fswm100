@@ -11,14 +11,14 @@ static const uint32_t RESTORE_STATE_VERSION = 0x112EA6ADUL;
 // setters
 void FSWM100::set_ads1115(ads1115::ADS1115Component *ads1115) { this->ads1115_ = ads1115; }
 ads1115::ADS1115Component *FSWM100::get_ads1115() { return this->ads1115_; }
-void FSWM100::set_flow_sensor(FlowSensor *flow_sensor) { flow_sensor_ = flow_sensor; }
-void FSWM100::set_pulse_sensor(PulseSensor *pulse_sensor) { pulse_sensor_ = pulse_sensor; }
-void FSWM100::set_pressure_sensor(PressureSensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
+void FSWM100::set_flow_sensor(FlowSensor *flow_sensor) { this->flow_sensor_ = flow_sensor; }
+void FSWM100::set_pulse_sensor(PulseSensor *pulse_sensor) { this->pulse_sensor_ = pulse_sensor; }
+void FSWM100::set_pressure_sensor(PressureSensor *pressure_sensor) { this->pressure_sensor_ = pressure_sensor; }
 void FSWM100::set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration) {
-  pressure_sensor_calibration_ = pressure_sensor_calibration;
+  this->pressure_sensor_calibration_ = pressure_sensor_calibration;
 }
 void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test) {
-  pressure_sensor_test_ = pressure_sensor_test;
+  this->pressure_sensor_test_ = pressure_sensor_test;
 }
 
 // getters

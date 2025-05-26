@@ -13,22 +13,22 @@ void PressureSensor::setup(float min_voltage, float max_voltage, float min_press
                            ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
                            ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "PressureSensor setup start.");
-  min_voltage_ = min_voltage;
-  max_voltage_ = max_voltage;
-  min_pressure_ = min_pressure;
-  max_pressure_ = max_pressure;
+  this->min_voltage_ = min_voltage;
+  this->max_voltage_ = max_voltage;
+  this->min_pressure_ = min_pressure;
+  this->max_pressure_ = max_pressure;
   // publish
-  publish_delta_ = publish_delta;
-  publish_frequency_ = publish_frequency;
-  publish_delta_test_ = publish_delta_test;
-  publish_frequency_test_ = publish_frequency_test;
+  this->publish_delta_ = publish_delta;
+  this->publish_frequency_ = publish_frequency;
+  this->publish_delta_test_ = publish_delta_test;
+  this->publish_frequency_test_ = publish_frequency_test;
   // calculate
-  voltage_factor_ = (max_pressure - min_pressure) / (max_voltage - min_voltage);
+  this->voltage_factor_ = (max_pressure - min_pressure) / (max_voltage - min_voltage);
   // ADS1115
-  multiplexer_ = multiplexer;
-  gain_ = gain;
-  sample_rate_ = sample_rate;
-  resolution_ = resolution;
+  this->multiplexer_ = multiplexer;
+  this->gain_ = gain;
+  this->sample_rate_ = sample_rate;
+  this->resolution_ = resolution;
   // initial state publish
   this->publish_state(this->last_publish_state_);
   ESP_LOGCONFIG(TAG, "PressureSensor setup complete.");

@@ -23,8 +23,8 @@ class FlowSensor : public sensor::Sensor {
   /**
    * setup the flow sensor
    */
-  void setup(ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
-             ads1115::ADS1115Resolution resolution);
+  void setup(float effective_noise_floor, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
+             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -71,6 +71,13 @@ class FlowSensor : public sensor::Sensor {
    * @brief the published state
    */
   float last_publish_state_{0};
+
+  /**
+   * @brief voltage fluctuations less than, or equal to this value
+   *        will be ignored, as noise.
+   *        This is used to filter out noise from the flow sensor.
+   */
+  float effective_noise_floor_{0.0f};
 };
 
 }  // namespace fswm100

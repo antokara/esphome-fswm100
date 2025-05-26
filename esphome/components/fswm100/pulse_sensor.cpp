@@ -13,8 +13,8 @@ void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
     ESP_LOGE(TAG, "PulseSensor pin not set!");
     return;
   }
-  pin_ = pulse_sensor_gpio_pin;
-  pin_->pin_mode(gpio::Flags::FLAG_INPUT);
+  this->pin_ = pulse_sensor_gpio_pin;
+  this->pin_->pin_mode(gpio::Flags::FLAG_INPUT);
   // initial state publish
   this->publish_state(this->last_publish_state_);
   ESP_LOGCONFIG(TAG, "PulseSensor setup complete.");
@@ -25,7 +25,7 @@ void PulseSensor::dump_config() {
   LOG_PIN("  Pin:", this->pin_);
 }
 
-bool PulseSensor::get_state() { return pin_->digital_read(); }
+bool PulseSensor::get_state() { return this->pin_->digital_read(); }
 
 void PulseSensor::loop() {
   // get the state
