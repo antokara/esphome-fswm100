@@ -149,11 +149,6 @@ class PressureSensor : public sensor::Sensor {
    * @brief the last time we published the state
    */
   uint32_t last_publish_time_{0};
-
-  /**
-   * @brief the published state
-   */
-  float last_publish_state_{0};
 };
 
 }  // namespace fswm100

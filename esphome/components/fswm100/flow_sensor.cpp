@@ -19,7 +19,7 @@ void FlowSensor::setup(float effective_noise_floor, float min_volume, ads1115::A
   this->sample_rate_ = sample_rate;
   this->resolution_ = resolution;
   // initial state publish
-  this->publish_state(this->last_publish_state_);
+  this->publish_state(this->last_sensor_state_);
   ESP_LOGCONFIG(TAG, "FlowSensor setup complete.");
 }
 
@@ -62,19 +62,37 @@ float FlowSensor::get_state() {
   return voltage;
 }
 
+void FlowSensor::active() {
+  this->last_active_time_ = millis();
+  if (this->state == 0) {
+    this->publish_state(this->min_volume_);
+  } else {
+    // TODO: calculate the flow rate, using the pulses we got
+  }
+}
+
 void FlowSensor::loop() {
   // has the state changed enough to publish?
-  float new_pressure_sensor_state = this->get_state();
-  if (abs(this->last_publish_state_ - new_pressure_sensor_state) > this->effective_noise_floor_) {
-    this->last_publish_state_ = new_pressure_sensor_state;
-    this->publish_state(new_pressure_sensor_state);
-  }
-  // TODO:
-  if (this->fswm100_->get_pulse_sensor()) {
-    // active
-
-  } else {
-    // inactive
+  float new_sensor_state = this->get_state();
+  bool pulse_sensor_state = this->fswm100_->get_pulse_sensor();
+  if (pulse_sensor_state != this->last_pulse_sensor_state_ && pulse_sensor_state) {
+    // active due to new pulse
+    this->last_pulse_sensor_state_ = pulse_sensor_state;
+    this->last_pulse_sensor_active_time_ = millis();
+    this->active();
+  } else if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
+    // active due to IR movement
+    this->active();
+  } else if (!pulse_sensor_state ||
+             millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
+    // inactive. no pulse or IR and timed out
+    if (this->state > 0) {
+      this->publish_state(0);
+    }
+    // update if it just switched (to false)
+    if (pulse_sensor_state != this->last_pulse_sensor_state_) {
+      this->last_pulse_sensor_state_ = pulse_sensor_state;
+    }
   }
 }
 

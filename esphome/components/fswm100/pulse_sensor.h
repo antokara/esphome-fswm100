@@ -61,11 +61,6 @@ class PulseSensor : public binary_sensor::BinarySensor {
   GPIOPin *pin_ = nullptr;
 
   /**
-   * @brief the published state
-   */
-  bool last_publish_state_{false};
-
-  /**
    * @brief the rate volume increase, per pulse
    * @example for a water meter with Pulse Rate of 1 Pulse/Gallon
    *          this should be set to 1.0

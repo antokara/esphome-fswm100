@@ -17,7 +17,7 @@ void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume) {
   this->pin_->pin_mode(gpio::Flags::FLAG_INPUT);
   this->rate_volume_ = rate_volume;
   // initial state publish
-  this->publish_state(this->last_publish_state_);
+  this->publish_state(false);
   ESP_LOGCONFIG(TAG, "PulseSensor setup complete.");
 }
 
@@ -33,8 +33,7 @@ void PulseSensor::loop() {
   // get the state
   bool new_state = this->get_state();
   // check if the state has changed or if this is the first time
-  if (new_state != this->last_publish_state_) {
-    this->last_publish_state_ = new_state;
+  if (new_state != this->state) {
     this->publish_state(new_state);
   }
 }

@@ -79,7 +79,7 @@ class FSWM100 : public Component, public EntityBase {
   void set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration);
 
   /**
-   * @brief Set the flow sensor active duration object
+   * @brief Set the flow sensor minimum duration object
    *  @see __init__.py
    *
    * @param flow_sensor_min_duration
@@ -100,7 +100,7 @@ class FSWM100 : public Component, public EntityBase {
   float get_pressure_sensor_calibration_multiplier();
 
   /**
-   * @brief returns the flow sensor active duration
+   * @brief returns the flow sensor minimum duration
    */
   float get_flow_sensor_min_duration();
 

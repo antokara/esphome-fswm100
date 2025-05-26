@@ -30,7 +30,7 @@ void PressureSensor::setup(float min_voltage, float max_voltage, float min_press
   this->sample_rate_ = sample_rate;
   this->resolution_ = resolution;
   // initial state publish
-  this->publish_state(this->last_publish_state_);
+  this->publish_state(0);
   ESP_LOGCONFIG(TAG, "PressureSensor setup complete.");
 }
 
@@ -94,11 +94,10 @@ void PressureSensor::loop() {
   if ((this->fswm100_->get_pressure_sensor_test_flag() && time_since_publish > this->publish_frequency_test_) ||
       (!this->fswm100_->get_pressure_sensor_test_flag() && time_since_publish > this->publish_frequency_)) {
     // has the state changed enough to publish?
-    float new_pressure_sensor_state = this->get_state();
-    if (abs(this->last_publish_state_ - new_pressure_sensor_state) > this->publish_delta_) {
+    float new_state = this->get_state();
+    if (abs(this->state - new_state) > this->publish_delta_) {
       this->last_publish_time_ = millis();
-      this->last_publish_state_ = new_pressure_sensor_state;
-      this->publish_state(new_pressure_sensor_state);
+      this->publish_state(new_state);
     }
   }
 }

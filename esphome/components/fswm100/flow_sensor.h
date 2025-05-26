@@ -43,6 +43,13 @@ class FlowSensor : public sensor::Sensor {
 
   void dump_config();
 
+  /**
+   * @brief to be called when there's active flow.
+   *        it could be when it just switched to active or
+   *        when it's sustained active flow.
+   */
+  void active();
+
  private:
   /**
    * @brief the parent component
@@ -68,9 +75,9 @@ class FlowSensor : public sensor::Sensor {
   ads1115::ADS1115Resolution resolution_;
 
   /**
-   * @brief the published state
+   * @brief the last sensor state
    */
-  float last_publish_state_{0};
+  float last_sensor_state_{0};
 
   /**
    * @brief voltage fluctuations less than, or equal to this value
@@ -90,6 +97,20 @@ class FlowSensor : public sensor::Sensor {
    * @brief the last time the flow was active
    */
   uint32_t last_active_time_{0};
+
+  /**
+   * @brief the last pulse sensor state we got
+   */
+  bool last_pulse_sensor_state_{false};
+
+  /**
+   * @brief the last time we switched to
+   *        an active pulse sensor reading.
+   *
+   *        useful, so we can calculate the current flow rate...
+   *
+   */
+  uint32_t last_pulse_sensor_active_time_{0};
 };
 
 }  // namespace fswm100
