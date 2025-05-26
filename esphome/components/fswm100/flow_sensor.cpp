@@ -19,7 +19,9 @@ void FlowSensor::setup(float effective_noise_floor, float min_volume, ads1115::A
   this->sample_rate_ = sample_rate;
   this->resolution_ = resolution;
   // initial state publish
-  this->publish_state(this->last_sensor_state_);
+  this->publish_state(0);
+  // prevent a false positive initial flow...
+  this->last_sensor_state_ = this->get_state();
   ESP_LOGCONFIG(TAG, "FlowSensor setup complete.");
 }
 
@@ -80,19 +82,23 @@ void FlowSensor::loop() {
     this->last_pulse_sensor_state_ = pulse_sensor_state;
     this->last_pulse_sensor_active_time_ = millis();
     this->active();
+    ESP_LOGD(TAG, "Flow: active due to new pulse");
   } else if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
     // active due to IR movement
+    this->last_sensor_state_ = new_sensor_state;
     this->active();
-  } else if (!pulse_sensor_state ||
-             millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
+    ESP_LOGD(TAG, "Flow: active due to IR");
+  } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
     // inactive. no pulse or IR and timed out
     if (this->state > 0) {
+      ESP_LOGD(TAG, "Flow: inactive");
       this->publish_state(0);
     }
-    // update if it just switched (to false)
-    if (pulse_sensor_state != this->last_pulse_sensor_state_) {
-      this->last_pulse_sensor_state_ = pulse_sensor_state;
-    }
+  }
+
+  // update if it just switched (to false)
+  if (!pulse_sensor_state && pulse_sensor_state != this->last_pulse_sensor_state_) {
+    this->last_pulse_sensor_state_ = pulse_sensor_state;
   }
 }
 

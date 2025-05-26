@@ -26,7 +26,7 @@ void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test)
 
 // getters
 float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
-float FSWM100::get_flow_sensor_min_duration() { return this->flow_sensor_min_duration_->state; }
+float FSWM100::get_flow_sensor_min_duration() { return this->flow_sensor_min_duration_->state * 1000; }
 bool FSWM100::get_pressure_sensor_test_flag() { return this->pressure_sensor_test_->state; }
 bool FSWM100::get_pulse_sensor() { return this->pulse_sensor_->state; }
 

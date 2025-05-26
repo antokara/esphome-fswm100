@@ -100,7 +100,7 @@ class FSWM100 : public Component, public EntityBase {
   float get_pressure_sensor_calibration_multiplier();
 
   /**
-   * @brief returns the flow sensor minimum duration
+   * @brief returns the flow sensor minimum duration in milliseconds
    */
   float get_flow_sensor_min_duration();
 
