@@ -29,6 +29,7 @@ float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->press
 float FSWM100::get_flow_sensor_min_duration() { return this->flow_sensor_min_duration_->state * 1000; }
 bool FSWM100::get_pressure_sensor_test_flag() { return this->pressure_sensor_test_->state; }
 bool FSWM100::get_pulse_sensor() { return this->pulse_sensor_->state; }
+float FSWM100::get_pulse_rate_volume() { return this->pulse_sensor_->get_rate_volume(); }
 
 void FSWM100::load_state_() {
   this->pref_ = global_preferences->make_preference<State>(this->get_object_id_hash() ^ RESTORE_STATE_VERSION);

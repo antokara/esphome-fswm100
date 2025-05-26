@@ -105,6 +105,11 @@ class FSWM100 : public Component, public EntityBase {
   float get_flow_sensor_min_duration();
 
   /**
+   * @brief returns the pulse rate volume
+   */
+  float get_pulse_rate_volume();
+
+  /**
    * @brief returns the pressure sensor test flag
    */
   bool get_pressure_sensor_test_flag();

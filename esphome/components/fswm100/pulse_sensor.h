@@ -43,6 +43,11 @@ class PulseSensor : public binary_sensor::BinarySensor {
    */
   void loop();
 
+  /**
+   * @brief returns the rate volume
+   */
+  float get_rate_volume();
+
  private:
   /**
    * @brief the parent component

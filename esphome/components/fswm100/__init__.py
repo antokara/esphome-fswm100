@@ -59,6 +59,7 @@ CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
 CONF_MIN_DURATION = "min_duration"
 CONF_MIN_VOLUME = "min_volume"
 CONF_RATE_VOLUME = "rate_volume"
+CONF_RATE_TIME = "rate_time"
 
 # icons
 ICON_TIMER_PLAY_OUTLINE = "mdi:timer-play-outline"
@@ -97,6 +98,8 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.GenerateID(): cv.declare_id(FlowSensor),
                 cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
                 cv.Optional(CONF_MIN_VOLUME, default=0.1): cv.float_,
+                cv.Optional(CONF_RATE_TIME, default=60.0): cv.float_,
+                cv.Optional(CONF_PUBLISH_FREQUENCY, default=5000): cv.int_,
                 cv.Optional(
                     CONF_MIN_DURATION,
                     default={
@@ -150,9 +153,9 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_MIN_PRESSURE, default=0): cv.float_,
                 cv.Optional(CONF_MAX_PRESSURE, default=100): cv.float_,
                 cv.Optional(CONF_PUBLISH_DELTA, default=2): cv.float_,
-                cv.Optional(CONF_PUBLISH_FREQUENCY, default=5000): cv.float_,
+                cv.Optional(CONF_PUBLISH_FREQUENCY, default=5000): cv.int_,
                 cv.Optional(CONF_PUBLISH_DELTA_TEST, default=0.1): cv.float_,
-                cv.Optional(CONF_PUBLISH_FREQUENCY_TEST, default=1000): cv.float_,
+                cv.Optional(CONF_PUBLISH_FREQUENCY_TEST, default=1000): cv.int_,
                 cv.Optional(
                     CONF_CALIBRATION,
                     default={
@@ -252,6 +255,8 @@ async def to_code(config):
             flowSensor.setup(
                 flow_config[CONF_EFFECTIVE_NOISE_FLOOR],
                 flow_config[CONF_MIN_VOLUME],
+                flow_config[CONF_RATE_TIME],
+                flow_config[CONF_PUBLISH_FREQUENCY],
                 flow_config[CONF_MULTIPLEXER],
                 flow_config[CONF_GAIN],
                 flow_config[CONF_SAMPLE_RATE],

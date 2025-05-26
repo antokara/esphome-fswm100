@@ -4,6 +4,12 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/ads1115/ads1115.h"
 
+/**
+ * time in milliseconds for our target rate
+ * 60000msecs = 60secs = 1minute rate for GPM
+ */
+#define FLOW_RATE_TIME 60000.0
+
 namespace esphome {
 namespace fswm100 {
 
@@ -23,8 +29,9 @@ class FlowSensor : public sensor::Sensor {
   /**
    * setup the flow sensor
    */
-  void setup(float effective_noise_floor, float min_volume, ads1115::ADS1115Multiplexer multiplexer,
-             ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
+  void setup(float effective_noise_floor, float min_volume, float rate_time, uint32_t publish_frequency,
+             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+             ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -49,6 +56,16 @@ class FlowSensor : public sensor::Sensor {
    *        when it's sustained active flow.
    */
   void active();
+
+  /**
+   * @brief calculate the active flow
+   */
+  float calculate_active_flow();
+
+  /**
+   * @brief attempt to publish the given flow rate
+   */
+  void try_publish(float rate);
 
  private:
   /**
@@ -94,6 +111,13 @@ class FlowSensor : public sensor::Sensor {
   float min_volume_{0.0f};
 
   /**
+   * @brief the rate of time used by the water meter, in seconds.
+   *        most of the times that's 1 minute.
+   * @example for a gal/min water meter, this should be set to 60.0
+   */
+  float rate_time_{60.0f};
+
+  /**
    * @brief the last time the flow was active
    */
   uint32_t last_active_time_{0};
@@ -111,6 +135,23 @@ class FlowSensor : public sensor::Sensor {
    *
    */
   uint32_t last_pulse_sensor_active_time_{0};
+
+  /**
+   * @brief how frequently to publish the flow rate.
+   *        it does not apply when the flow starts/stops,
+   *        so that we immediatelly publish those events.
+   *        This only applies while the flow is active,
+   *        basically, for flow rate change events.
+   * @see last_publish_time_
+   */
+  uint32_t publish_frequency_{0};
+
+  /**
+   * @brief the time when the last publish
+   *        of flow rate change took place
+   * @see publish_frequency_
+   */
+  uint32_t last_publish_time_{0};
 };
 
 }  // namespace fswm100

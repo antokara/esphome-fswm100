@@ -41,6 +41,8 @@ fswm100:
     accuracy_decimals: 2
     effective_noise_floor: 0.05
     min_volume: 0.1
+    rate_time: 60.0
+    publish_frequency: 1000
     # ADS1115
     multiplexer: "A1_GND"
     gain: 6.144

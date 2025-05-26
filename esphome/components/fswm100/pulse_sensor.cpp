@@ -38,5 +38,7 @@ void PulseSensor::loop() {
   }
 }
 
+float PulseSensor::get_rate_volume() { return this->rate_volume_; }
+
 }  // namespace fswm100
 }  // namespace esphome
