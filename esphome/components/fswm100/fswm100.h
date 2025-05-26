@@ -109,6 +109,14 @@ class FSWM100 : public Component, public EntityBase {
    */
   bool get_pressure_sensor_test_flag();
 
+  /**
+   * @brief returns the pulse sensor state
+   *
+   * @return true if the pulse sensor is active
+   * @return false if the pulse sensor is inactive
+   */
+  bool get_pulse_sensor();
+
   void setup() override;
 
   /**

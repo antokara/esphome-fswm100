@@ -28,6 +28,7 @@ void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test)
 float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
 float FSWM100::get_flow_sensor_active_duration() { return this->flow_sensor_active_duration_->state; }
 bool FSWM100::get_pressure_sensor_test_flag() { return this->pressure_sensor_test_->state; }
+bool FSWM100::get_pulse_sensor() { return this->pulse_sensor_->state; }
 
 void FSWM100::load_state_() {
   this->pref_ = global_preferences->make_preference<State>(this->get_object_id_hash() ^ RESTORE_STATE_VERSION);

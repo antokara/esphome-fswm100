@@ -232,10 +232,6 @@ async def to_code(config):
         pulse_sensor_pin = await cg.gpio_pin_expression(pulse_config[CONF_GPIO_PIN_KEY])
         # setup the "pulseSensor" class instance, passing it the config
         cg.add(pulseSensor.setup(pulse_sensor_pin))
-        # TODO:
-        # use:
-        #   - count_volume (e.g. 1 pulse per unit)
-        #   - count_frequency (e.g. 1 pulse every 60 seconds)
 
     # Flow
     if flow_config := config.get(CONF_FLOW):
@@ -275,13 +271,6 @@ async def to_code(config):
             # set the FlowSensorActiveDuration class instance reference
             # to the FSWM100 class instance
             cg.add(fswm100.set_flow_sensor_active_duration(flowSensorActiveDuration))
-        # the flow is to use the pulse+IR, to calculate itself
-        # use:
-        #   - min_flow_volume (e.g. 0.1 GPM)
-        #   - TODO: maybe, make these dynamic OR self-calibrate
-        #   - ir_count_delta_threshold (how much delta between readings needed to increase counts)
-        #   - ir_delta_counts (how many counts are needed within the window, to consider active flow)
-        #   - ir_window_duration (duration of active flow window)
 
     # Pressure
     if pressure_config := config.get(CONF_PRESSURE):
