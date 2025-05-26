@@ -7,7 +7,7 @@ namespace fswm100 {
 
 PulseSensor::PulseSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
+void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume) {
   ESP_LOGCONFIG(TAG, "PulseSensor setup start.");
   if (pulse_sensor_gpio_pin == nullptr) {
     ESP_LOGE(TAG, "PulseSensor pin not set!");
@@ -15,6 +15,7 @@ void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
   }
   this->pin_ = pulse_sensor_gpio_pin;
   this->pin_->pin_mode(gpio::Flags::FLAG_INPUT);
+  this->rate_volume_ = rate_volume;
   // initial state publish
   this->publish_state(this->last_publish_state_);
   ESP_LOGCONFIG(TAG, "PulseSensor setup complete.");
@@ -23,6 +24,7 @@ void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin) {
 void PulseSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "PulseSensor:");
   LOG_PIN("  Pin:", this->pin_);
+  ESP_LOGCONFIG(TAG, "  Pin:", this->rate_volume_);
 }
 
 bool PulseSensor::get_state() { return this->pin_->digital_read(); }

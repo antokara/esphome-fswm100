@@ -57,6 +57,8 @@ CONF_CALIBRATION = "calibration"
 CONF_TEST = "test"
 CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
 CONF_ACTIVE_DURATION = "active_duration"
+CONF_MIN_VOLUME = "min_volume"
+CONF_RATE_VOLUME = "rate_volume"
 
 # icons
 ICON_TIMER_PLAY_OUTLINE = "mdi:timer-play-outline"
@@ -94,6 +96,7 @@ CONFIG_SCHEMA = cv.Schema(
             {
                 cv.GenerateID(): cv.declare_id(FlowSensor),
                 cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
+                cv.Optional(CONF_MIN_VOLUME, default=0.1): cv.float_,
                 cv.Optional(
                     CONF_ACTIVE_DURATION,
                     default={
@@ -130,6 +133,7 @@ CONFIG_SCHEMA = cv.Schema(
             {
                 cv.GenerateID(): cv.declare_id(PulseSensor),
                 cv.Required(CONF_GPIO_PIN_KEY): pins.gpio_input_pin_schema,
+                cv.Optional(CONF_RATE_VOLUME, default=1): cv.float_,
             }
         ),
         # Pressure Sensor
@@ -231,7 +235,7 @@ async def to_code(config):
         # create a configuration object instance from the "pulse.gpio_pin" config
         pulse_sensor_pin = await cg.gpio_pin_expression(pulse_config[CONF_GPIO_PIN_KEY])
         # setup the "pulseSensor" class instance, passing it the config
-        cg.add(pulseSensor.setup(pulse_sensor_pin))
+        cg.add(pulseSensor.setup(pulse_sensor_pin, pulse_config[CONF_RATE_VOLUME]))
 
     # Flow
     if flow_config := config.get(CONF_FLOW):
@@ -247,6 +251,7 @@ async def to_code(config):
         cg.add(
             flowSensor.setup(
                 flow_config[CONF_EFFECTIVE_NOISE_FLOOR],
+                flow_config[CONF_MIN_VOLUME],
                 flow_config[CONF_MULTIPLEXER],
                 flow_config[CONF_GAIN],
                 flow_config[CONF_SAMPLE_RATE],

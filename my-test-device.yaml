@@ -40,6 +40,7 @@ fswm100:
     unit_of_measurement: gal/min
     accuracy_decimals: 2
     effective_noise_floor: 0.05
+    min_volume: 0.1
     # ADS1115
     multiplexer: "A1_GND"
     gain: 6.144
@@ -47,6 +48,7 @@ fswm100:
     resolution: 16_BITS
   pulse:
     name: Water Meter Pulse
+    rate_volume: 1
     gpio_pin:
       number: GPIO04
       mode:

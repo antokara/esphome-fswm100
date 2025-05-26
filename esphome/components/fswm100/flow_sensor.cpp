@@ -7,10 +7,12 @@ namespace fswm100 {
 
 FlowSensor::FlowSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void FlowSensor::setup(float effective_noise_floor, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-                       ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
+void FlowSensor::setup(float effective_noise_floor, float min_volume, ads1115::ADS1115Multiplexer multiplexer,
+                       ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+                       ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowSensor setup start.");
   this->effective_noise_floor_ = effective_noise_floor;
+  this->min_volume_ = min_volume;
   // ADS1115
   this->multiplexer_ = multiplexer;
   this->gain_ = gain;
@@ -24,6 +26,7 @@ void FlowSensor::setup(float effective_noise_floor, ads1115::ADS1115Multiplexer 
 void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "FlowSensor:");
   ESP_LOGCONFIG(TAG, "  effective noise floor:", this->effective_noise_floor_);
+  ESP_LOGCONFIG(TAG, "  min volume:", this->min_volume_);
   ESP_LOGCONFIG(TAG, "  multiplexer:", this->multiplexer_);
   ESP_LOGCONFIG(TAG, "  gain:", this->gain_);
   ESP_LOGCONFIG(TAG, "  sample rate:", this->sample_rate_);
@@ -65,6 +68,13 @@ void FlowSensor::loop() {
   if (abs(this->last_publish_state_ - new_pressure_sensor_state) > this->effective_noise_floor_) {
     this->last_publish_state_ = new_pressure_sensor_state;
     this->publish_state(new_pressure_sensor_state);
+  }
+  // TODO:
+  if (this->fswm100_->get_pulse_sensor()) {
+    // active
+
+  } else {
+    // inactive
   }
 }
 

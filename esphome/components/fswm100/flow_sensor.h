@@ -23,8 +23,8 @@ class FlowSensor : public sensor::Sensor {
   /**
    * setup the flow sensor
    */
-  void setup(float effective_noise_floor, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
+  void setup(float effective_noise_floor, float min_volume, ads1115::ADS1115Multiplexer multiplexer,
+             ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -78,6 +78,18 @@ class FlowSensor : public sensor::Sensor {
    *        This is used to filter out noise from the flow sensor.
    */
   float effective_noise_floor_{0.0f};
+
+  /**
+   * @brief the minimum flow volume the water meter can detect
+   * @example for a gal/min water meter with Min Flow Rate: 0.125GPM
+   *             this should be set to 0.125
+   */
+  float min_volume_{0.0f};
+
+  /**
+   * @brief the last time the flow was active
+   */
+  uint32_t last_active_time_{0};
 };
 
 }  // namespace fswm100
