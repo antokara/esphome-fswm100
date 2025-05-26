@@ -4,7 +4,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/number/number.h"
 
-#define PRESSURE_SENSOR_CALIBRATION_DEFAULT_VALUE 1.0f
+#define FLOW_SENSOR_ACTIVE_DURATION_DEFAULT_VALUE 1.0f
 
 namespace esphome {
 namespace fswm100 {
@@ -15,12 +15,12 @@ namespace fswm100 {
  */
 class FSWM100;
 
-class PressureSensorCalibration : public number::Number, public Component {
+class FlowSensorActiveDuration : public number::Number, public Component {
  public:
   /**
    * @param fswm100 the parent component class
    */
-  PressureSensorCalibration(FSWM100 *fswm100);
+  FlowSensorActiveDuration(FSWM100 *fswm100);
 
   void setup() override;
   void dump_config() override;

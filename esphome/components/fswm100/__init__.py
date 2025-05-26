@@ -13,6 +13,7 @@ from esphome.const import (
     CONF_PRESSURE,
     CONF_RESOLUTION,
     CONF_SAMPLE_RATE,
+    DEVICE_CLASS_DURATION,
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_PRESSURE,
     DEVICE_CLASS_VOLUME_FLOW_RATE,
@@ -22,6 +23,7 @@ from esphome.const import (
     ICON_TIMELAPSE,
     ICON_WATER,
     UNIT_EMPTY,
+    UNIT_SECOND,
 )
 
 #
@@ -54,6 +56,10 @@ CONF_MAX_PRESSURE = "max_pressure"
 CONF_CALIBRATION = "calibration"
 CONF_TEST = "test"
 CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
+CONF_ACTIVE_DURATION = "active_duration"
+
+# icons
+ICON_TIMER_PLAY_OUTLINE = "mdi:timer-play-outline"
 
 # the nameppace for our component
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
@@ -68,6 +74,9 @@ PressureSensorCalibration = fswm100_ns.class_(
 )
 PressureSensorTest = fswm100_ns.class_(
     "PressureSensorTest", switch.Switch, cg.Component
+)
+FlowSensorActiveDuration = fswm100_ns.class_(
+    "FlowSensorActiveDuration", number.Number, cg.Component
 )
 
 CONFIG_SCHEMA = cv.Schema(
@@ -85,6 +94,24 @@ CONFIG_SCHEMA = cv.Schema(
             {
                 cv.GenerateID(): cv.declare_id(FlowSensor),
                 cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
+                cv.Optional(
+                    CONF_ACTIVE_DURATION,
+                    default={
+                        CONF_NAME: "Flow Duration",
+                    },
+                ): number.number_schema(
+                    FlowSensorActiveDuration,
+                    icon=ICON_TIMER_PLAY_OUTLINE,
+                    unit_of_measurement=UNIT_SECOND,
+                    device_class=DEVICE_CLASS_DURATION,
+                    entity_category=ENTITY_CATEGORY_CONFIG,
+                ).extend(
+                    {
+                        cv.Optional(CONF_MODE, default="BOX"): cv.enum(
+                            number.NUMBER_MODES
+                        ),
+                    }
+                ),
                 # ads1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Optional(CONF_GAIN): cv.enum(GAIN, string=True),
@@ -95,7 +122,6 @@ CONFIG_SCHEMA = cv.Schema(
                     SAMPLERATE, string=True
                 ),
             }
-            # add sensitivity property (the effective noise floor)
         ),
         # Pulse Sensor
         cv.Required(CONF_PULSE): binary_sensor.binary_sensor_schema(
@@ -231,6 +257,24 @@ async def to_code(config):
                 flow_config[CONF_RESOLUTION],
             )
         )
+        # flow active duration configuration
+        if flow_active_duration_config := flow_config.get(CONF_ACTIVE_DURATION):
+            flowSensorActiveDuration = cg.new_Pvariable(
+                flow_active_duration_config[CONF_ID],
+                fswm100,
+            )
+            # register the sensor class instance
+            await number.register_number(
+                flowSensorActiveDuration,
+                flow_active_duration_config,
+                min_value=1,
+                max_value=120,
+                step=1,
+            )
+            cg.add(flowSensorActiveDuration.setup())
+            # set the FlowSensorActiveDuration class instance reference
+            # to the FSWM100 class instance
+            cg.add(fswm100.set_flow_sensor_active_duration(flowSensorActiveDuration))
         # the flow is to use the pulse+IR, to calculate itself
         # use:
         #   - min_flow_volume (e.g. 0.1 GPM)
@@ -300,15 +344,3 @@ async def to_code(config):
             # set the PressureSensorTest class instance reference
             # to the FSWM100 class instance
             cg.add(fswm100.set_pressure_sensor_test(pressureSensorTest))
-
-        # TODO: pass the ads1115 properties
-        # use:
-        #  - calibration multiplier
-        #  - min pressure (e.g. 0 PSI)
-        #  - max pressure (e.g. 100 PSI)
-        #  - min voltage (e.g. 0.45)
-        #  - max voltage (e.g. 5.00)
-        #  - send_delta (use built-in sensor filter?)
-        #  - send_frequency (use built-in sensor frequency?)
-        #  - test_delta (for water leak test)
-        #  - test_frequency (for water leak test)

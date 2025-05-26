@@ -9,6 +9,7 @@
 #include "pressure_sensor_calibration.h"
 #include "pressure_sensor_test.h"
 #include "flow_sensor.h"
+#include "flow_sensor_active_duration.h"
 
 /**
  * @brief the milliseconds that the component will wait
@@ -22,6 +23,7 @@
  */
 struct State {
   float pressure_sensor_calibration_multiplier;
+  float flow_sensor_active_duration;
 } __attribute__((packed));
 
 namespace esphome {
@@ -77,6 +79,14 @@ class FSWM100 : public Component, public EntityBase {
   void set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration);
 
   /**
+   * @brief Set the flow sensor active duration object
+   *  @see __init__.py
+   *
+   * @param flow_sensor_active_duration
+   */
+  void set_flow_sensor_active_duration(FlowSensorActiveDuration *flow_sensor_active_duration);
+
+  /**
    * @brief Set the pressure sensor calibration object
    *  @see __init__.py
    *
@@ -88,6 +98,11 @@ class FSWM100 : public Component, public EntityBase {
    * @brief returns the pressure sensor calibration multiplier
    */
   float get_pressure_sensor_calibration_multiplier();
+
+  /**
+   * @brief returns the flow sensor active duration
+   */
+  float get_flow_sensor_active_duration();
 
   /**
    * @brief returns the pressure sensor test flag
@@ -149,6 +164,11 @@ class FSWM100 : public Component, public EntityBase {
    * @brief the pressure sensor calibration number
    */
   PressureSensorCalibration *pressure_sensor_calibration_{nullptr};
+
+  /**
+   * @brief the flow sensor active duration number
+   */
+  FlowSensorActiveDuration *flow_sensor_active_duration_{nullptr};
 
   /**
    * @brief the pressure sensor test flag
