@@ -17,8 +17,8 @@ void FSWM100::set_pressure_sensor(PressureSensor *pressure_sensor) { this->press
 void FSWM100::set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration) {
   this->pressure_sensor_calibration_ = pressure_sensor_calibration;
 }
-void FSWM100::set_flow_sensor_active_duration(FlowSensorActiveDuration *flow_sensor_active_duration) {
-  this->flow_sensor_active_duration_ = flow_sensor_active_duration;
+void FSWM100::set_flow_sensor_min_duration(FlowSensorMinDuration *flow_sensor_min_duration) {
+  this->flow_sensor_min_duration_ = flow_sensor_min_duration;
 }
 void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test) {
   this->pressure_sensor_test_ = pressure_sensor_test;
@@ -26,7 +26,7 @@ void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test)
 
 // getters
 float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
-float FSWM100::get_flow_sensor_active_duration() { return this->flow_sensor_active_duration_->state; }
+float FSWM100::get_flow_sensor_min_duration() { return this->flow_sensor_min_duration_->state; }
 bool FSWM100::get_pressure_sensor_test_flag() { return this->pressure_sensor_test_->state; }
 bool FSWM100::get_pulse_sensor() { return this->pulse_sensor_->state; }
 
@@ -36,15 +36,15 @@ void FSWM100::load_state_() {
   if (this->pref_.load(&recovered)) {
     ESP_LOGCONFIG(TAG, "restored pressure_sensor_calibration_multiplier %.2f",
                   recovered.pressure_sensor_calibration_multiplier);
-    ESP_LOGCONFIG(TAG, "restored flow_sensor_active_duration %.2f", recovered.flow_sensor_active_duration);
+    ESP_LOGCONFIG(TAG, "restored flow_sensor_min_duration %.2f", recovered.flow_sensor_min_duration);
   } else {
     ESP_LOGCONFIG(TAG, "unable to restore state. setting to defaults");
     recovered.pressure_sensor_calibration_multiplier = PRESSURE_SENSOR_CALIBRATION_DEFAULT_VALUE;
-    recovered.flow_sensor_active_duration = FLOW_SENSOR_ACTIVE_DURATION_DEFAULT_VALUE;
+    recovered.flow_sensor_min_duration = FLOW_SENSOR_MIN_DURATION_DEFAULT_VALUE;
   }
   // set the component properties using the restored state
   this->pressure_sensor_calibration_->publish_state(recovered.pressure_sensor_calibration_multiplier);
-  this->flow_sensor_active_duration_->publish_state(recovered.flow_sensor_active_duration);
+  this->flow_sensor_min_duration_->publish_state(recovered.flow_sensor_min_duration);
 }
 
 void FSWM100::save_state_() {
@@ -54,11 +54,11 @@ void FSWM100::save_state_() {
   memset(&state, 0, sizeof(State));
   // set the state usign the component properties
   state.pressure_sensor_calibration_multiplier = this->pressure_sensor_calibration_->state;
-  state.flow_sensor_active_duration = this->flow_sensor_active_duration_->state;
+  state.flow_sensor_min_duration = this->flow_sensor_min_duration_->state;
   this->pref_.save(&state);
   ESP_LOGD(TAG, "Saved state:");
   ESP_LOGD(TAG, " - pressure_sensor_calibration_multiplier %.2f", state.pressure_sensor_calibration_multiplier);
-  ESP_LOGD(TAG, " - flow_sensor_active_duration %.2f", state.flow_sensor_active_duration);
+  ESP_LOGD(TAG, " - flow_sensor_min_duration %.2f", state.flow_sensor_min_duration);
 }
 
 void FSWM100::save_state() {

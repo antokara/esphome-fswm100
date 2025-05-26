@@ -15,6 +15,10 @@ namespace fswm100 {
  */
 class FSWM100;
 
+/**
+ * @brief a calibration multiplier for the pressure sensor,
+ *        to account for any offset correction.
+ */
 class PressureSensorCalibration : public number::Number, public Component {
  public:
   /**

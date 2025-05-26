@@ -56,7 +56,7 @@ CONF_MAX_PRESSURE = "max_pressure"
 CONF_CALIBRATION = "calibration"
 CONF_TEST = "test"
 CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
-CONF_ACTIVE_DURATION = "active_duration"
+CONF_MIN_DURATION = "min_duration"
 CONF_MIN_VOLUME = "min_volume"
 CONF_RATE_VOLUME = "rate_volume"
 
@@ -77,8 +77,8 @@ PressureSensorCalibration = fswm100_ns.class_(
 PressureSensorTest = fswm100_ns.class_(
     "PressureSensorTest", switch.Switch, cg.Component
 )
-FlowSensorActiveDuration = fswm100_ns.class_(
-    "FlowSensorActiveDuration", number.Number, cg.Component
+FlowSensorMinDuration = fswm100_ns.class_(
+    "FlowSensorMinDuration", number.Number, cg.Component
 )
 
 CONFIG_SCHEMA = cv.Schema(
@@ -98,12 +98,12 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
                 cv.Optional(CONF_MIN_VOLUME, default=0.1): cv.float_,
                 cv.Optional(
-                    CONF_ACTIVE_DURATION,
+                    CONF_MIN_DURATION,
                     default={
-                        CONF_NAME: "Flow Duration",
+                        CONF_NAME: "Min. Flow Duration",
                     },
                 ): number.number_schema(
-                    FlowSensorActiveDuration,
+                    FlowSensorMinDuration,
                     icon=ICON_TIMER_PLAY_OUTLINE,
                     unit_of_measurement=UNIT_SECOND,
                     device_class=DEVICE_CLASS_DURATION,
@@ -259,23 +259,23 @@ async def to_code(config):
             )
         )
         # flow active duration configuration
-        if flow_active_duration_config := flow_config.get(CONF_ACTIVE_DURATION):
-            flowSensorActiveDuration = cg.new_Pvariable(
-                flow_active_duration_config[CONF_ID],
+        if flow_min_duration_config := flow_config.get(CONF_MIN_DURATION):
+            flowSensorMinDuration = cg.new_Pvariable(
+                flow_min_duration_config[CONF_ID],
                 fswm100,
             )
             # register the sensor class instance
             await number.register_number(
-                flowSensorActiveDuration,
-                flow_active_duration_config,
+                flowSensorMinDuration,
+                flow_min_duration_config,
                 min_value=1,
                 max_value=120,
                 step=1,
             )
-            cg.add(flowSensorActiveDuration.setup())
-            # set the FlowSensorActiveDuration class instance reference
+            cg.add(flowSensorMinDuration.setup())
+            # set the FlowSensorMinDuration class instance reference
             # to the FSWM100 class instance
-            cg.add(fswm100.set_flow_sensor_active_duration(flowSensorActiveDuration))
+            cg.add(fswm100.set_flow_sensor_min_duration(flowSensorMinDuration))
 
     # Pressure
     if pressure_config := config.get(CONF_PRESSURE):
