@@ -70,20 +70,15 @@ float FlowSensor::get_state() {
 
 void FlowSensor::active() {
   this->last_active_time_ = millis();
-  if (this->state == 0) {
-    // publish immediately, if this is a new active flow
-    this->publish_state(this->min_volume_);
+  float flow = this->calculate_active_flow();
+  if (flow > this->state) {
+    // publish immediately if the flow is higher than the last state
+    // this happens when the pulse triggers...
+    this->publish_state(flow);
   } else {
-    float flow = this->calculate_active_flow();
-    if (flow > this->state) {
-      // publish immediately if the flow is higher than the last state
-      // this happens when the pulse triggers...
-      this->publish_state(flow);
-    } else {
-      // otherwise, just try to publish the flow rate
-      // as it most likely starts to go down
-      this->try_publish(flow);
-    }
+    // otherwise, just try to publish the flow rate
+    // as it most likely starts to go down
+    this->try_publish(flow);
   }
 }
 
