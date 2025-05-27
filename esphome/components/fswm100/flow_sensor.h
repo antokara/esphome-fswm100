@@ -58,7 +58,9 @@ class FlowSensor : public sensor::Sensor {
   void active();
 
   /**
-   * @brief calculate the active flow
+   * @brief calculate and return the active flow,
+   *        based on the time since the last pulse sensor state change,
+   *       the rate time and the pulse rate volume.
    */
   float calculate_active_flow();
 
@@ -66,6 +68,11 @@ class FlowSensor : public sensor::Sensor {
    * @brief attempt to publish the given flow rate
    */
   void try_publish(float rate);
+
+  /**
+   *
+   */
+  uint32_t time_since_pulse();
 
  private:
   /**
@@ -128,13 +135,20 @@ class FlowSensor : public sensor::Sensor {
   bool last_pulse_sensor_state_{false};
 
   /**
-   * @brief the last time we switched to
-   *        an active pulse sensor reading.
+   * @brief the oldest time we have, of
+   *        when switched to an active pulse sensor reading.
    *
-   *        useful, so we can calculate the current flow rate...
-   *
+   *        we need 2 points in time to calculate the flow rate,
+   *        since we need to know how fast the pulse sensor
+   *        triggered, in order to calculate the flow rate...
    */
-  uint32_t last_pulse_sensor_active_time_{0};
+  uint32_t oldest_pulse_sensor_active_time_{0};
+
+  /**
+   * @brief the newest time we have, of
+   *        when switched to an active pulse sensor reading.
+   */
+  uint32_t newest_pulse_sensor_active_time_{0};
 
   /**
    * @brief how frequently to publish the flow rate.

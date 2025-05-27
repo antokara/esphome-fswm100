@@ -78,14 +78,20 @@ void FlowSensor::active() {
 }
 
 float FlowSensor::calculate_active_flow() {
-  return (this->rate_time_ * 1000) / (millis() - this->last_pulse_sensor_active_time_) /
-         this->fswm100_->get_pulse_rate_volume();
+  // start with the minimum flow volume
+  float flow = this->min_volume_;
+  // don't attempt to calculate flow if we don't have a pulse sensor active time
+  if (this->oldest_pulse_sensor_active_time_ > 0) {
+    flow = (this->rate_time_ * 1000) / (millis() - this->oldest_pulse_sensor_active_time_) *
+           this->fswm100_->get_pulse_rate_volume();
+  }
+  return flow;
 }
 
-void FlowSensor::try_publish(float rate) {
-  if (millis() - this->last_publish_time_ > this->publish_frequency_) {
+void FlowSensor::try_publish(float flow) {
+  if (abs(long(millis() - this->last_publish_time_ > this->publish_frequency_))) {
     this->last_publish_time_ = millis();
-    this->publish_state(rate);
+    this->publish_state(flow);
   }
 }
 
@@ -95,15 +101,18 @@ void FlowSensor::loop() {
   bool pulse_sensor_state = this->fswm100_->get_pulse_sensor();
   if (pulse_sensor_state != this->last_pulse_sensor_state_ && pulse_sensor_state) {
     // active due to new pulse
-    this->last_pulse_sensor_state_ = pulse_sensor_state;
-    this->last_pulse_sensor_active_time_ = millis();
     this->active();
+    this->last_pulse_sensor_state_ = pulse_sensor_state;
+    this->oldest_pulse_sensor_active_time_ = this->newest_pulse_sensor_active_time_;
+    this->newest_pulse_sensor_active_time_ = millis();
     ESP_LOGD(TAG, "Flow: active due to new pulse");
+
   } else if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
     // active due to IR movement
-    this->last_sensor_state_ = new_sensor_state;
+    ESP_LOGD(TAG, "Flow: active due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
     this->active();
-    ESP_LOGD(TAG, "Flow: active due to IR");
+    this->last_sensor_state_ = new_sensor_state;
+
   } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
     // inactive. no pulse or IR and timed out
     if (this->state > 0) {
@@ -113,6 +122,7 @@ void FlowSensor::loop() {
       // keep trying to send, in case the event gets missed, to avoid false positive active flow
       this->try_publish(0);
     }
+
   } else {
     // active but not yet timed out
     this->try_publish(this->calculate_active_flow());
