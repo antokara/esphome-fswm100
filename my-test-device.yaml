@@ -7,6 +7,13 @@ esp32:
 
 # Enable logging
 logger:
+  # level: NONE
+  # level: ERROR
+  # level: WARN
+  # level: INFO
+  level: DEBUG # default
+  # level: VERBOSE
+  # level: VERY_VERBOSE
 
 # Enable Home Assistant API
 api:
