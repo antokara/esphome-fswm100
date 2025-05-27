@@ -71,9 +71,19 @@ float FlowSensor::get_state() {
 void FlowSensor::active() {
   this->last_active_time_ = millis();
   if (this->state == 0) {
+    // publish immediately, if this is a new active flow
     this->publish_state(this->min_volume_);
   } else {
-    this->try_publish(this->calculate_active_flow());
+    float flow = this->calculate_active_flow();
+    if (flow > this->state) {
+      // publish immediately if the flow is higher than the last state
+      // this happens when the pulse triggers...
+      this->publish_state(flow);
+    } else {
+      // otherwise, just try to publish the flow rate
+      // as it most likely starts to go down
+      this->try_publish(flow);
+    }
   }
 }
 
@@ -109,7 +119,7 @@ void FlowSensor::loop() {
 
   } else if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
     // active due to IR movement
-    ESP_LOGD(TAG, "Flow: active due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
+    ESP_LOGVV(TAG, "Flow: active due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
     this->active();
     this->last_sensor_state_ = new_sensor_state;
 
@@ -123,7 +133,7 @@ void FlowSensor::loop() {
       this->try_publish(0);
     }
 
-  } else {
+  } else if (this->state > 0) {
     // active but not yet timed out
     this->try_publish(this->calculate_active_flow());
   }
