@@ -125,29 +125,6 @@ class PressureSensor : public sensor::Sensor {
    *        This is used to filter out noise from the pressure sensor.
    */
   float effective_noise_floor_{0.0f};
-
-  /**
-   * @brief the previous pressure sensor test flag
-   */
-  bool prev_pressure_sensor_test_flag_{false};
-
-  /**
-   * @brief the pressure sensor test start pressure
-   *
-   * This is used to store the pressure when the pressure sensor test starts.
-   * It is used to calculate the pressure difference during the test.
-   */
-  float pressure_sensor_test_start_pressure_{0.0f};
-
-  /**
-   * @brief the low pass filter used to smooth the pressure sensor readings
-   */
-  LowPassFilter *filter_{nullptr};
-
-  /**
-   * @brief the previously filtered value from the filter
-   */
-  float prev_filtered_value_{0.0f};  // Last filtered value from the filter
 };
 
 }  // namespace fswm100

@@ -26,8 +26,8 @@ void FSWM100::set_flow_sensor_min_duration(FlowSensorMinDuration *flow_sensor_mi
 void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test) {
   this->pressure_sensor_test_ = pressure_sensor_test;
 }
-
-void FSWM100::publish_pressure_test_sensor(float pressure) { this->pressure_test_sensor_->publish_state(pressure); }
+void FSWM100::pressure_test_sensor_publish(float pressure) { this->pressure_test_sensor_->publish_state(pressure); }
+void FSWM100::pressure_test_sensor_process(float pressure) { this->pressure_test_sensor_->process(pressure); }
 
 // getters
 float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
