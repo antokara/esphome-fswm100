@@ -83,6 +83,10 @@ fswm100:
     resolution: 16_BITS
     filters:
       - delta: 5
+  pressure_test:
+    name: Water Pressure Test
+    filters:
+      - delta: 0.1
 
 # required (shared) component by fsw100
 i2c:

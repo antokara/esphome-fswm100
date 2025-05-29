@@ -57,6 +57,7 @@ CONF_MIN_DURATION = "min_duration"
 CONF_MIN_VOLUME = "min_volume"
 CONF_RATE_VOLUME = "rate_volume"
 CONF_RATE_TIME = "rate_time"
+CONF_PRESSURE_TEST = "pressure_test"
 
 # icons
 ICON_TIMER_PLAY_OUTLINE = "mdi:timer-play-outline"
@@ -68,6 +69,7 @@ fswm100_ns = cg.esphome_ns.namespace("fswm100")
 FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
 PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
 PressureSensor = fswm100_ns.class_("PressureSensor", sensor.Sensor)
+PressureTestSensor = fswm100_ns.class_("PressureTestSensor", sensor.Sensor)
 FlowSensor = fswm100_ns.class_("FlowSensor", sensor.Sensor)
 PressureSensorCalibration = fswm100_ns.class_(
     "PressureSensorCalibration", number.Number, cg.Component
@@ -192,17 +194,13 @@ CONFIG_SCHEMA = cv.Schema(
                 ),
             }
         ),
-        # Water Meter (counter)
-        # I2C Device at 0x48 address (default)
-        # cv.Required(CONF_I2C): i2c.i2c_device_schema(0x48).extend(
-        #     {
-        #         cv.GenerateID(): cv.declare_id(I2CDevice),
-        #         cv.Required(CONF_SDA): pin_with_input_and_output_support,
-        #         cv.Required(CONF_SCL): pin_with_input_and_output_support,
-        #         cv.Optional(CONF_SCAN, default=True): cv.boolean,
-        #         cv.Optional(CONF_FREQUENCY, default="100kHz"): cv.frequency,
-        #     }
-        # ),
+        # Pressure Test Sensor
+        cv.Required(CONF_PRESSURE_TEST): sensor.sensor_schema(
+            PressureTestSensor,
+            icon=ICON_GAUGE,
+            unit_of_measurement=UNIT_PSI,
+            device_class=DEVICE_CLASS_PRESSURE,
+        ),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -334,3 +332,15 @@ async def to_code(config):
             # set the PressureSensorTest class instance reference
             # to the FSWM100 class instance
             cg.add(fswm100.set_pressure_sensor_test(pressureSensorTest))
+    # Pressure Test Sensor
+    if pressure_test_config := config.get(CONF_PRESSURE_TEST):
+        # create an instance of our custom Sensor "pressureTestSensor" class
+        # passing the FSWM100 class instance to its constructor
+        pressureTestSensor = cg.new_Pvariable(pressure_test_config[CONF_ID], fswm100)
+        # register the sensor class instance
+        await sensor.register_sensor(pressureTestSensor, pressure_test_config)
+        # set the PressureSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_pressure_test_sensor(pressureTestSensor))
+        # setup the "pressureSensor" class instance, passing it the config
+        cg.add(pressureTestSensor.setup())

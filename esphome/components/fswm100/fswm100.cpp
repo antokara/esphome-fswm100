@@ -14,6 +14,9 @@ ads1115::ADS1115Component *FSWM100::get_ads1115() { return this->ads1115_; }
 void FSWM100::set_flow_sensor(FlowSensor *flow_sensor) { this->flow_sensor_ = flow_sensor; }
 void FSWM100::set_pulse_sensor(PulseSensor *pulse_sensor) { this->pulse_sensor_ = pulse_sensor; }
 void FSWM100::set_pressure_sensor(PressureSensor *pressure_sensor) { this->pressure_sensor_ = pressure_sensor; }
+void FSWM100::set_pressure_test_sensor(PressureTestSensor *pressure_test_sensor) {
+  this->pressure_test_sensor_ = pressure_test_sensor;
+}
 void FSWM100::set_pressure_sensor_calibration(PressureSensorCalibration *pressure_sensor_calibration) {
   this->pressure_sensor_calibration_ = pressure_sensor_calibration;
 }
@@ -23,6 +26,8 @@ void FSWM100::set_flow_sensor_min_duration(FlowSensorMinDuration *flow_sensor_mi
 void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test) {
   this->pressure_sensor_test_ = pressure_sensor_test;
 }
+
+void FSWM100::publish_pressure_test_sensor(float pressure) { this->pressure_test_sensor_->publish_state(pressure); }
 
 // getters
 float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
