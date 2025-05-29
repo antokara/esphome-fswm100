@@ -123,6 +123,13 @@ class PressureSensor : public sensor::Sensor {
    * @brief voltage fluctuations less than, or equal to this value
    *        will be ignored, as noise.
    *        This is used to filter out noise from the pressure sensor.
+   *
+   *        Unfortuately, the pressure sensor has too much fluctuation/noise and
+   *        we can't really use the floor to completely eliminate it.
+   *        It actually fluctuates up to +/-1V at times, therefore,
+   *        we must use a decent delta filter and only use the effective noise floor
+   *        to filter out the "power supply" noise and in case we find a more
+   *        stable pressure sensor in the future...
    */
   float effective_noise_floor_{0.0f};
 };
