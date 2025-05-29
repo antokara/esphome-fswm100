@@ -59,6 +59,8 @@ CONF_MIN_VOLUME = "min_volume"
 CONF_RATE_VOLUME = "rate_volume"
 CONF_RATE_TIME = "rate_time"
 CONF_PRESSURE_TEST = "pressure_test"
+CONF_TIME_CONSTANT = "time_constant"
+CONF_WINDOW_SIZE = "window_size"
 
 # icons
 ICON_TIMER_PLAY_OUTLINE = "mdi:timer-play-outline"
@@ -201,6 +203,13 @@ CONFIG_SCHEMA = cv.Schema(
             icon=ICON_GAUGE,
             unit_of_measurement=UNIT_PSI,
             device_class=DEVICE_CLASS_PRESSURE,
+        ).extend(
+            {
+                cv.GenerateID(): cv.declare_id(PressureTestSensor),
+                cv.Optional(CONF_PUBLISH_DELTA, default=0.01): cv.float_,
+                cv.Optional(CONF_TIME_CONSTANT, default=7.0): cv.float_,
+                cv.Optional(CONF_WINDOW_SIZE, default=3): cv.int_,
+            }
         ),
     }
 ).extend(cv.COMPONENT_SCHEMA)
@@ -344,4 +353,10 @@ async def to_code(config):
         # to the FSWM100 class instance
         cg.add(fswm100.set_pressure_test_sensor(pressureTestSensor))
         # setup the "pressureSensor" class instance, passing it the config
-        cg.add(pressureTestSensor.setup())
+        cg.add(
+            pressureTestSensor.setup(
+                pressure_test_config[CONF_PUBLISH_DELTA],
+                pressure_test_config[CONF_TIME_CONSTANT],
+                pressure_test_config[CONF_WINDOW_SIZE],
+            )
+        )

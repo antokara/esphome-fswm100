@@ -88,6 +88,10 @@ fswm100:
   pressure_test:
     name: Water Pressure Test
     accuracy_decimals: 2
+    publish_delta: 0.1
+    time_constant: 7.0
+    window_size: 3
+
 
 
 # required (shared) component by fsw100

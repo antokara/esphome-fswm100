@@ -23,7 +23,7 @@ class PressureTestSensor : public sensor::Sensor {
   /**
    * setup the pressure test sensor
    */
-  void setup();
+  void setup(float publish_delta, float time_constant, int window_size);
 
   void dump_config();
 
@@ -58,6 +58,10 @@ class PressureTestSensor : public sensor::Sensor {
    * @brief the previously filtered value from the filter
    */
   float prev_filtered_value_{0.0f};  // Last filtered value from the filter
+
+  float publish_delta_{0.1f};  // Minimum delta to publish a new value
+  float time_constant_{7.0f};  // Time constant for the low pass filter
+  int window_size_{3};         // Window size for the low pass filter
 };
 
 }  // namespace fswm100
