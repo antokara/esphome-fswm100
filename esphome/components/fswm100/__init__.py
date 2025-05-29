@@ -45,10 +45,7 @@ UNIT_PSI = "psi"
 # configuration keys
 CONF_PULSE = "pulse"
 CONF_GPIO_PIN_KEY = "gpio_pin"
-CONF_PUBLISH_DELTA = "publish_delta"
 CONF_PUBLISH_FREQUENCY = "publish_frequency"
-CONF_PUBLISH_DELTA_TEST = "publish_delta_test"
-CONF_PUBLISH_FREQUENCY_TEST = "publish_frequency_test"
 CONF_MIN_VOLTAGE = "min_voltage"
 CONF_MAX_VOLTAGE = "max_voltage"
 CONF_MIN_PRESSURE = "min_pressure"
@@ -148,14 +145,11 @@ CONFIG_SCHEMA = cv.Schema(
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(PressureSensor),
+                cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
                 cv.Optional(CONF_MIN_VOLTAGE, default=0.5): cv.float_,
                 cv.Optional(CONF_MAX_VOLTAGE, default=4.5): cv.float_,
                 cv.Optional(CONF_MIN_PRESSURE, default=0): cv.float_,
                 cv.Optional(CONF_MAX_PRESSURE, default=100): cv.float_,
-                cv.Optional(CONF_PUBLISH_DELTA, default=2): cv.float_,
-                cv.Optional(CONF_PUBLISH_FREQUENCY, default=5000): cv.int_,
-                cv.Optional(CONF_PUBLISH_DELTA_TEST, default=0.1): cv.float_,
-                cv.Optional(CONF_PUBLISH_FREQUENCY_TEST, default=1000): cv.int_,
                 cv.Optional(
                     CONF_CALIBRATION,
                     default={
@@ -295,14 +289,11 @@ async def to_code(config):
         # setup the "pressureSensor" class instance, passing it the config
         cg.add(
             pressureSensor.setup(
+                pressure_config[CONF_EFFECTIVE_NOISE_FLOOR],
                 pressure_config[CONF_MIN_VOLTAGE],
                 pressure_config[CONF_MAX_VOLTAGE],
                 pressure_config[CONF_MIN_PRESSURE],
                 pressure_config[CONF_MAX_PRESSURE],
-                pressure_config[CONF_PUBLISH_DELTA],
-                pressure_config[CONF_PUBLISH_FREQUENCY],
-                pressure_config[CONF_PUBLISH_DELTA_TEST],
-                pressure_config[CONF_PUBLISH_FREQUENCY_TEST],
                 # ADS1115 properties
                 pressure_config[CONF_MULTIPLEXER],
                 pressure_config[CONF_GAIN],

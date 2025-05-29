@@ -27,11 +27,9 @@ void PulseSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  Pin:", this->rate_volume_);
 }
 
-bool PulseSensor::get_state() { return this->pin_->digital_read(); }
-
 void PulseSensor::loop() {
   // get the state
-  bool new_state = this->get_state();
+  bool new_state = this->pin_->digital_read();
   // check if the state has changed or if this is the first time
   if (new_state != this->state) {
     this->publish_state(new_state);

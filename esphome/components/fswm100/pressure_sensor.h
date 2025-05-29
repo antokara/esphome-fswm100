@@ -23,19 +23,11 @@ class PressureSensor : public sensor::Sensor {
   /**
    * setup the pressure sensor
    */
-  void setup(float min_voltage, float max_voltage, float min_pressure, float max_pressure, float publish_delta,
-             float publish_frequency, float publish_delta_test, float publish_frequency_test,
+  void setup(float effective_noise_floor, float min_voltage, float max_voltage, float min_pressure, float max_pressure,
              ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
              ads1115::ADS1115Resolution resolution);
 
   void dump_config();
-
-  /**
-   * @brief get the state of the pressure sensor
-   *
-   * @return float the pressure sensor state
-   */
-  float get_state();
 
   /**
    * @brief to be called in the loop() method of the parent component
@@ -96,30 +88,6 @@ class PressureSensor : public sensor::Sensor {
   float max_pressure_;
 
   /**
-   * @brief the delta value to publish
-   * the pressure sensor state
-   */
-  float publish_delta_;
-
-  /**
-   * @brief the frequency to publish
-   * the pressure sensor state
-   */
-  float publish_frequency_;
-
-  /**
-   * @brief the delta value to publish
-   * the pressure sensor during a test
-   */
-  float publish_delta_test_;
-
-  /**
-   * @brief the frequency to publish
-   * the pressure sensor during a test
-   */
-  float publish_frequency_test_;
-
-  /**
    * @brief the voltage factor
    *
    * This is used to convert the voltage to pressure.
@@ -146,9 +114,16 @@ class PressureSensor : public sensor::Sensor {
   float voltage_to_pressure(float voltage);
 
   /**
-   * @brief the last time we published the state
+   * @brief the last sensor state
    */
-  uint32_t last_publish_time_{0};
+  float last_sensor_state_{0};
+
+  /**
+   * @brief voltage fluctuations less than, or equal to this value
+   *        will be ignored, as noise.
+   *        This is used to filter out noise from the pressure sensor.
+   */
+  float effective_noise_floor_{0.0f};
 };
 
 }  // namespace fswm100

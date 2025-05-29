@@ -29,14 +29,6 @@ class PulseSensor : public binary_sensor::BinarySensor {
   void dump_config();
 
   /**
-   * @brief get the state of the pulse sensor
-   *
-   * @return true if the pulse sensor is active
-   * @return false if the pulse sensor is inactive
-   */
-  bool get_state();
-
-  /**
    * @brief to be called in the loop() method of the parent component
    * it checks if the state has changed and if it should be published.
    * if yes, it publishes the state.

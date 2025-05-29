@@ -39,35 +39,6 @@ void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  resolution:", this->resolution_);
 }
 
-float FlowSensor::get_state() {
-  /**
-   *  - Black Surface/Low reflection leads to
-   *    decreased phototransistor conductivity,
-   *    causing the output voltage to be higher, closer to Vcc.
-   *
-   *  - White Surface/High reflection leads to
-   *    increased phototransistor conductivity,
-   *    causing the output voltage to be lower, closer to GND.
-   *
-   * The precision we can achieve with our circuit
-   * (power supply, ADS1115 and the TCR5000) is about 0.05V.
-   * This means that any voltage flactuation below 0.05V
-   * should be ignored...
-   */
-  float voltage = abs(this->fswm100_->get_ads1115()->request_measurement(this->multiplexer_, this->gain_,
-                                                                         this->resolution_, this->sample_rate_));
-
-  if (std::isnan(voltage)) {
-    ESP_LOGVV(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
-    return -1;  // when it fails
-  }
-
-  ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
-            static_cast<int>(this->multiplexer_), voltage);
-
-  return voltage;
-}
-
 void FlowSensor::active() {
   this->last_active_time_ = millis();
   float flow = this->calculate_active_flow();
@@ -101,8 +72,32 @@ void FlowSensor::try_publish(float flow) {
 }
 
 void FlowSensor::loop() {
+  /**
+   *  - Black Surface/Low reflection leads to
+   *    decreased phototransistor conductivity,
+   *    causing the output voltage to be higher, closer to Vcc.
+   *
+   *  - White Surface/High reflection leads to
+   *    increased phototransistor conductivity,
+   *    causing the output voltage to be lower, closer to GND.
+   *
+   * The precision we can achieve with our circuit
+   * (power supply, ADS1115 and the TCR5000) is about 0.05V.
+   * This means that any voltage flactuation below 0.05V
+   * should be ignored...
+   */
+  float new_sensor_state = abs(this->fswm100_->get_ads1115()->request_measurement(
+      this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
+
+  if (std::isnan(new_sensor_state)) {
+    ESP_LOGVV(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
+    return;  // when it fails
+  }
+
+  ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
+            static_cast<int>(this->multiplexer_), new_sensor_state);
+
   // has the state changed enough to publish?
-  float new_sensor_state = this->get_state();
   bool pulse_sensor_state = this->fswm100_->get_pulse_sensor();
   if (pulse_sensor_state != this->last_pulse_sensor_state_ && pulse_sensor_state) {
     // active due to new pulse

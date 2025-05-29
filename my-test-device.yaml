@@ -46,6 +46,7 @@ fswm100:
     name: Water Flow
     unit_of_measurement: gal/min
     accuracy_decimals: 2
+    # in volts
     effective_noise_floor: 0.05
     min_volume: 0.1
     rate_time: 60.0
@@ -73,17 +74,15 @@ fswm100:
     max_voltage: 4.5
     min_pressure: 0
     max_pressure: 100
-    # under normal operation (test inactive)
-    publish_delta: 5
-    publish_frequency: 5000
-    # while the test is active
-    publish_delta_test: 0.1
-    publish_frequency_test: 1000
+    # in volts
+    effective_noise_floor: 0.05
     # ADS1115
     multiplexer: "A0_GND"
     gain: 6.144
     sample_rate: 860
     resolution: 16_BITS
+    filters:
+      - delta: 5
 
 # required (shared) component by fsw100
 i2c:
@@ -101,21 +100,5 @@ ads1115:
   # important. must be set to false
   continuous_mode: false
 
-# # demo with standard lib
-
-# sensor:
-#   - platform: ads1115
-#     multiplexer: 'A0_GND'
-#     gain: 6.144
-#     sample_rate: 860
-#     resolution: 16_BITS
-#     update_interval: 1s
-#     name: "ADS1115 Channel A0-GND"
-
-#   - platform: ads1115
-#     multiplexer: 'A1_GND'
-#     gain: 6.144
-#     sample_rate: 860
-#     resolution: 16_BITS
-#     update_interval: 1s
-#     name: "ADS1115 Channel A1-GND"
+# TODO: add filtered gradient from the pressure?
+# TODO: add gallons counter from the pulse?
