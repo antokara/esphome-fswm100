@@ -75,7 +75,9 @@ fswm100:
     min_pressure: 0
     max_pressure: 100
     # in volts
-    effective_noise_floor: 0.05
+    effective_noise_floor: 0.1
+    # too much noise by the sensor
+    #effective_noise_floor: 1
     # ADS1115
     multiplexer: "A0_GND"
     gain: 6.144
@@ -85,8 +87,14 @@ fswm100:
       - delta: 5
   pressure_test:
     name: Water Pressure Test
+    accuracy_decimals: 2
     filters:
-      - delta: 0.1
+      - exponential_moving_average:
+          # A higher value includes more details in the output
+          # while a lower value removes more noise.
+          alpha: 0.1
+          send_every: 10
+
 
 # required (shared) component by fsw100
 i2c:

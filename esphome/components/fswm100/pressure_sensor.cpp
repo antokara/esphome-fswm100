@@ -70,7 +70,9 @@ void PressureSensor::loop() {
   if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
     float pressure =
         this->voltage_to_pressure(new_sensor_state) * this->fswm100_->get_pressure_sensor_calibration_multiplier();
-    ESP_LOGVV(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
+    ESP_LOGV(TAG, "'%s': Voltage Delta %.4f", this->get_name().c_str(),
+             abs(this->last_sensor_state_ - new_sensor_state));
+    ESP_LOGV(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
 
     if (pressure < this->min_pressure_) {
       pressure = this->min_pressure_;
@@ -79,11 +81,20 @@ void PressureSensor::loop() {
       pressure = this->max_pressure_;
     }
     this->publish_state(pressure);
-    // TODO:
-    // the pressure sensor has 0.3 noise,
-    // therefore, we need to only publish on a separate sensor
-    // for the test... the gradient only
-    // and probably remove the manual delta/update and use filters instead.
+
+    if (this->prev_pressure_sensor_test_flag_ != this->fswm100_->get_pressure_sensor_test_flag()) {
+      this->prev_pressure_sensor_test_flag_ = this->fswm100_->get_pressure_sensor_test_flag();
+      if (this->prev_pressure_sensor_test_flag_) {
+        // started
+        this->pressure_sensor_test_start_pressure_ = pressure;
+      } else {
+        // stopped. reset
+        this->fswm100_->publish_pressure_test_sensor(0);
+      }
+    } else if (this->prev_pressure_sensor_test_flag_) {
+      // test in progress
+      this->fswm100_->publish_pressure_test_sensor(pressure - this->pressure_sensor_test_start_pressure_);
+    }
   }
 }
 
