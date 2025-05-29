@@ -3,6 +3,7 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/ads1115/ads1115.h"
+#include "LowPassFilter.h"
 
 namespace esphome {
 namespace fswm100 {
@@ -137,6 +138,16 @@ class PressureSensor : public sensor::Sensor {
    * It is used to calculate the pressure difference during the test.
    */
   float pressure_sensor_test_start_pressure_{0.0f};
+
+  /**
+   * @brief the low pass filter used to smooth the pressure sensor readings
+   */
+  LowPassFilter *filter_{nullptr};
+
+  /**
+   * @brief the previously filtered value from the filter
+   */
+  float prev_filtered_value_{0.0f};  // Last filtered value from the filter
 };
 
 }  // namespace fswm100

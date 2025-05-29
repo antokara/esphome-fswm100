@@ -5,6 +5,9 @@
 namespace esphome {
 namespace fswm100 {
 
+double time_constant = 7.0;
+int window_size = 3;
+
 PressureSensor::PressureSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
 void PressureSensor::setup(float effective_noise_floor, float min_voltage, float max_voltage, float min_pressure,
@@ -25,6 +28,7 @@ void PressureSensor::setup(float effective_noise_floor, float min_voltage, float
   this->resolution_ = resolution;
   // initial state publish
   this->publish_state(0);
+
   ESP_LOGCONFIG(TAG, "PressureSensor setup complete.");
 }
 
@@ -87,13 +91,22 @@ void PressureSensor::loop() {
       if (this->prev_pressure_sensor_test_flag_) {
         // started
         this->pressure_sensor_test_start_pressure_ = pressure;
+        this->prev_filtered_value_ = 0;
+        this->fswm100_->publish_pressure_test_sensor(0);
+        // TODO: make the time constant and window size configurable
+        this->filter_ = new LowPassFilter(time_constant, window_size);
       } else {
         // stopped. reset
         this->fswm100_->publish_pressure_test_sensor(0);
       }
     } else if (this->prev_pressure_sensor_test_flag_) {
       // test in progress
-      this->fswm100_->publish_pressure_test_sensor(pressure - this->pressure_sensor_test_start_pressure_);
+      float filtered_val_opt = this->filter_->add_sample(pressure - this->pressure_sensor_test_start_pressure_);
+      // TODO: make this configurable
+      if (filtered_val_opt && abs(prev_filtered_value_ - filtered_val_opt) > 0.1) {
+        prev_filtered_value_ = filtered_val_opt;
+        this->fswm100_->publish_pressure_test_sensor(filtered_val_opt);
+      }
     }
   }
 }
