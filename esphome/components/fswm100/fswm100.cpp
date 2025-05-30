@@ -39,6 +39,10 @@ void FSWM100::set_status_led(GPIOPin *status_led_red_gpio_pin, GPIOPin *status_l
   this->set_status_led(StatusLEDColor::WHITE);
 }
 void FSWM100::set_status_led(StatusLEDColor color) {
+  if (this->status_led_color_ == color) {
+    return;
+  }
+
   this->status_led_color_ = color;
   switch (color) {
     case StatusLEDColor::RED:
@@ -158,10 +162,10 @@ void FSWM100::loop() {
   this->flow_sensor_->loop();
   this->pressure_sensor_->loop();
 
-  if (this->flow_sensor_->state > 0 && this->status_led_color_ != StatusLEDColor::BLUE) {
+  if (this->flow_sensor_->state > 0) {
     // active flow
     this->set_status_led(StatusLEDColor::BLUE);
-  } else if (this->status_led_color_ != StatusLEDColor::GREEN) {
+  } else {
     // no active flow - no issues
     this->set_status_led(StatusLEDColor::GREEN);
   }
