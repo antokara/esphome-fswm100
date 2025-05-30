@@ -41,7 +41,6 @@ external_components:
 # demo with fsw100
 fswm100:
   ads1115_id: ads1115_a
-
   flow:
     name: Water Flow
     unit_of_measurement: gal/min
@@ -89,9 +88,14 @@ fswm100:
     publish_delta: 0.1
     time_constant: 7.0
     window_size: 3
-
-
-
+  status_led:
+    red:
+      number: GPIO32
+    green:
+      number: GPIO33
+    blue:
+      number: GPIO25
+    
 # required (shared) component by fsw100
 i2c:
   id: i2c_a
@@ -107,6 +111,3 @@ ads1115:
   address: 0x48
   # important. must be set to false
   continuous_mode: false
-
-# TODO: add filtered gradient from the pressure?
-# TODO: add gallons counter from the pulse?

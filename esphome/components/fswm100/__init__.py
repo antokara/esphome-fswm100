@@ -61,6 +61,10 @@ CONF_RATE_TIME = "rate_time"
 CONF_PRESSURE_TEST = "pressure_test"
 CONF_TIME_CONSTANT = "time_constant"
 CONF_WINDOW_SIZE = "window_size"
+CONF_STATUS_LED = "status_led"
+CONF_RED = "red"
+CONF_GREEN = "green"
+CONF_BLUE = "blue"
 
 # icons
 ICON_TIMER_PLAY_OUTLINE = "mdi:timer-play-outline"
@@ -211,6 +215,14 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_WINDOW_SIZE, default=3): cv.int_,
             }
         ),
+        # Status LED
+        cv.Required(CONF_STATUS_LED): cv.Schema(
+            {
+                cv.Required(CONF_RED): pins.gpio_output_pin_schema,
+                cv.Required(CONF_GREEN): pins.gpio_output_pin_schema,
+                cv.Required(CONF_BLUE): pins.gpio_output_pin_schema,
+            }
+        ),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -226,6 +238,16 @@ async def to_code(config):
     shared_ads1115 = await cg.get_variable(config[ads1115.CONF_ADS1115_ID])
     # Call the C++ method to set the ADS1115 parent
     cg.add(fswm100.set_ads1115(shared_ads1115))
+
+    # status led configuration
+    if status_led_config := config.get(CONF_STATUS_LED):
+        cg.add(
+            fswm100.set_status_led(
+                await cg.gpio_pin_expression(status_led_config[CONF_RED]),
+                await cg.gpio_pin_expression(status_led_config[CONF_GREEN]),
+                await cg.gpio_pin_expression(status_led_config[CONF_BLUE]),
+            )
+        )
 
     # pulse configuration
     if pulse_config := config.get(CONF_PULSE):

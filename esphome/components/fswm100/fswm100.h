@@ -30,6 +30,8 @@ struct State {
 namespace esphome {
 namespace fswm100 {
 
+enum class StatusLEDColor { RED, GREEN, BLUE, OFF, WHITE, YELLOW, CYAN, MAGENTA };
+
 /**
  * @brief the log tag for this component
  */
@@ -141,6 +143,12 @@ class FSWM100 : public Component, public EntityBase {
    */
   void pressure_test_sensor_process(float pressure);
 
+  /**
+   * @brief sets the status (RGB) LED GPIO pins
+   */
+  void set_status_led(GPIOPin *status_led_red_gpio_pin, GPIOPin *status_led_green_gpio_pin,
+                      GPIOPin *status_led_blue_gpio_pin);
+
   void setup() override;
 
   /**
@@ -167,6 +175,13 @@ class FSWM100 : public Component, public EntityBase {
    * it will only save once, at the end of the debounce period.
    */
   void save_state();
+
+  /**
+   * @brief sets the status LED to the given RGB color
+   *
+   * @param color the color to set the status LED to
+   */
+  void set_status_led(StatusLEDColor color);
 
  private:
   /**
@@ -254,6 +269,24 @@ class FSWM100 : public Component, public EntityBase {
    * @see loop()
    */
   void save_state_pending_check_();
+
+  /**
+   * @brief the GPIO pin for the red status (RGB) LED
+   */
+  GPIOPin *status_led_red_gpio_pin_{nullptr};
+  /**
+   * @brief the GPIO pin for the green status (RGB) LED
+   */
+  GPIOPin *status_led_green_gpio_pin_{nullptr};
+  /**
+   * @brief the GPIO pin for the blue status (RGB) LED
+   */
+  GPIOPin *status_led_blue_gpio_pin_{nullptr};
+
+  /**
+   * @brief the current RGB color of the status LED
+   */
+  StatusLEDColor status_led_color_{StatusLEDColor::OFF};
 };
 
 }  // namespace fswm100

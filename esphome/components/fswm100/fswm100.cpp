@@ -28,6 +28,61 @@ void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test)
 }
 void FSWM100::pressure_test_sensor_publish(float pressure) { this->pressure_test_sensor_->publish_state(pressure); }
 void FSWM100::pressure_test_sensor_process(float pressure) { this->pressure_test_sensor_->process(pressure); }
+void FSWM100::set_status_led(GPIOPin *status_led_red_gpio_pin, GPIOPin *status_led_green_gpio_pin,
+                             GPIOPin *status_led_blue_gpio_pin) {
+  this->status_led_red_gpio_pin_ = status_led_red_gpio_pin;
+  this->status_led_green_gpio_pin_ = status_led_green_gpio_pin;
+  this->status_led_blue_gpio_pin_ = status_led_blue_gpio_pin;
+  this->status_led_red_gpio_pin_->pin_mode(gpio::Flags::FLAG_OUTPUT);
+  this->status_led_green_gpio_pin_->pin_mode(gpio::Flags::FLAG_OUTPUT);
+  this->status_led_blue_gpio_pin_->pin_mode(gpio::Flags::FLAG_OUTPUT);
+  this->set_status_led(StatusLEDColor::WHITE);
+}
+void FSWM100::set_status_led(StatusLEDColor color) {
+  this->status_led_color_ = color;
+  switch (color) {
+    case StatusLEDColor::RED:
+      this->status_led_red_gpio_pin_->digital_write(true);
+      this->status_led_green_gpio_pin_->digital_write(false);
+      this->status_led_blue_gpio_pin_->digital_write(false);
+      break;
+    case StatusLEDColor::GREEN:
+      this->status_led_red_gpio_pin_->digital_write(false);
+      this->status_led_green_gpio_pin_->digital_write(true);
+      this->status_led_blue_gpio_pin_->digital_write(false);
+      break;
+    case StatusLEDColor::BLUE:
+      this->status_led_red_gpio_pin_->digital_write(false);
+      this->status_led_green_gpio_pin_->digital_write(false);
+      this->status_led_blue_gpio_pin_->digital_write(true);
+      break;
+    case StatusLEDColor::OFF:
+      this->status_led_red_gpio_pin_->digital_write(false);
+      this->status_led_green_gpio_pin_->digital_write(false);
+      this->status_led_blue_gpio_pin_->digital_write(false);
+      break;
+    case StatusLEDColor::WHITE:
+      this->status_led_red_gpio_pin_->digital_write(true);
+      this->status_led_green_gpio_pin_->digital_write(true);
+      this->status_led_blue_gpio_pin_->digital_write(true);
+      break;
+    case StatusLEDColor::YELLOW:
+      this->status_led_red_gpio_pin_->digital_write(true);
+      this->status_led_green_gpio_pin_->digital_write(true);
+      this->status_led_blue_gpio_pin_->digital_write(false);
+      break;
+    case StatusLEDColor::CYAN:
+      this->status_led_red_gpio_pin_->digital_write(false);
+      this->status_led_green_gpio_pin_->digital_write(true);
+      this->status_led_blue_gpio_pin_->digital_write(true);
+      break;
+    case StatusLEDColor::MAGENTA:
+      this->status_led_red_gpio_pin_->digital_write(true);
+      this->status_led_green_gpio_pin_->digital_write(false);
+      this->status_led_blue_gpio_pin_->digital_write(true);
+      break;
+  }
+}
 
 // getters
 float FSWM100::get_pressure_sensor_calibration_multiplier() { return this->pressure_sensor_calibration_->state; }
@@ -102,6 +157,14 @@ void FSWM100::loop() {
   this->pulse_sensor_->loop();
   this->flow_sensor_->loop();
   this->pressure_sensor_->loop();
+
+  if (this->flow_sensor_->state > 0 && this->status_led_color_ != StatusLEDColor::BLUE) {
+    // active flow
+    this->set_status_led(StatusLEDColor::BLUE);
+  } else if (this->status_led_color_ != StatusLEDColor::GREEN) {
+    // no active flow - no issues
+    this->set_status_led(StatusLEDColor::GREEN);
+  }
 
   //   // this->status_set_warning();
   //   //  this->status_clear_warning();
