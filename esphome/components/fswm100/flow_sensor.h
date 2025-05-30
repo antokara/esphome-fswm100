@@ -34,6 +34,14 @@ class FlowSensor : public sensor::Sensor {
              ads1115::ADS1115Resolution resolution);
 
   /**
+   * @brief get the state of the flow sensor
+   *
+   * @return float the voltage read from the ADS1115 channel
+   *               that corresponds to the flow sensor.
+   */
+  float get_state();
+
+  /**
    * @brief to be called in the loop() method of the parent component
    * it checks if the state has changed and if it should be published.
    * if yes, it publishes the state.

@@ -162,11 +162,22 @@ void FSWM100::loop() {
   this->flow_sensor_->loop();
   this->pressure_sensor_->loop();
 
+  /**
+   * the status LED states/colors.
+   * the order here is important, as it determines which state/color
+   * takes precedence over the others.
+   *
+   * e.g. if the flow sensor is active, it will override the pressure sensor test state,
+   * and the status LED will be set to blue no matter what else follows.
+   */
   if (this->flow_sensor_->state > 0) {
     // active flow
     this->set_status_led(StatusLEDColor::BLUE);
+  } else if (this->pressure_sensor_test_->state == true) {
+    // active pressure test
+    this->set_status_led(StatusLEDColor::MAGENTA);
   } else {
-    // no active flow - no issues
+    // idle and without issues
     this->set_status_led(StatusLEDColor::GREEN);
   }
 

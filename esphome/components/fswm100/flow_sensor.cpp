@@ -22,8 +22,6 @@ void FlowSensor::setup(float effective_noise_floor, float min_volume, float rate
   this->resolution_ = resolution;
   // initial state publish
   this->publish_state(0);
-  // prevent a false positive initial flow...
-  this->last_sensor_state_ = this->get_state();
   ESP_LOGCONFIG(TAG, "FlowSensor setup complete.");
 }
 
@@ -71,7 +69,7 @@ void FlowSensor::try_publish(float flow) {
   }
 }
 
-void FlowSensor::loop() {
+float FlowSensor::get_state() {
   /**
    *  - Black Surface/Low reflection leads to
    *    decreased phototransistor conductivity,
@@ -90,12 +88,18 @@ void FlowSensor::loop() {
       this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
 
   if (std::isnan(new_sensor_state)) {
-    ESP_LOGVV(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
-    return;  // when it fails
+    ESP_LOGD(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
+    return 0;  // when it fails
   }
 
   ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
             static_cast<int>(this->multiplexer_), new_sensor_state);
+
+  return new_sensor_state;
+}
+
+void FlowSensor::loop() {
+  float new_sensor_state = this->get_state();
 
   // has the state changed enough to publish?
   bool pulse_sensor_state = this->fswm100_->get_pulse_sensor();
@@ -108,11 +112,16 @@ void FlowSensor::loop() {
     ESP_LOGD(TAG, "Flow: active due to new pulse");
 
   } else if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
+    if (this->last_sensor_state_ == 0) {
+      // first time we read the sensor, or it was 0 before
+      this->last_sensor_state_ = new_sensor_state;
+      ESP_LOGD(TAG, "Flow: first reading %.4f", new_sensor_state);
+      return;  // no need to publish, as we just started
+    }
     // active due to IR movement
     ESP_LOGVV(TAG, "Flow: active due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
     this->active();
     this->last_sensor_state_ = new_sensor_state;
-
   } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
     // inactive. no pulse or IR and timed out
     if (this->state > 0) {
