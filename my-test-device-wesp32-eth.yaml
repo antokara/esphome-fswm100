@@ -4,7 +4,6 @@ esphome:
 
 esp32:
   board: esp32dev
-  # board: wt32-eth01
 
 # Enable logging
 logger:
@@ -25,17 +24,17 @@ ota:
   - platform: esphome
     password: !secret ota_password
 
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-
-# ethernet:
-#   type: LAN8720
-#   mdc_pin: GPIO23
-#   mdio_pin: GPIO18
-#   clk_mode: GPIO0_IN
-#   phy_addr: 1
-#   power_pin: GPIO16
+# for wesp32 board rev.7 and up
+ethernet:
+  type: RTL8201
+  mdc_pin: GPIO16
+  mdio_pin: GPIO17
+  clk_mode: GPIO0_IN
+  phy_addr: 0
+  phy_registers:
+    - address: 0x10
+      value: 0x1FFA
+      page_id: 0x07
 
 external_components:
   - source:
