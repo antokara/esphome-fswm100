@@ -25,6 +25,7 @@ ota:
     password: !secret ota_password
 
 # for wesp32 board rev.7 and up
+# @see https://esphome.io/components/ethernet.html#configuration-examples
 ethernet:
   type: RTL8201
   mdc_pin: GPIO16
