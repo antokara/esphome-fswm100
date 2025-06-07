@@ -59,7 +59,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "circuit.kicad_prl",
+    "filename": "esp32-wifi.kicad_prl",
     "version": 5
   },
   "net_inspector_panel": {

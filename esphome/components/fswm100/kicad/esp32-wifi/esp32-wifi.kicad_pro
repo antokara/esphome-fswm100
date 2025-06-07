@@ -442,7 +442,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "circuit.kicad_pro",
+    "filename": "esp32-wifi.kicad_pro",
     "version": 3
   },
   "net_settings": {
