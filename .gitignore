@@ -1,7 +1,7 @@
 # kicad lock files
 *.lck
 # kicad backups
-**/circuit-backups/*.zip
+**/kicad/**/*.zip
 
 # ESPHome configuration files with secrets
 secrets.yaml
