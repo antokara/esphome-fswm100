@@ -25,7 +25,6 @@ void PressureSensor::setup(float effective_noise_floor, float min_voltage, float
   this->resolution_ = resolution;
   // initial state publish
   this->publish_state(0);
-  this->last_pressure_sensor_calibration_multiplier_ = this->fswm100_->get_pressure_sensor_calibration_multiplier();
   ESP_LOGCONFIG(TAG, "PressureSensor setup complete.");
 }
 
