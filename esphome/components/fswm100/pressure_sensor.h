@@ -120,6 +120,16 @@ class PressureSensor : public sensor::Sensor {
   float last_sensor_state_{0};
 
   /**
+   * @brief the pressure sensor calibration multiplier state
+   *        last time we published the state.
+   *
+   *        if this changed, it means we should publish without
+   *        using filters, to allow the user to calibrate the sensor
+   *        and see the new state immediatelly, even for small changes.
+   */
+  float last_pressure_sensor_calibration_multiplier_{0};
+
+  /**
    * @brief voltage fluctuations less than, or equal to this value
    *        will be ignored, as noise.
    *        This is used to filter out noise from the pressure sensor.
