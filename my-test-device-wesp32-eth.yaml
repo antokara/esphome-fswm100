@@ -77,9 +77,12 @@ fswm100:
     name: Water Pressure
     accuracy_decimals: 2
     unit_of_measurement: psi
-    # for the 0.5V pressure tranducer
+    # for the 0.5V-4.5V pressure transducer
+    # the actual voltage range, may need to be adjusted
+    # in relation to the power supply used as well.
+    # multiplier 0.9
     min_voltage: 0.78
-    max_voltage: 4.5
+    max_voltage: 4.6
     min_pressure: 0
     max_pressure: 100
     # in volts
