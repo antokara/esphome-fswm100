@@ -87,10 +87,19 @@ void PressureSensor::loop() {
     this->publish_state(pressure);
 
     // when the pressure sensor calibration multiplier changed,
-    // we want to send the state without filters, so the user can see the new value immediately
+    // force an immediate publish of the current pressure (without filters),
+    // so the user can see the new value immediately, during the calibration process.
     if (this->last_pressure_sensor_calibration_multiplier_ !=
         this->fswm100_->get_pressure_sensor_calibration_multiplier()) {
       this->last_pressure_sensor_calibration_multiplier_ = this->fswm100_->get_pressure_sensor_calibration_multiplier();
+      this->internal_send_state_to_frontend(pressure);
+    }
+
+    // when the test starts/ends, force an immediate publish of the current pressure
+    // so that there's an absolute pressure value tied to those points in time, besides
+    // the relative pressure value changes.
+    if (this->fswm100_->get_pressure_sensor_test_flag() != this->last_pressure_sensor_test_flag_) {
+      this->last_pressure_sensor_test_flag_ = this->fswm100_->get_pressure_sensor_test_flag();
       this->internal_send_state_to_frontend(pressure);
     }
 

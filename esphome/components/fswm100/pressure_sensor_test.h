@@ -15,8 +15,8 @@ class FSWM100;
 
 /**
  * @brief a switch that when enabled, a pressure test should be
- *        in-progress and thus, the "sensitivity" and "frequency"
- *        of state publishes, is increased.
+ *        in-progress and the pressure test sensor should
+ *        publish the pressure values.
  * @see publish_delta_test, publish_frequency_test
  */
 class PressureSensorTest : public switch_::Switch, public Component {

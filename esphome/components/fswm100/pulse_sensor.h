@@ -12,6 +12,12 @@ namespace fswm100 {
  */
 class FSWM100;
 
+/**
+ * @brief the pulse sensor class that reads the digital input
+ *        from the GPIO pin connected to the Water Meter's Reed Switch.
+ *
+ *        It is used in tandem with the FlowSensor to calculate the flow rate.
+ */
 class PulseSensor : public binary_sensor::BinarySensor {
  public:
   /**

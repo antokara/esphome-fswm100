@@ -13,6 +13,12 @@ namespace fswm100 {
  */
 class FSWM100;
 
+/**
+ * @brief the sensor that keeps track of the pressure during
+ * the pressure test. This is the value that starts and ends at 0
+ * with the goal to show positive/negative pressure changes
+ * during the pressure test.
+ */
 class PressureTestSensor : public sensor::Sensor {
  public:
   /**

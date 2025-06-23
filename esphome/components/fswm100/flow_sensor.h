@@ -19,6 +19,17 @@ namespace fswm100 {
  */
 class FSWM100;
 
+/**
+ * @brief the flow sensor class that reads the IR fluctuations
+ *        from the ADS1115 in tandem with the pulse sensor and
+ *        converts that to a flow rate, which it publishes.
+ *
+ *        It uses the ADS1115 multiplexer, gain, sample rate and resolution
+ *        to read the IR fluctuations.
+ *
+ *        It also calculates the flow rate based on the time since the last pulse sensor state change,
+ *        the rate time and the pulse rate volume.
+ */
 class FlowSensor : public sensor::Sensor {
  public:
   /**

@@ -14,6 +14,16 @@ namespace fswm100 {
  */
 class FSWM100;
 
+/**
+ * @brief the pressure sensor class that reads the transducer voltage
+ *        from the ADS1115 and converts it to pressure,
+ *        using the specs of the transducer and the calibration config.
+ *
+ *        It publishes the pressure value depending on the noise floor and
+ *        also performs immediate publishes (bypassing any defined sensor filters)
+ *        as needed (e.g. when the pressure sensor calibration multiplier changes and
+ *        when the pressure test starts/stops).
+ */
 class PressureSensor : public sensor::Sensor {
  public:
   /**
@@ -128,6 +138,12 @@ class PressureSensor : public sensor::Sensor {
    *        and see the new state immediatelly, even for small changes.
    */
   float last_pressure_sensor_calibration_multiplier_{0};
+
+  /**
+   * @brief the last state value of the pressure sensor test flag.
+   *       This is used to determine if the pressure sensor test has started or stopped.
+   */
+  bool last_pressure_sensor_test_flag_{false};
 
   /**
    * @brief voltage fluctuations less than, or equal to this value
