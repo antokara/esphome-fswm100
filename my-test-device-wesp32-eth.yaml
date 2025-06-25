@@ -103,9 +103,11 @@ fswm100:
   pressure_test:
     name: Water Pressure Test
     accuracy_decimals: 2
-    publish_delta: 0.1
-    time_constant: 7.0
-    window_size: 3
+    filters:
+      - delta: 0.1
+      - exponential_moving_average:
+        alpha: 0.1
+        send_every: 1
   status_led:
     red:
       number: GPIO18

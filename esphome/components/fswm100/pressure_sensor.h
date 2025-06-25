@@ -3,7 +3,6 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/ads1115/ads1115.h"
-#include "LowPassFilter.h"
 
 namespace esphome {
 namespace fswm100 {

@@ -7,21 +7,20 @@ namespace fswm100 {
 
 PressureTestSensor::PressureTestSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void PressureTestSensor::setup(float publish_delta, float time_constant, int window_size) {
+void PressureTestSensor::setup() {
   ESP_LOGCONFIG(TAG, "PressureTestSensor setup start.");
-  this->publish_delta_ = publish_delta;
-  this->time_constant_ = time_constant;
-  this->window_size_ = window_size;
   // initial state publish
   this->publish_state(0);
   ESP_LOGCONFIG(TAG, "PressureTestSensor setup complete.");
 }
 
-void PressureTestSensor::dump_config() {
-  ESP_LOGCONFIG(TAG, "PressureTestSensor:");
-  ESP_LOGCONFIG(TAG, "  publish delta: %.2f", this->publish_delta_);
-  ESP_LOGCONFIG(TAG, "  time constant: %.2f", this->time_constant_);
-  ESP_LOGCONFIG(TAG, "  window size: %d", this->window_size_);
+void PressureTestSensor::dump_config() { ESP_LOGCONFIG(TAG, "PressureTestSensor:"); }
+
+void PressureTestSensor::publish(float pressure, bool immediate) {
+  this->publish_state(pressure);
+  if (immediate) {
+    this->internal_send_state_to_frontend(pressure);
+  }
 }
 
 void PressureTestSensor::process(float pressure) {
@@ -30,20 +29,14 @@ void PressureTestSensor::process(float pressure) {
     if (this->prev_pressure_sensor_test_flag_) {
       // started
       this->start_pressure_ = pressure;
-      this->prev_filtered_value_ = 0;
-      this->fswm100_->pressure_test_sensor_publish(0);
-      this->filter_ = new LowPassFilter(this->time_constant_, this->window_size_);
+      this->publish(0, true);
     } else {
       // stopped. reset
-      this->fswm100_->pressure_test_sensor_publish(0);
+      this->publish(0, true);
     }
   } else if (this->prev_pressure_sensor_test_flag_) {
     // test in progress
-    float filtered_val_opt = this->filter_->add_sample(pressure - this->start_pressure_);
-    if (filtered_val_opt && abs(prev_filtered_value_ - filtered_val_opt) > this->publish_delta_) {
-      prev_filtered_value_ = filtered_val_opt;
-      this->fswm100_->pressure_test_sensor_publish(filtered_val_opt);
-    }
+    this->publish(pressure - this->start_pressure_, false);
   }
 }
 

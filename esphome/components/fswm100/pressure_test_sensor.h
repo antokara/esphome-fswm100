@@ -29,9 +29,14 @@ class PressureTestSensor : public sensor::Sensor {
   /**
    * setup the pressure test sensor
    */
-  void setup(float publish_delta, float time_constant, int window_size);
+  void setup();
 
   void dump_config();
+
+  /**
+   * @brief attempt to publish
+   */
+  void publish(float pressure, bool immediate);
 
   void process(float pressure);
 
@@ -54,40 +59,6 @@ class PressureTestSensor : public sensor::Sensor {
    * It is used to calculate the pressure difference during the test.
    */
   float start_pressure_{0.0f};
-
-  /**
-   * @brief the low pass filter used to smooth the pressure sensor readings
-   */
-  LowPassFilter *filter_{nullptr};
-
-  /**
-   * @brief the previously filtered value from the filter
-   */
-  float prev_filtered_value_{0.0f};  // Last filtered value from the filter
-
-  /**
-   * @brief the delta value to publish the pressure test sensor value
-   *
-   * This is used to determine if the pressure test sensor value has changed enough
-   * to be published. If the change is less than this value, it will not be published.
-   */
-  float publish_delta_{0.0f};
-
-  /**
-   * @brief the time constant for the low pass filter
-   *
-   * This is used to determine how quickly the filter responds to changes in the pressure sensor readings.
-   * A lower value means the filter will respond more quickly, while a higher value means it will respond more slowly.
-   */
-  float time_constant_{7.0f};
-
-  /**
-   * @brief the window size for the low pass filter
-   *
-   * This is used to determine how many samples are needed before the filter output is considered valid.
-   * It must be at least 1, and it defines how many samples are averaged in the filter.
-   */
-  int window_size_{3};
 };
 
 }  // namespace fswm100

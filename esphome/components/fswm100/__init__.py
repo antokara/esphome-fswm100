@@ -45,7 +45,6 @@ UNIT_PSI = "psi"
 # configuration keys
 CONF_PULSE = "pulse"
 CONF_GPIO_PIN_KEY = "gpio_pin"
-CONF_PUBLISH_DELTA = "publish_delta"
 CONF_MIN_VOLTAGE = "min_voltage"
 CONF_MAX_VOLTAGE = "max_voltage"
 CONF_MIN_PRESSURE = "min_pressure"
@@ -58,8 +57,6 @@ CONF_MIN_VOLUME = "min_volume"
 CONF_RATE_VOLUME = "rate_volume"
 CONF_RATE_TIME = "rate_time"
 CONF_PRESSURE_TEST = "pressure_test"
-CONF_TIME_CONSTANT = "time_constant"
-CONF_WINDOW_SIZE = "window_size"
 CONF_STATUS_LED = "status_led"
 CONF_RED = "red"
 CONF_GREEN = "green"
@@ -208,9 +205,6 @@ CONFIG_SCHEMA = cv.Schema(
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(PressureTestSensor),
-                cv.Optional(CONF_PUBLISH_DELTA, default=0.01): cv.float_,
-                cv.Optional(CONF_TIME_CONSTANT, default=7.0): cv.float_,
-                cv.Optional(CONF_WINDOW_SIZE, default=3): cv.int_,
             }
         ),
         # Status LED
@@ -372,10 +366,4 @@ async def to_code(config):
         # to the FSWM100 class instance
         cg.add(fswm100.set_pressure_test_sensor(pressureTestSensor))
         # setup the "pressureSensor" class instance, passing it the config
-        cg.add(
-            pressureTestSensor.setup(
-                pressure_test_config[CONF_PUBLISH_DELTA],
-                pressure_test_config[CONF_TIME_CONSTANT],
-                pressure_test_config[CONF_WINDOW_SIZE],
-            )
-        )
+        cg.add(pressureTestSensor.setup())

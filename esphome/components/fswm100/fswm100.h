@@ -134,11 +134,6 @@ class FSWM100 : public Component, public EntityBase {
   bool get_pulse_sensor();
 
   /**
-   * @brief publishes the pressure by test sensor value
-   */
-  void pressure_test_sensor_publish(float pressure);
-
-  /**
    * @brief processes the pressure with the test sensor value
    */
   void pressure_test_sensor_process(float pressure);
