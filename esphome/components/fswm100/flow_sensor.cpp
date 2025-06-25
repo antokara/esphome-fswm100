@@ -7,21 +7,20 @@ namespace fswm100 {
 
 FlowSensor::FlowSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void FlowSensor::setup(float effective_noise_floor, float min_volume, float rate_time, uint32_t publish_frequency,
+void FlowSensor::setup(float effective_noise_floor, float min_volume, float rate_time,
                        ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
                        ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowSensor setup start.");
   this->effective_noise_floor_ = effective_noise_floor;
   this->min_volume_ = min_volume;
   this->rate_time_ = rate_time;
-  this->publish_frequency_ = publish_frequency;
   // ADS1115
   this->multiplexer_ = multiplexer;
   this->gain_ = gain;
   this->sample_rate_ = sample_rate;
   this->resolution_ = resolution;
   // initial state publish
-  this->publish_state(0);
+  this->publish(0, true);
   ESP_LOGCONFIG(TAG, "FlowSensor setup complete.");
 }
 
@@ -30,7 +29,6 @@ void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  effective noise floor:", this->effective_noise_floor_);
   ESP_LOGCONFIG(TAG, "  min volume:", this->min_volume_);
   ESP_LOGCONFIG(TAG, "  rate time:", this->rate_time_);
-  ESP_LOGCONFIG(TAG, "  publish frequency:", this->publish_frequency_);
   ESP_LOGCONFIG(TAG, "  multiplexer:", this->multiplexer_);
   ESP_LOGCONFIG(TAG, "  gain:", this->gain_);
   ESP_LOGCONFIG(TAG, "  sample rate:", this->sample_rate_);
@@ -43,11 +41,11 @@ void FlowSensor::active() {
   if (flow > this->state) {
     // publish immediately if the flow is higher than the last state
     // this happens when the pulse triggers...
-    this->publish_state(flow);
+    this->publish(flow, true);
   } else {
     // otherwise, just try to publish the flow rate
     // as it most likely starts to go down
-    this->try_publish(flow);
+    this->publish(flow, false);
   }
 }
 
@@ -62,10 +60,10 @@ float FlowSensor::calculate_active_flow() {
   return flow;
 }
 
-void FlowSensor::try_publish(float flow) {
-  if (abs(long(millis() - this->last_publish_time_ > this->publish_frequency_))) {
-    this->last_publish_time_ = millis();
-    this->publish_state(flow);
+void FlowSensor::publish(float flow, bool immediate) {
+  this->publish_state(flow);
+  if (immediate) {
+    this->internal_send_state_to_frontend(flow);
   }
 }
 
@@ -126,15 +124,15 @@ void FlowSensor::loop() {
     // inactive. no pulse or IR and timed out
     if (this->state > 0) {
       ESP_LOGD(TAG, "Flow: inactive");
-      this->publish_state(0);
+      this->publish(0, true);
     } else {
       // keep trying to send, in case the event gets missed, to avoid false positive active flow
-      this->try_publish(0);
+      this->publish(0, false);
     }
 
   } else if (this->state > 0) {
     // active but not yet timed out
-    this->try_publish(this->calculate_active_flow());
+    this->publish(this->calculate_active_flow(), false);
   }
 
   // update if it just switched (to false)

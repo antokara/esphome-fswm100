@@ -45,7 +45,6 @@ UNIT_PSI = "psi"
 # configuration keys
 CONF_PULSE = "pulse"
 CONF_GPIO_PIN_KEY = "gpio_pin"
-CONF_PUBLISH_FREQUENCY = "publish_frequency"
 CONF_PUBLISH_DELTA = "publish_delta"
 CONF_MIN_VOLTAGE = "min_voltage"
 CONF_MAX_VOLTAGE = "max_voltage"
@@ -105,7 +104,6 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
                 cv.Optional(CONF_MIN_VOLUME, default=0.1): cv.float_,
                 cv.Optional(CONF_RATE_TIME, default=60.0): cv.float_,
-                cv.Optional(CONF_PUBLISH_FREQUENCY, default=5000): cv.int_,
                 cv.Optional(
                     CONF_MIN_DURATION,
                     default={
@@ -280,7 +278,6 @@ async def to_code(config):
                 flow_config[CONF_EFFECTIVE_NOISE_FLOOR],
                 flow_config[CONF_MIN_VOLUME],
                 flow_config[CONF_RATE_TIME],
-                flow_config[CONF_PUBLISH_FREQUENCY],
                 flow_config[CONF_MULTIPLEXER],
                 flow_config[CONF_GAIN],
                 flow_config[CONF_SAMPLE_RATE],

@@ -56,14 +56,18 @@ fswm100:
     accuracy_decimals: 2
     # in volts
     effective_noise_floor: 0.05
+    # the min volume the water meter can measure
     min_volume: 0.1
+    # the rate in seconds to measure the flow
     rate_time: 60.0
-    publish_frequency: 5000
     # ADS1115
     multiplexer: "A0_GND"
     gain: 6.144
     sample_rate: 860
     resolution: 16_BITS
+    filters:
+      # this does not apply to start/stop flow
+      - debounce: 5s
   pulse:
     name: Water Meter Pulse
     rate_volume: 1
@@ -93,6 +97,8 @@ fswm100:
     sample_rate: 860
     resolution: 16_BITS
     filters:
+      # this does not apply during the start/stop
+      # of the pressure test
       - delta: 5
   pressure_test:
     name: Water Pressure Test

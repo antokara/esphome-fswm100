@@ -40,9 +40,8 @@ class FlowSensor : public sensor::Sensor {
   /**
    * setup the flow sensor
    */
-  void setup(float effective_noise_floor, float min_volume, float rate_time, uint32_t publish_frequency,
-             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
-             ads1115::ADS1115Resolution resolution);
+  void setup(float effective_noise_floor, float min_volume, float rate_time, ads1115::ADS1115Multiplexer multiplexer,
+             ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -78,7 +77,7 @@ class FlowSensor : public sensor::Sensor {
   /**
    * @brief attempt to publish the given flow rate
    */
-  void try_publish(float rate);
+  void publish(float rate, bool immediate);
 
   /**
    *
@@ -160,23 +159,6 @@ class FlowSensor : public sensor::Sensor {
    *        when switched to an active pulse sensor reading.
    */
   uint32_t newest_pulse_sensor_active_time_{0};
-
-  /**
-   * @brief how frequently to publish the flow rate.
-   *        it does not apply when the flow starts/stops,
-   *        so that we immediatelly publish those events.
-   *        This only applies while the flow is active,
-   *        basically, for flow rate change events.
-   * @see last_publish_time_
-   */
-  uint32_t publish_frequency_{0};
-
-  /**
-   * @brief the time when the last publish
-   *        of flow rate change took place
-   * @see publish_frequency_
-   */
-  uint32_t last_publish_time_{0};
 };
 
 }  // namespace fswm100
