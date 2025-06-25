@@ -106,8 +106,8 @@ fswm100:
     filters:
       - delta: 0.1
       - exponential_moving_average:
-        alpha: 0.1
-        send_every: 1
+          alpha: 0.1
+          send_every: 1
   status_led:
     red:
       number: GPIO18
