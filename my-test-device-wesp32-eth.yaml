@@ -1,0 +1,133 @@
+esphome:
+  name: test-device
+  friendly_name: Test Device
+
+esp32:
+  board: esp32dev
+
+# Enable logging
+logger:
+  # level: NONE
+  # level: ERROR
+  # level: WARN
+  # level: INFO
+  level: DEBUG # default
+  # level: VERBOSE
+  # level: VERY_VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# for wesp32 board rev.7 and up
+# @see https://esphome.io/components/ethernet.html#configuration-examples
+ethernet:
+  type: RTL8201
+  mdc_pin: GPIO16
+  mdio_pin: GPIO17
+  clk_mode: GPIO0_IN
+  phy_addr: 0
+  phy_registers:
+    - address: 0x10
+      value: 0x1FFA
+      page_id: 0x07
+
+external_components:
+  - source:
+      # type: git
+      # url: https://github.com/antokara/esphome-fswm100
+      # ref: test-1
+      type: local
+      path: ./esphome/components
+    components: [fswm100]
+    refresh: 0.5min
+
+# demo with fsw100
+fswm100:
+  ads1115_id: ads1115_a
+  flow:
+    name: Water Flow
+    unit_of_measurement: gal/min
+    accuracy_decimals: 2
+    # in volts
+    effective_noise_floor: 0.05
+    # the min volume the water meter can measure
+    min_volume: 0.1
+    # the rate in seconds to measure the flow
+    rate_time: 60.0
+    # ADS1115
+    multiplexer: "A0_GND"
+    gain: 6.144
+    sample_rate: 860
+    resolution: 16_BITS
+    filters:
+      # this does not apply to start/stop flow
+      - debounce: 5s
+  pulse:
+    name: Water Meter Pulse
+    rate_volume: 1
+    gpio_pin:
+      number: GPIO23
+      mode:
+        input: true
+    filters:
+      - delayed_off: 250ms
+  pressure:
+    name: Water Pressure
+    accuracy_decimals: 2
+    unit_of_measurement: psi
+    # for the 0.5V-4.5V pressure transducer
+    # the actual voltage range, may need to be adjusted
+    # in relation to the power supply used as well.
+    # multiplier 0.9
+    min_voltage: 0.78
+    max_voltage: 4.6
+    min_pressure: 0
+    max_pressure: 100
+    # in volts
+    effective_noise_floor: 0.1
+    # ADS1115
+    multiplexer: "A1_GND"
+    gain: 6.144
+    sample_rate: 860
+    resolution: 16_BITS
+    filters:
+      # this does not apply during the start/stop
+      # of the pressure test
+      - delta: 5
+  pressure_test:
+    name: Water Pressure Test
+    accuracy_decimals: 2
+    filters:
+      - delta: 0.1
+      - exponential_moving_average:
+          alpha: 0.1
+          send_every: 1
+  status_led:
+    red:
+      number: GPIO18
+    green:
+      number: GPIO05
+    blue:
+      number: GPIO32
+    
+# required (shared) component by fsw100
+i2c:
+  id: i2c_a
+  sda: GPIO15
+  scl: GPIO04
+  scan: true
+  frequency: 100kHz
+
+# required (shared) component by fsw100
+ads1115:
+  id: ads1115_a
+  i2c_id: i2c_a
+  address: 0x48
+  # important. must be set to false
+  continuous_mode: false

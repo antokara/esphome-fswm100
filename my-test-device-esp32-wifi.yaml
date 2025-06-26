@@ -1,0 +1,113 @@
+esphome:
+  name: test-device
+  friendly_name: Test Device
+
+esp32:
+  board: esp32dev
+
+# Enable logging
+logger:
+  # level: NONE
+  # level: ERROR
+  # level: WARN
+  # level: INFO
+  level: DEBUG # default
+  # level: VERBOSE
+  # level: VERY_VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+external_components:
+  - source:
+      # type: git
+      # url: https://github.com/antokara/esphome-fswm100
+      # ref: test-1
+      type: local
+      path: ./esphome/components
+    components: [fswm100]
+    refresh: 0.5min
+
+# demo with fsw100
+fswm100:
+  ads1115_id: ads1115_a
+  flow:
+    name: Water Flow
+    unit_of_measurement: gal/min
+    accuracy_decimals: 2
+    # in volts
+    effective_noise_floor: 0.05
+    min_volume: 0.1
+    rate_time: 60.0
+    publish_frequency: 5000
+    # ADS1115
+    multiplexer: "A0_GND"
+    gain: 6.144
+    sample_rate: 860
+    resolution: 16_BITS
+  pulse:
+    name: Water Meter Pulse
+    rate_volume: 1
+    gpio_pin:
+      number: GPIO04
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_off: 250ms
+  pressure:
+    name: Water Pressure
+    accuracy_decimals: 2
+    unit_of_measurement: psi
+    min_voltage: 0.5
+    max_voltage: 4.5
+    min_pressure: 0
+    max_pressure: 100
+    # in volts
+    effective_noise_floor: 0.1
+    # ADS1115
+    multiplexer: "A1_GND"
+    gain: 6.144
+    sample_rate: 860
+    resolution: 16_BITS
+    filters:
+      - delta: 5
+  pressure_test:
+    name: Water Pressure Test
+    accuracy_decimals: 2
+    publish_delta: 0.1
+    time_constant: 7.0
+    window_size: 3
+  status_led:
+    red:
+      number: GPIO32
+    green:
+      number: GPIO33
+    blue:
+      number: GPIO25
+    
+# required (shared) component by fsw100
+i2c:
+  id: i2c_a
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+  frequency: 100kHz
+
+# required (shared) component by fsw100
+ads1115:
+  id: ads1115_a
+  i2c_id: i2c_a
+  address: 0x48
+  # important. must be set to false
+  continuous_mode: false
