@@ -40,6 +40,21 @@ class PressureTestSensor : public sensor::Sensor {
 
   void process(float pressure);
 
+  /**
+   * @brief internal method to send the state to the frontend.
+   *        this does not go through the filters and it actually
+   *        what the last filter uses in its Filter::output method.
+   *
+   *        When we override this method, we can skip sending
+   *        the state to the frontend, which is useful for
+   *        resetting the filters without sending "invalid/reset" state values.
+   *        That's because the filters will process the state
+   *        but we can control whether to send it to the frontend or not.
+   *
+   * @param state the state to send
+   */
+  void internal_send_state_to_frontend(float state);
+
  private:
   /**
    * @brief the parent component
@@ -59,6 +74,13 @@ class PressureTestSensor : public sensor::Sensor {
    * It is used to calculate the pressure difference during the test.
    */
   float start_pressure_{0.0f};
+
+  /**
+   * @brief whether to skip sending the state to the frontend.
+   *        This is useful for allowing us to reset any applied filters
+   *        without sending "invalid/reset" state values to the frontend.
+   */
+  bool skip_send_to_frontend_{false};
 };
 
 }  // namespace fswm100

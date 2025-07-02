@@ -31,12 +31,27 @@ void PressureTestSensor::process(float pressure) {
       this->start_pressure_ = pressure;
       this->publish(0, true);
     } else {
-      // stopped. reset
+      // stopped
+
+      // we need to reset any applied filters to zero
+      this->skip_send_to_frontend_ = true;
+      for (int i = 0; i < 10; i++) {
+        this->publish(0, false);
+      }
+      this->skip_send_to_frontend_ = false;
+
+      // publish
       this->publish(0, true);
     }
   } else if (this->prev_pressure_sensor_test_flag_) {
     // test in progress
     this->publish(pressure - this->start_pressure_, false);
+  }
+}
+
+void PressureTestSensor::internal_send_state_to_frontend(float state) {
+  if (!this->skip_send_to_frontend_) {
+    Sensor::internal_send_state_to_frontend(state);
   }
 }
 
