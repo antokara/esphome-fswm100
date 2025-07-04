@@ -7,8 +7,9 @@ namespace fswm100 {
 
 PressureTestSensor::PressureTestSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void PressureTestSensor::setup() {
+void PressureTestSensor::setup(const std::function<std::vector<sensor::Filter *>()> &factory) {
   ESP_LOGCONFIG(TAG, "PressureTestSensor setup start.");
+  this->filter_factory_ = factory;
   // initial state publish
   this->publish_state(0);
   ESP_LOGCONFIG(TAG, "PressureTestSensor setup complete.");
@@ -17,10 +18,10 @@ void PressureTestSensor::setup() {
 void PressureTestSensor::dump_config() { ESP_LOGCONFIG(TAG, "PressureTestSensor:"); }
 
 void PressureTestSensor::publish(float pressure, bool immediate) {
-  this->publish_state(pressure);
   if (immediate) {
-    this->internal_send_state_to_frontend(pressure);
+    this->reset_filters();
   }
+  this->publish_state(pressure);
 }
 
 void PressureTestSensor::process(float pressure) {
@@ -32,15 +33,6 @@ void PressureTestSensor::process(float pressure) {
       this->publish(0, true);
     } else {
       // stopped
-
-      // we need to reset any applied filters to zero
-      this->skip_send_to_frontend_ = true;
-      for (int i = 0; i < 10; i++) {
-        this->publish(0, false);
-      }
-      this->skip_send_to_frontend_ = false;
-
-      // publish
       this->publish(0, true);
     }
   } else if (this->prev_pressure_sensor_test_flag_) {
@@ -49,9 +41,12 @@ void PressureTestSensor::process(float pressure) {
   }
 }
 
-void PressureTestSensor::internal_send_state_to_frontend(float state) {
-  if (!this->skip_send_to_frontend_) {
-    Sensor::internal_send_state_to_frontend(state);
+void PressureTestSensor::reset_filters() {
+  if (this->filter_factory_) {
+    ESP_LOGI(TAG, "PressureTestSensor Resetting filters by creating new filter instances...");
+    this->set_filters(this->filter_factory_());
+  } else {
+    ESP_LOGW(TAG, "PressureTestSensor No filter factory set, cannot reset filters.");
   }
 }
 

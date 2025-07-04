@@ -4,6 +4,7 @@ from esphome.components import ads1115, binary_sensor, number, sensor, switch
 from esphome.components.ads1115.sensor import GAIN, MUX, RESOLUTION, SAMPLERATE
 import esphome.config_validation as cv
 from esphome.const import (
+    CONF_FILTERS,
     CONF_FLOW,
     CONF_GAIN,
     CONF_ID,
@@ -25,6 +26,7 @@ from esphome.const import (
     UNIT_EMPTY,
     UNIT_SECOND,
 )
+from esphome.cpp_helpers import extract_registry_entry_config
 
 #
 # Make sure to autload the required components.
@@ -365,5 +367,100 @@ async def to_code(config):
         # set the PressureSensor class instance reference
         # to the FSWM100 class instance
         cg.add(fswm100.set_pressure_test_sensor(pressureTestSensor))
+        # Generate the C++ lambda that will act as our filter factory
+        # filters = await sensor.build_filters(pressure_test_config[CONF_FILTERS])
+        filters = await build_filters(pressure_test_config[CONF_FILTERS])
+        for conf in filters:
+            print("filters:", conf)
+        # This lambda function is the "factory". When called, it will execute
+        # the code inside and return a new vector of filter objects.
+        # e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
+        factory_lambda = cg.RawExpression(
+            f"[]() -> std::vector<esphome::sensor::Filter *> {{ return {{ {', '.join(str(f) for f in filters)} }}; }}"
+        )
         # setup the "pressureSensor" class instance, passing it the config
-        cg.add(pressureTestSensor.setup())
+        cg.add(pressureTestSensor.setup(factory_lambda))
+
+
+async def build_filters(config):
+    """
+    This function mimics the behavior of the internal esphome.sensor.build_filters.
+
+    It takes a list of filter configurations (like from YAML), validates them
+    against the live ESPHome filter registry, and returns a list of C++
+    codegen objects ready to be used.
+    """
+    # This list will hold the generated C++ filter objects
+    filters_cpp = []
+
+    print("--- Starting Filter Build Process (using live registry) ---")
+
+    # Iterate over each filter dictionary in the configuration list
+    for i, conf in enumerate(config):
+        print(f"\nProcessing filter #{i + 1}: {conf}")
+
+        # A filter config must be a dictionary with:
+        #   - one key (the filter name) and
+        #   - the "type_id" key
+        if not isinstance(conf, dict) or len(conf) != 2:
+            raise cv.Invalid(
+                f"Filter configuration must be a dictionary with one key. Invalid value: {conf}"
+            )
+
+        # The key is the name of the filter, e.g., "offset"
+        filter_key = next(iter(conf))
+
+        print(f"  - Will lookup the Filter type '{filter_key}'")
+
+        # Look up the filter's information in the real registry
+        if filter_key not in sensor.FILTER_REGISTRY:
+            raise cv.Invalid(
+                f"Filter with key '{filter_key}' not found in ESPHome's sensor.FILTER_REGISTRY."
+            )
+
+        print(f"  - Filter type looked-up: '{filter_key}'")
+
+        # <esphome.util.RegistryEntry object at 0x7f680ef1ab40>
+        filter = sensor.FILTER_REGISTRY[filter_key]
+        coroutine_fun = filter.coroutine_fun
+        schema = filter.schema
+        name = filter.name
+        builderConfig = conf[filter_key]
+        print(f"  - builderConfig: '{builderConfig}'")
+        type_id = conf["type_id"]
+        type_id = "sensor_deltafilter_id_3"
+
+        # builderConfig = extract_registry_entry_config(sensor.FILTER_REGISTRY, conf)
+
+        print(f"  - filter_key: '{filter_key}'")
+        print(f"  - schema: '{schema}'")
+        print(f"  - name: '{name}'")
+        print(f"  - type_id: '{type_id}'")
+        print(f"  - coroutine_fun: '{coroutine_fun}'")
+        print(
+            f"  - coroutine_fun call: '{await coroutine_fun(builderConfig, type_id)}'"
+        )
+
+        # # Validate the configuration for this filter using its schema
+        # # The schema handles both shorthand (e.g., `offset: 10.0`) and
+        # # full dictionary notation.
+        # try:
+        #     validated_conf = schema(conf)
+        #     # The schema returns the full config, so we need the value part
+        #     validated_conf = validated_conf[filter_key]
+        # except cv.Invalid as e:
+        #     print(f"  - Validation Error: {e}")
+        #     raise
+
+        # print(f"  - Configuration validated: {validated_conf}")
+
+        # # Generate the C++ code object for the filter
+        # # cg.new_Pvariable creates the 'new ClassName(...)' C++ code.
+        # # We need to pass the validated parameters to it.
+        # template_ = await cg.templatable(validated_conf, cv.Schema({}), filter_class)
+
+        # print(f"  - Generated C++ Code: {template_}")
+        # filters_cpp.append(template_)
+
+    print("\n--- Filter Build Process Finished ---")
+    return filters_cpp
