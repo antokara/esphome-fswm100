@@ -42,7 +42,13 @@ class PressureTestSensor : public sensor::Sensor {
 
   void process(float pressure);
   /**
-   * @brief resets the filters to the default ones
+   * @brief resets the filters to the filters defined in the yaml configuration.
+   *        this basically, clears any "history" or "cache" of the filters and
+   *        thus, allows us to immediatelly publish a new state value
+   *        when needed, without any previous values affecting it.
+   *
+   *        This is useful when the pressure sensor test starts or stops and
+   *        we do not want any previous test values to affect the new...
    */
   void reset_filters();
 
