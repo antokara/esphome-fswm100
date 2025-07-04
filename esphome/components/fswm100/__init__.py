@@ -386,7 +386,7 @@ def filter_key_to_class_name(filter_key):
     """
     # Split the key by underscores, capitalize each part, and join them.
     pascal_case_name = "".join(part.capitalize() for part in filter_key.split("_"))
-    return f"{pascal_case_name}Filter"
+    return f"esphome::sensor::{pascal_case_name}Filter"
 
 
 async def build_filters(config):
