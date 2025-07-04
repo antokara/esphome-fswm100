@@ -7,9 +7,9 @@ namespace fswm100 {
 
 PressureTestSensor::PressureTestSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void PressureTestSensor::setup(const std::function<std::vector<sensor::Filter *>()> &factory) {
+void PressureTestSensor::setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory) {
   ESP_LOGCONFIG(TAG, "PressureTestSensor setup start.");
-  this->filter_factory_ = factory;
+  this->filters_factory_ = filters_factory;
   // initial state publish
   this->publish_state(0);
   ESP_LOGCONFIG(TAG, "PressureTestSensor setup complete.");
@@ -42,9 +42,9 @@ void PressureTestSensor::process(float pressure) {
 }
 
 void PressureTestSensor::reset_filters() {
-  if (this->filter_factory_) {
+  if (this->filters_factory_) {
     ESP_LOGI(TAG, "PressureTestSensor Resetting filters by creating new filter instances...");
-    this->set_filters(this->filter_factory_());
+    this->set_filters(this->filters_factory_());
   } else {
     ESP_LOGW(TAG, "PressureTestSensor No filter factory set, cannot reset filters.");
   }

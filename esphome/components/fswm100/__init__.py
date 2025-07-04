@@ -371,11 +371,11 @@ async def to_code(config):
         # This lambda function is the "factory". When called, it will execute
         # the code inside and return a new vector of filter objects.
         # e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
-        factory_lambda = cg.RawExpression(
+        filters_factory = cg.RawExpression(
             f"[]() -> std::vector<esphome::sensor::Filter *> {{ return {{ {', '.join(str(f) for f in filters)} }}; }}"
         )
         # setup the "pressureSensor" class instance, passing it the config
-        cg.add(pressureTestSensor.setup(factory_lambda))
+        cg.add(pressureTestSensor.setup(filters_factory))
 
 
 def filter_key_to_class_name(filter_key):

@@ -28,8 +28,10 @@ class PressureTestSensor : public sensor::Sensor {
 
   /**
    * setup the pressure test sensor
+   * @param filters_factory a function that returns a vector of sensor filters
+   *                        that should be used for this sensor.
    */
-  void setup(const std::function<std::vector<sensor::Filter *>()> &factory);
+  void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory);
 
   void dump_config();
 
@@ -66,8 +68,10 @@ class PressureTestSensor : public sensor::Sensor {
 
   /**
    *  A function object that knows how to create a new set of filters
+   * e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new
+   * esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
    */
-  std::function<std::vector<sensor::Filter *>()> filter_factory_;
+  std::function<std::vector<sensor::Filter *>()> filters_factory_;
 };
 
 }  // namespace fswm100
