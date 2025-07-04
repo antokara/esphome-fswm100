@@ -9,7 +9,7 @@ PressureTestSensor::PressureTestSensor(FSWM100 *fswm100) { fswm100_ = fswm100; }
 
 void PressureTestSensor::setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory) {
   ESP_LOGCONFIG(TAG, "PressureTestSensor setup start.");
-  this->filters_factory_ = filters_factory;
+  // this->filters_factory_ = filters_factory;
   // initial state publish
   this->publish_state(0);
   ESP_LOGCONFIG(TAG, "PressureTestSensor setup complete.");
