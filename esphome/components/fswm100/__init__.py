@@ -1,4 +1,4 @@
-from esphome import pins
+from esphome import core, pins
 import esphome.codegen as cg
 from esphome.components import ads1115, binary_sensor, number, sensor, switch
 from esphome.components.ads1115.sensor import GAIN, MUX, RESOLUTION, SAMPLERATE
@@ -14,6 +14,7 @@ from esphome.const import (
     CONF_PRESSURE,
     CONF_RESOLUTION,
     CONF_SAMPLE_RATE,
+    CONF_TYPE_ID,
     DEVICE_CLASS_DURATION,
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_PRESSURE,
@@ -368,10 +369,7 @@ async def to_code(config):
         # to the FSWM100 class instance
         cg.add(fswm100.set_pressure_test_sensor(pressureTestSensor))
         # Generate the C++ lambda that will act as our filter factory
-        # filters = await sensor.build_filters(pressure_test_config[CONF_FILTERS])
         filters = await build_filters(pressure_test_config[CONF_FILTERS])
-        for conf in filters:
-            print("filters:", conf)
         # This lambda function is the "factory". When called, it will execute
         # the code inside and return a new vector of filter objects.
         # e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
@@ -380,6 +378,17 @@ async def to_code(config):
         )
         # setup the "pressureSensor" class instance, passing it the config
         cg.add(pressureTestSensor.setup(factory_lambda))
+
+
+def filter_key_to_class_name(filter_key):
+    """
+    Converts a snake_case filter key into its PascalCase C++ class name.
+
+    For example: 'sliding_window_moving_average' becomes 'SlidingWindowMovingAverageFilter'.
+    """
+    # Split the key by underscores, capitalize each part, and join them.
+    pascal_case_name = "".join(part.capitalize() for part in filter_key.split("_"))
+    return f"{pascal_case_name}Filter"
 
 
 async def build_filters(config):
@@ -393,12 +402,8 @@ async def build_filters(config):
     # This list will hold the generated C++ filter objects
     filters_cpp = []
 
-    print("--- Starting Filter Build Process (using live registry) ---")
-
     # Iterate over each filter dictionary in the configuration list
-    for i, conf in enumerate(config):
-        print(f"\nProcessing filter #{i + 1}: {conf}")
-
+    for conf in config:
         # A filter config must be a dictionary with:
         #   - one key (the filter name) and
         #   - the "type_id" key
@@ -409,58 +414,46 @@ async def build_filters(config):
 
         # The key is the name of the filter, e.g., "offset"
         filter_key = next(iter(conf))
-
-        print(f"  - Will lookup the Filter type '{filter_key}'")
-
         # Look up the filter's information in the real registry
         if filter_key not in sensor.FILTER_REGISTRY:
             raise cv.Invalid(
                 f"Filter with key '{filter_key}' not found in ESPHome's sensor.FILTER_REGISTRY."
             )
-
-        print(f"  - Filter type looked-up: '{filter_key}'")
-
-        # <esphome.util.RegistryEntry object at 0x7f680ef1ab40>
         filter = sensor.FILTER_REGISTRY[filter_key]
-        coroutine_fun = filter.coroutine_fun
         schema = filter.schema
-        name = filter.name
-        builderConfig = conf[filter_key]
-        print(f"  - builderConfig: '{builderConfig}'")
-        type_id = conf["type_id"]
-        type_id = "sensor_deltafilter_id_3"
+        filter_config = conf[filter_key]
 
-        # builderConfig = extract_registry_entry_config(sensor.FILTER_REGISTRY, conf)
+        try:
+            validated_conf = schema(filter_config)
+        except cv.Invalid as e:
+            print(f"  - Validation Error: {e}")
+            raise
 
-        print(f"  - filter_key: '{filter_key}'")
-        print(f"  - schema: '{schema}'")
-        print(f"  - name: '{name}'")
-        print(f"  - type_id: '{type_id}'")
-        print(f"  - coroutine_fun: '{coroutine_fun}'")
-        print(
-            f"  - coroutine_fun call: '{await coroutine_fun(builderConfig, type_id)}'"
+        # --- Manually create the C++ 'new' expression ---
+        # Get the arguments for the C++ constructor
+        if isinstance(validated_conf, dict):
+            args = list(validated_conf.values())
+        else:
+            args = [validated_conf]
+
+        # Format arguments for C++ (e.g., add quotes to strings)
+        formatted_args = []
+        for arg in args:
+            if isinstance(arg, str) and not isinstance(
+                arg, (cv.Lambda, cg.RawExpression)
+            ):
+                # For lambdas, we don't add quotes. For other strings, we do.
+                if "return" in arg or arg.strip().startswith("return"):
+                    formatted_args.append(str(arg))
+                else:
+                    formatted_args.append(f'"{arg}"')
+            else:
+                formatted_args.append(str(arg))
+
+        # Construct the C++ code for creating a new instance
+        cpp_code = (
+            f"new {filter_key_to_class_name(filter_key)}({', '.join(formatted_args)})"
         )
-
-        # # Validate the configuration for this filter using its schema
-        # # The schema handles both shorthand (e.g., `offset: 10.0`) and
-        # # full dictionary notation.
-        # try:
-        #     validated_conf = schema(conf)
-        #     # The schema returns the full config, so we need the value part
-        #     validated_conf = validated_conf[filter_key]
-        # except cv.Invalid as e:
-        #     print(f"  - Validation Error: {e}")
-        #     raise
-
-        # print(f"  - Configuration validated: {validated_conf}")
-
-        # # Generate the C++ code object for the filter
-        # # cg.new_Pvariable creates the 'new ClassName(...)' C++ code.
-        # # We need to pass the validated parameters to it.
-        # template_ = await cg.templatable(validated_conf, cv.Schema({}), filter_class)
-
-        # print(f"  - Generated C++ Code: {template_}")
-        # filters_cpp.append(template_)
-
-    print("\n--- Filter Build Process Finished ---")
+        template_ = cg.RawExpression(cpp_code)
+        filters_cpp.append(template_)
     return filters_cpp
