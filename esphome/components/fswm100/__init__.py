@@ -1,4 +1,4 @@
-from esphome import core, pins
+from esphome import pins
 import esphome.codegen as cg
 from esphome.components import ads1115, binary_sensor, number, sensor, switch
 from esphome.components.ads1115.sensor import GAIN, MUX, RESOLUTION, SAMPLERATE
@@ -14,7 +14,6 @@ from esphome.const import (
     CONF_PRESSURE,
     CONF_RESOLUTION,
     CONF_SAMPLE_RATE,
-    CONF_TYPE_ID,
     DEVICE_CLASS_DURATION,
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_PRESSURE,
@@ -27,7 +26,6 @@ from esphome.const import (
     UNIT_EMPTY,
     UNIT_SECOND,
 )
-from esphome.cpp_helpers import extract_registry_entry_config
 
 #
 # Make sure to autload the required components.
