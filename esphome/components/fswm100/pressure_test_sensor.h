@@ -28,8 +28,10 @@ class PressureTestSensor : public sensor::Sensor {
 
   /**
    * setup the pressure test sensor
+   * @param filters_factory a function that returns a vector of sensor filters
+   *                        that should be used for this sensor.
    */
-  void setup();
+  void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory);
 
   void dump_config();
 
@@ -39,21 +41,16 @@ class PressureTestSensor : public sensor::Sensor {
   void publish(float pressure, bool immediate);
 
   void process(float pressure);
-
   /**
-   * @brief internal method to send the state to the frontend.
-   *        this does not go through the filters and it actually
-   *        what the last filter uses in its Filter::output method.
+   * @brief resets the filters to the filters defined in the yaml configuration.
+   *        this basically, clears any "history" or "cache" of the filters and
+   *        thus, allows us to immediatelly publish a new state value
+   *        when needed, without any previous values affecting it.
    *
-   *        When we override this method, we can skip sending
-   *        the state to the frontend, which is useful for
-   *        resetting the filters without sending "invalid/reset" state values.
-   *        That's because the filters will process the state
-   *        but we can control whether to send it to the frontend or not.
-   *
-   * @param state the state to send
+   *        This is useful when the pressure sensor test starts or stops and
+   *        we do not want any previous test values to affect the new...
    */
-  void internal_send_state_to_frontend(float state);
+  void reset_filters();
 
  private:
   /**
@@ -76,11 +73,11 @@ class PressureTestSensor : public sensor::Sensor {
   float start_pressure_{0.0f};
 
   /**
-   * @brief whether to skip sending the state to the frontend.
-   *        This is useful for allowing us to reset any applied filters
-   *        without sending "invalid/reset" state values to the frontend.
+   *  A function object that knows how to create a new set of filters
+   * e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new
+   * esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
    */
-  bool skip_send_to_frontend_{false};
+  std::function<std::vector<sensor::Filter *>()> filters_factory_;
 };
 
 }  // namespace fswm100

@@ -4,6 +4,7 @@ from esphome.components import ads1115, binary_sensor, number, sensor, switch
 from esphome.components.ads1115.sensor import GAIN, MUX, RESOLUTION, SAMPLERATE
 import esphome.config_validation as cv
 from esphome.const import (
+    CONF_FILTERS,
     CONF_FLOW,
     CONF_GAIN,
     CONF_ID,
@@ -365,5 +366,92 @@ async def to_code(config):
         # set the PressureSensor class instance reference
         # to the FSWM100 class instance
         cg.add(fswm100.set_pressure_test_sensor(pressureTestSensor))
+        # Generate the C++ lambda that will act as our filter factory
+        filters = await build_filters(pressure_test_config[CONF_FILTERS])
+        # This lambda function is the "factory". When called, it will execute
+        # the code inside and return a new vector of filter objects.
+        # e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
+        filters_factory = cg.RawExpression(
+            f"[]() -> std::vector<esphome::sensor::Filter *> {{ return {{ {', '.join(str(f) for f in filters)} }}; }}"
+        )
         # setup the "pressureSensor" class instance, passing it the config
-        cg.add(pressureTestSensor.setup())
+        cg.add(pressureTestSensor.setup(filters_factory))
+
+
+def filter_key_to_class_name(filter_key):
+    """
+    Converts a snake_case filter key into its PascalCase C++ class name.
+
+    For example: 'sliding_window_moving_average' becomes 'SlidingWindowMovingAverageFilter'.
+    """
+    # Split the key by underscores, capitalize each part, and join them.
+    pascal_case_name = "".join(part.capitalize() for part in filter_key.split("_"))
+    return f"{pascal_case_name}Filter"
+
+
+async def build_filters(config):
+    """
+    This function mimics the behavior of the internal esphome.sensor.build_filters.
+
+    It takes a list of filter configurations (like from YAML), validates them
+    against the live ESPHome filter registry, and returns a list of C++
+    codegen objects ready to be used.
+    """
+    # This list will hold the generated C++ filter objects
+    filters_cpp = []
+
+    # Iterate over each filter dictionary in the configuration list
+    for conf in config:
+        # A filter config must be a dictionary with:
+        #   - one key (the filter name) and
+        #   - the "type_id" key
+        if not isinstance(conf, dict) or len(conf) != 2:
+            raise cv.Invalid(
+                f"Filter configuration must be a dictionary with one key. Invalid value: {conf}"
+            )
+
+        # The key is the name of the filter, e.g., "offset"
+        filter_key = next(iter(conf))
+        # Look up the filter's information in the real registry
+        if filter_key not in sensor.FILTER_REGISTRY:
+            raise cv.Invalid(
+                f"Filter with key '{filter_key}' not found in ESPHome's sensor.FILTER_REGISTRY."
+            )
+        filter = sensor.FILTER_REGISTRY[filter_key]
+        schema = filter.schema
+        filter_config = conf[filter_key]
+
+        try:
+            validated_conf = schema(filter_config)
+        except cv.Invalid as e:
+            print(f"  - Validation Error: {e}")
+            raise
+
+        # --- Manually create the C++ 'new' expression ---
+        # Get the arguments for the C++ constructor
+        if isinstance(validated_conf, dict):
+            args = list(validated_conf.values())
+        else:
+            args = [validated_conf]
+
+        # Format arguments for C++ (e.g., add quotes to strings)
+        formatted_args = []
+        for arg in args:
+            if isinstance(arg, str) and not isinstance(
+                arg, (cv.Lambda, cg.RawExpression)
+            ):
+                # For lambdas, we don't add quotes. For other strings, we do.
+                if "return" in arg or arg.strip().startswith("return"):
+                    formatted_args.append(str(arg))
+                else:
+                    formatted_args.append(f'"{arg}"')
+            else:
+                formatted_args.append(str(arg))
+
+        # Construct the C++ code for creating a new instance
+        cpp_code = (
+            f"new {filter_key_to_class_name(filter_key)}({', '.join(formatted_args)})"
+        )
+        template_ = cg.RawExpression(cpp_code)
+        filters_cpp.append(template_)
+    return filters_cpp

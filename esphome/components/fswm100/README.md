@@ -65,3 +65,7 @@
 ## connect to view logs
 
 `esphome logs my-test-device-wesp32-eth.yaml --device=/dev/ttyUSB0`
+
+## clean build
+
+`esphome clean my-test-device-wesp32-eth.yaml`
