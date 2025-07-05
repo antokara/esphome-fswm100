@@ -104,10 +104,7 @@ fswm100:
     name: Water Pressure Test
     accuracy_decimals: 2
     filters:
-      - delta: 0.1
-      - exponential_moving_average:
-          alpha: 0.1
-          send_every: 1
+      - throttle_average: 5s
   status_led:
     red:
       number: GPIO18
