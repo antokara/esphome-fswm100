@@ -374,6 +374,7 @@ async def to_code(config):
         filters_factory = cg.RawExpression(
             f"[]() -> std::vector<esphome::sensor::Filter *> {{ return {{ {', '.join(str(f) for f in filters)} }}; }}"
         )
+        print(f"  - Filters Factory: {filters_factory}")
         # setup the "pressureSensor" class instance, passing it the config
         cg.add(pressureTestSensor.setup(filters_factory))
 
@@ -391,7 +392,7 @@ def filter_key_to_class_name(filter_key):
 
 async def build_filters(config):
     """
-    This function mimics the behavior of the internal esphome.sensor.build_filters.
+    This function attempts to mimic the behavior of the internal esphome.sensor.build_filters.
 
     It takes a list of filter configurations (like from YAML), validates them
     against the live ESPHome filter registry, and returns a list of C++
@@ -437,7 +438,12 @@ async def build_filters(config):
         # Format arguments for C++ (e.g., add quotes to strings)
         formatted_args = []
         for arg in args:
-            if isinstance(arg, str) and not isinstance(
+            # @see components/sensor/__init__.py:delta_filter_to_code
+            if filter_key == "delta" and isinstance(arg, str):
+                # convert the "absolute" or "percentage" string to a percentage boolean
+                # meaning, pass true for "percentage" and false for "absolute"
+                formatted_args.append("true" if arg == "percentage" else "false")
+            elif isinstance(arg, str) and not isinstance(
                 arg, (cv.Lambda, cg.RawExpression)
             ):
                 # For lambdas, we don't add quotes. For other strings, we do.

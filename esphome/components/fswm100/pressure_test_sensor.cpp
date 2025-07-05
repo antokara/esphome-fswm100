@@ -44,8 +44,7 @@ void PressureTestSensor::process(float pressure) {
 void PressureTestSensor::reset_filters() {
   if (this->filters_factory_) {
     ESP_LOGD(TAG, "PressureTestSensor Resetting filters by creating new filter instances...");
-    this->set_filters({new esphome::sensor::DeltaFilter(0.1, "absolute")});
-    // this->set_filters(this->filters_factory_());
+    this->set_filters(this->filters_factory_());
   } else {
     ESP_LOGW(TAG, "PressureTestSensor No filter factory set, cannot reset filters.");
   }
