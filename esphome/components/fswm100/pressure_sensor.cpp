@@ -68,8 +68,9 @@ void PressureSensor::loop() {
 
   // has the state changed enough to publish?
   if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
-    float pressure =
-        this->voltage_to_pressure(new_sensor_state) * this->fswm100_->get_pressure_sensor_calibration_multiplier();
+    float pressure = std::round(this->voltage_to_pressure(new_sensor_state) *
+                                this->fswm100_->get_pressure_sensor_calibration_multiplier() * 100.0f) /
+                     100.0f;
 
     ESP_LOGV(TAG, "'%s': %.4f Voltage", this->get_name().c_str(), new_sensor_state);
     ESP_LOGVV(TAG, "'%s': Voltage Delta %.4f", this->get_name().c_str(),
