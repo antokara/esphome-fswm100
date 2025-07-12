@@ -132,11 +132,9 @@ void FlowSensor::loop() {
   } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
     // inactive. no pulse or IR and timed out
     if (this->state > 0) {
+      // just switched to inactive
       ESP_LOGD(TAG, "Flow: inactive");
       this->publish(0, true);
-    } else {
-      // keep trying to send, in case the event gets missed, to avoid false positive active flow
-      this->publish(0, false);
     }
 
   } else if (this->state > 0) {
