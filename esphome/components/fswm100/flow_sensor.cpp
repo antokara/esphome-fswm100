@@ -7,10 +7,12 @@ namespace fswm100 {
 
 FlowSensor::FlowSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void FlowSensor::setup(float effective_noise_floor, float min_volume, float rate_time,
+void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory,
+                       float effective_noise_floor, float min_volume, float rate_time,
                        ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
                        ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowSensor setup start.");
+  this->filters_factory_ = filters_factory;
   this->effective_noise_floor_ = effective_noise_floor;
   this->min_volume_ = min_volume;
   this->rate_time_ = rate_time;
@@ -68,10 +70,10 @@ float FlowSensor::calculate_active_flow() {
 }
 
 void FlowSensor::publish(float flow, bool immediate) {
-  this->publish_state(flow);
   if (immediate) {
-    this->internal_send_state_to_frontend(flow);
+    this->reset_filters();
   }
+  this->publish_state(flow);
 }
 
 float FlowSensor::get_state() {
@@ -145,6 +147,15 @@ void FlowSensor::loop() {
   // update if it just switched (to false)
   if (!pulse_sensor_state && pulse_sensor_state != this->last_pulse_sensor_state_) {
     this->last_pulse_sensor_state_ = pulse_sensor_state;
+  }
+}
+
+void FlowSensor::reset_filters() {
+  if (this->filters_factory_) {
+    ESP_LOGD(TAG, "FlowSensor Resetting filters by creating new filter instances...");
+    this->set_filters(this->filters_factory_());
+  } else {
+    ESP_LOGW(TAG, "FlowSensor No filter factory set, cannot reset filters.");
   }
 }
 

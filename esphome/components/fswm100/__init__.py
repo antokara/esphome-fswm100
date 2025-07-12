@@ -267,9 +267,19 @@ async def to_code(config):
         # set the FlowSensor class instance reference
         # to the FSWM100 class instance
         cg.add(fswm100.set_flow_sensor(flowSensor))
+        # Generate the C++ lambda that will act as our filter factory
+        filters = await build_filters(flow_config[CONF_FILTERS])
+        # This lambda function is the "factory". When called, it will execute
+        # the code inside and return a new vector of filter objects.
+        # e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
+        filters_factory = cg.RawExpression(
+            f"[]() -> std::vector<esphome::sensor::Filter *> {{ return {{ {', '.join(str(f) for f in filters)} }}; }}"
+        )
+        print(f"  - Flow Sensor Filters Factory: {filters_factory}")
         # setup the "flowSensor" class instance, passing it the config
         cg.add(
             flowSensor.setup(
+                filters_factory,
                 flow_config[CONF_EFFECTIVE_NOISE_FLOOR],
                 flow_config[CONF_MIN_VOLUME],
                 flow_config[CONF_RATE_TIME],
@@ -374,7 +384,7 @@ async def to_code(config):
         filters_factory = cg.RawExpression(
             f"[]() -> std::vector<esphome::sensor::Filter *> {{ return {{ {', '.join(str(f) for f in filters)} }}; }}"
         )
-        print(f"  - Filters Factory: {filters_factory}")
+        print(f"  - PressureTestSensor Filters Factory: {filters_factory}")
         # setup the "pressureSensor" class instance, passing it the config
         cg.add(pressureTestSensor.setup(filters_factory))
 

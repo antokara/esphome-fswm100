@@ -65,7 +65,7 @@ fswm100:
     resolution: 16_BITS
     filters:
       # this does not apply during the start/stop of flow
-      - delta: 5
+      - delta: 0.5
   pulse:
     name: Water Meter Pulse
     rate_volume: 1

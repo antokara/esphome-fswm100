@@ -40,8 +40,9 @@ class FlowSensor : public sensor::Sensor {
   /**
    * setup the flow sensor
    */
-  void setup(float effective_noise_floor, float min_volume, float rate_time, ads1115::ADS1115Multiplexer multiplexer,
-             ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
+  void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float effective_noise_floor,
+             float min_volume, float rate_time, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
+             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -78,6 +79,17 @@ class FlowSensor : public sensor::Sensor {
    * @brief attempt to publish the given flow rate
    */
   void publish(float rate, bool immediate);
+
+  /**
+   * @brief resets the filters to the filters defined in the yaml configuration.
+   *        this basically, clears any "history" or "cache" of the filters and
+   *        thus, allows us to immediatelly publish a new state value
+   *        when needed, without any previous values affecting it.
+   *
+   *        This is useful when the pressure sensor test starts or stops and
+   *        we do not want any previous test values to affect the new...
+   */
+  void reset_filters();
 
   /**
    *
@@ -159,6 +171,13 @@ class FlowSensor : public sensor::Sensor {
    *        when switched to an active pulse sensor reading.
    */
   uint32_t newest_pulse_sensor_active_time_{0};
+
+  /**
+   *  A function object that knows how to create a new set of filters
+   * e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new
+   * esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
+   */
+  std::function<std::vector<sensor::Filter *>()> filters_factory_;
 };
 
 }  // namespace fswm100

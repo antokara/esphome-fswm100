@@ -41,6 +41,7 @@ class PressureTestSensor : public sensor::Sensor {
   void publish(float pressure, bool immediate);
 
   void process(float pressure);
+
   /**
    * @brief resets the filters to the filters defined in the yaml configuration.
    *        this basically, clears any "history" or "cache" of the filters and
