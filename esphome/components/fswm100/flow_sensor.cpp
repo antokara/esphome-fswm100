@@ -52,11 +52,18 @@ void FlowSensor::active() {
 float FlowSensor::calculate_active_flow() {
   // start with the minimum flow volume
   float flow = this->min_volume_;
+
   // don't attempt to calculate flow if we don't have a pulse sensor active time
   if (this->oldest_pulse_sensor_active_time_ > 0) {
     flow = (this->rate_time_ * 1000) / (millis() - this->oldest_pulse_sensor_active_time_) *
            this->fswm100_->get_pulse_rate_volume();
   }
+
+  // ensure the flow is not below the minimum volume
+  if (flow < this->min_volume_) {
+    flow = this->min_volume_;
+  }
+
   return flow;
 }
 
