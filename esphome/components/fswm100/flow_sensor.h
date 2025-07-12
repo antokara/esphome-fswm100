@@ -152,9 +152,12 @@ class FlowSensor : public sensor::Sensor {
   uint32_t last_active_time_{0};
 
   /**
-   * @brief the last pulse sensor state we got
+   * @brief the last pulse sensor state we got.
+   *        start with true, in case the device boots up
+   *        and the pulse sensor is already active.
+   *        to avoid sending a false flow rate.
    */
-  bool last_pulse_sensor_state_{false};
+  bool last_pulse_sensor_state_{true};
 
   /**
    * @brief the oldest time we have, of

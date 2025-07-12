@@ -23,7 +23,6 @@ void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &fil
   this->resolution_ = resolution;
   // initialize values...
   this->publish(0, true);
-  this->last_pulse_sensor_state_ = this->fswm100_->get_pulse_sensor();
   ESP_LOGCONFIG(TAG, "FlowSensor setup complete.");
 }
 
