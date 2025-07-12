@@ -137,8 +137,8 @@ void FlowSensor::loop() {
       this->publish(0, true);
     }
 
-  } else if (this->state > 0) {
-    // active but not yet timed out
+  } else if (this->state > 0 && this->last_active_time_ != 0) {
+    // active, not yet timed out and this is not the first reading
     this->publish(this->calculate_active_flow(), false);
   }
 
