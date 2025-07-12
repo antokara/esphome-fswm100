@@ -21,8 +21,9 @@ void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &fil
   this->gain_ = gain;
   this->sample_rate_ = sample_rate;
   this->resolution_ = resolution;
-  // initial state publish
+  // initialize values...
   this->publish(0, true);
+  this->last_pulse_sensor_state_ = this->fswm100_->get_pulse_sensor();
   ESP_LOGCONFIG(TAG, "FlowSensor setup complete.");
 }
 
@@ -137,8 +138,8 @@ void FlowSensor::loop() {
       this->publish(0, true);
     }
 
-  } else if (this->state > 0 && this->last_active_time_ != 0) {
-    // active, not yet timed out and this is not the first reading
+  } else if (this->state > 0) {
+    // active but not yet timed out
     this->publish(this->calculate_active_flow(), false);
   }
 
