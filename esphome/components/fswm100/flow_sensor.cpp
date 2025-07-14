@@ -39,7 +39,7 @@ void FlowSensor::dump_config() {
 
 void FlowSensor::active() {
   this->last_active_time_ = millis();
-  this->publish(this->calculate_active_flow(), false);
+  this->publish(this->calculate_active_flow());
 }
 
 float FlowSensor::calculate_active_flow() {
@@ -61,7 +61,7 @@ float FlowSensor::calculate_active_flow() {
 }
 
 void FlowSensor::publish(float flow, bool immediate) {
-  if (immediate) {
+  if (immediate || this->state == 0 && flow > 0 || this->state > 0 && flow == 0) {
     this->reset_filters();
   }
   this->publish_state(flow);
@@ -125,12 +125,12 @@ void FlowSensor::loop() {
     if (this->state > 0) {
       // just switched to inactive
       ESP_LOGD(TAG, "Flow: inactive");
-      this->publish(0, true);
+      this->publish(0);
     }
 
   } else if (this->state > 0) {
     // active but not yet timed out
-    this->publish(this->calculate_active_flow(), false);
+    this->publish(this->calculate_active_flow());
   }
 
   // update if it just switched (to false)

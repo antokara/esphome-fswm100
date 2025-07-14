@@ -77,8 +77,13 @@ class FlowSensor : public sensor::Sensor {
 
   /**
    * @brief attempt to publish the given flow rate
+   * @param rate the flow rate to publish
+   * @param immediate if true, it will publish the rate immediately,
+   *                  bypassing any filters that might be defined.
+   *                  Even if false, if the flow just stopped or started,
+   *                  it will publish the rate immediately.
    */
-  void publish(float rate, bool immediate);
+  void publish(float rate, bool immediate = false);
 
   /**
    * @brief resets the filters to the filters defined in the yaml configuration.
