@@ -453,7 +453,7 @@ async def build_filters(config):
                 # convert the "absolute" or "percentage" string to a percentage boolean
                 # meaning, pass true for "percentage" and false for "absolute"
                 formatted_args.append("true" if arg == "percentage" else "false")
-            elif filter_key == "throttle_average":
+            elif filter_key in {"throttle_average", "heartbeat"}:
                 # convert string to milliseconds
                 formatted_args.append(
                     str(cv.time_period_str_unit(arg).total_milliseconds)

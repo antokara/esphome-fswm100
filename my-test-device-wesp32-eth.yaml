@@ -66,6 +66,7 @@ fswm100:
     filters:
       # this does not apply during the start/stop of flow
       - delta: 0.5
+      - heartbeat: 20s
   pulse:
     name: Water Meter Pulse
     rate_volume: 1
