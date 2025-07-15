@@ -56,8 +56,8 @@ float FlowSensor::calculate_active_flow() {
       // we can calculate the new flow rate
       flow = (this->rate_time_ * 1000) / (millis() - this->oldest_pulse_sensor_active_time_) *
              this->fswm100_->get_pulse_rate_volume();
-    } else {
-      // not enough time has passed to calculate the new flow rate
+    } else if (this->state > 0) {
+      // when not enough time has passed to calculate the new flow rate but there is an active flow,
       // use the last published flow rate
       flow = this->state;
     }
