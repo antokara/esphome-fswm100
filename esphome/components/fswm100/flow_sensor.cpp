@@ -48,8 +48,19 @@ float FlowSensor::calculate_active_flow() {
 
   // don't attempt to calculate flow if we don't have a pulse sensor active time
   if (this->oldest_pulse_sensor_active_time_ > 0) {
-    flow = (this->rate_time_ * 1000) / (millis() - this->oldest_pulse_sensor_active_time_) *
-           this->fswm100_->get_pulse_rate_volume();
+    const uint32_t time_between_pulses =
+        abs(long(this->newest_pulse_sensor_active_time_ - this->oldest_pulse_sensor_active_time_));
+    const uint32_t time_since_last_pulse = abs(long(millis() - this->oldest_pulse_sensor_active_time_));
+    if (time_since_last_pulse > time_between_pulses) {
+      // if the time since the last pulse is greater than the time between pulses,
+      // we can calculate the new flow rate
+      flow = (this->rate_time_ * 1000) / (millis() - this->oldest_pulse_sensor_active_time_) *
+             this->fswm100_->get_pulse_rate_volume();
+    } else {
+      // not enough time has passed to calculate the new flow rate
+      // use the last published flow rate
+      flow = this->state;
+    }
   }
 
   // ensure the flow is not below the minimum volume
