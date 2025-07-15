@@ -50,8 +50,8 @@ float FlowSensor::calculate_active_flow() {
   if (this->oldest_pulse_sensor_active_time_ > 0) {
     const uint32_t time_between_pulses =
         abs(long(this->newest_pulse_sensor_active_time_ - this->oldest_pulse_sensor_active_time_));
-    const uint32_t time_since_last_pulse = abs(long(millis() - this->oldest_pulse_sensor_active_time_));
-    if (time_since_last_pulse > time_between_pulses) {
+    const uint32_t time_since_newest_pulse = abs(long(millis() - this->newest_pulse_sensor_active_time_));
+    if (time_since_newest_pulse > time_between_pulses) {
       // if the time since the last pulse is greater than the time between pulses,
       // we can calculate the new flow rate
       flow = (this->rate_time_ * 1000) / (millis() - this->oldest_pulse_sensor_active_time_) *
