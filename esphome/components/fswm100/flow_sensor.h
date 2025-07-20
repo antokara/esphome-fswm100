@@ -5,10 +5,12 @@
 #include "esphome/components/ads1115/ads1115.h"
 
 /**
- * time in milliseconds for our target rate
- * 60000msecs = 60secs = 1minute rate for GPM
+ * @brief The multiplier applied to the time between pulses
+ *        to determine if the flow rate should be re-calculated.
+ *        This is used to avoid re-calculating the flow rate too often,
+ *        which leads to spikes in the flow rate.
  */
-#define FLOW_RATE_TIME 60000.0
+#define FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER 1.25
 
 namespace esphome {
 namespace fswm100 {
