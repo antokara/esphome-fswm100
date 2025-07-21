@@ -71,10 +71,10 @@ void PressureSensor::loop() {
     float pressure =
         this->voltage_to_pressure(new_sensor_state) * this->fswm100_->get_pressure_sensor_calibration_multiplier();
 
-    ESP_LOGV(TAG, "'%s': %.4f Voltage", this->get_name().c_str(), new_sensor_state);
+    ESP_LOGVV(TAG, "'%s': %.4f Voltage", this->get_name().c_str(), new_sensor_state);
     ESP_LOGVV(TAG, "'%s': Voltage Delta %.4f", this->get_name().c_str(),
               abs(this->last_sensor_state_ - new_sensor_state));
-    ESP_LOGV(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
+    ESP_LOGVV(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
 
     if (pressure < this->min_pressure_) {
       pressure = this->min_pressure_;
