@@ -131,7 +131,7 @@ void FlowSensor::loop() {
       return;  // no need to publish, as we just started
     }
     // active due to IR movement
-    ESP_LOGVV(TAG, "Flow: active due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
+    ESP_LOGV(TAG, "Flow: active due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
     this->active();
     this->last_sensor_state_ = new_sensor_state;
   } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
