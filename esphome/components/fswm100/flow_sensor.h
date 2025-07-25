@@ -133,6 +133,12 @@ class FlowSensor : public sensor::Sensor {
   float last_sensor_state_{0};
 
   /**
+   * @brief the max state delta value,
+   *        since the last debug state publish
+   */
+  float debug_state_delta_max_{0.0f};
+
+  /**
    * @brief the last time we published a debug state
    */
   uint32_t last_debug_state_time_{0};

@@ -114,6 +114,7 @@ void FlowSensor::loop() {
   float new_sensor_state = this->get_state();
 
   // has the state changed enough to publish?
+  float state_delta = abs(this->last_sensor_state_ - new_sensor_state);
   bool pulse_sensor_state = this->fswm100_->get_pulse_sensor();
   if (pulse_sensor_state != this->last_pulse_sensor_state_ && pulse_sensor_state) {
     // active due to new pulse
@@ -123,7 +124,7 @@ void FlowSensor::loop() {
     this->oldest_pulse_sensor_active_time_ = this->newest_pulse_sensor_active_time_;
     this->newest_pulse_sensor_active_time_ = millis();
 
-  } else if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
+  } else if (state_delta > this->effective_noise_floor_) {
     if (this->last_sensor_state_ == 0) {
       // first time we read the sensor, or it was 0 before
       ESP_LOGD(TAG, "Flow: first reading %.4f", new_sensor_state);
@@ -131,7 +132,7 @@ void FlowSensor::loop() {
       return;  // no need to publish, as we just started
     }
     // active due to IR movement
-    ESP_LOGD(TAG, "Flow: active due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
+    ESP_LOGD(TAG, "Flow: active due to IR %.4f delta", state_delta);
     this->active();
     this->last_sensor_state_ = new_sensor_state;
   } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
@@ -146,10 +147,17 @@ void FlowSensor::loop() {
     // active but not yet timed out
     this->publish(this->calculate_active_flow());
   }
+
+  // keep the max state delta for debug purposes
+  if (state_delta > this->debug_state_delta_max_) {
+    this->debug_state_delta_max_ = state_delta;
+  }
+
   if (this->state == 0 && millis() - this->last_debug_state_time_ > 1000) {
     // publish debug state every second
     this->last_debug_state_time_ = millis();
-    ESP_LOGD(TAG, "Flow: inactive due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
+    ESP_LOGD(TAG, "Flow: inactive due to IR %.4f state_delta_max", this->debug_state_delta_max_);
+    this->debug_state_delta_max_ = 0.0f;  // reset
   }
 
   // update if it just switched (to false)
