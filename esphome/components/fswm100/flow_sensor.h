@@ -133,6 +133,11 @@ class FlowSensor : public sensor::Sensor {
   float last_sensor_state_{0};
 
   /**
+   * @brief the last time we published a debug state
+   */
+  uint32_t last_debug_state_time_{0};
+
+  /**
    * @brief voltage fluctuations less than, or equal to this value
    *        will be ignored, as noise.
    *        This is used to filter out noise from the flow sensor.

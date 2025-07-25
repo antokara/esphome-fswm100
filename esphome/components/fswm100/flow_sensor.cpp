@@ -145,6 +145,10 @@ void FlowSensor::loop() {
   } else if (this->state > 0) {
     // active but not yet timed out
     this->publish(this->calculate_active_flow());
+  } else if (millis() - this->last_debug_state_time_ > 1000) {
+    // publish debug state every second
+    this->last_debug_state_time_ = millis();
+    ESP_LOGD(TAG, "Flow: inactive due to IR %.4f delta", abs(this->last_sensor_state_ - new_sensor_state));
   }
 
   // update if it just switched (to false)
