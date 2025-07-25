@@ -18,8 +18,7 @@
 
 #include <vector>
 
-namespace esphome {
-namespace api {
+namespace esphome::api {
 
 #ifdef USE_API_NOISE
 struct SavedNoisePsk {
@@ -39,7 +38,6 @@ class APIServer : public Component, public Controller {
   bool teardown() override;
 #ifdef USE_API_PASSWORD
   bool check_password(const std::string &password) const;
-  bool uses_password() const;
   void set_password(const std::string &password);
 #endif
   void set_port(uint16_t port);
@@ -197,6 +195,5 @@ template<typename... Ts> class APIConnectedCondition : public Condition<Ts...> {
   bool check(Ts... x) override { return global_api_server->is_connected(); }
 };
 
-}  // namespace api
-}  // namespace esphome
+}  // namespace esphome::api
 #endif

@@ -3,16 +3,48 @@
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
+#include "esphome/core/string_ref.h"
 
 #include <cassert>
+#include <cstring>
 #include <vector>
 
 #ifdef ESPHOME_LOG_HAS_VERY_VERBOSE
 #define HAS_PROTO_MESSAGE_DUMP
 #endif
 
-namespace esphome {
-namespace api {
+namespace esphome::api {
+
+/*
+ * StringRef Ownership Model for API Protocol Messages
+ * ===================================================
+ *
+ * StringRef is used for zero-copy string handling in outgoing (SOURCE_SERVER) messages.
+ * It holds a pointer and length to existing string data without copying.
+ *
+ * CRITICAL: The referenced string data MUST remain valid until message encoding completes.
+ *
+ * Safe StringRef Patterns:
+ * 1. String literals: StringRef("literal") - Always safe (static storage duration)
+ * 2. Member variables: StringRef(this->member_string_) - Safe if object outlives encoding
+ * 3. Global/static strings: StringRef(GLOBAL_CONSTANT) - Always safe
+ * 4. Local variables: Safe ONLY if encoding happens before function returns:
+ *    std::string temp = compute_value();
+ *    msg.set_field(StringRef(temp));
+ *    return this->send_message(msg);  // temp is valid during encoding
+ *
+ * Unsafe Patterns (WILL cause crashes/corruption):
+ * 1. Temporaries: msg.set_field(StringRef(obj.get_string())) // get_string() returns by value
+ * 2. Optional values: msg.set_field(StringRef(optional.value())) // value() returns a copy
+ * 3. Concatenation: msg.set_field(StringRef(str1 + str2)) // Result is temporary
+ *
+ * For unsafe patterns, store in a local variable first:
+ *    std::string temp = optional.value();  // or get_string() or str1 + str2
+ *    msg.set_field(StringRef(temp));
+ *
+ * The send_*_response pattern ensures proper lifetime management by encoding
+ * within the same function scope where temporaries are created.
+ */
 
 /// Representation of a VarInt - in ProtoBuf should be 64bit but we only use 32bit
 class ProtoVarInt {
@@ -135,6 +167,7 @@ class ProtoVarInt {
 
 // Forward declaration for decode_to_message and encode_to_writer
 class ProtoMessage;
+class ProtoDecodableMessage;
 
 class ProtoLengthDelimited {
  public:
@@ -142,15 +175,15 @@ class ProtoLengthDelimited {
   std::string as_string() const { return std::string(reinterpret_cast<const char *>(this->value_), this->length_); }
 
   /**
-   * Decode the length-delimited data into an existing ProtoMessage instance.
+   * Decode the length-delimited data into an existing ProtoDecodableMessage instance.
    *
    * This method allows decoding without templates, enabling use in contexts
-   * where the message type is not known at compile time. The ProtoMessage's
+   * where the message type is not known at compile time. The ProtoDecodableMessage's
    * decode() method will be called with the raw data and length.
    *
-   * @param msg The ProtoMessage instance to decode into
+   * @param msg The ProtoDecodableMessage instance to decode into
    */
-  void decode_to_message(ProtoMessage &msg) const;
+  void decode_to_message(ProtoDecodableMessage &msg) const;
 
  protected:
   const uint8_t *const value_;
@@ -175,23 +208,7 @@ class Proto32Bit {
   const uint32_t value_;
 };
 
-class Proto64Bit {
- public:
-  explicit Proto64Bit(uint64_t value) : value_(value) {}
-  uint64_t as_fixed64() const { return this->value_; }
-  int64_t as_sfixed64() const { return static_cast<int64_t>(this->value_); }
-  double as_double() const {
-    union {
-      uint64_t raw;
-      double value;
-    } s{};
-    s.raw = this->value_;
-    return s.value;
-  }
-
- protected:
-  const uint64_t value_;
-};
+// NOTE: Proto64Bit class removed - wire type 1 (64-bit fixed) not supported
 
 class ProtoWriteBuffer {
  public:
@@ -205,9 +222,9 @@ class ProtoWriteBuffer {
    * @param field_id Field number (tag) in the protobuf message
    * @param type Wire type value:
    *   - 0: Varint (int32, int64, uint32, uint64, sint32, sint64, bool, enum)
-   *   - 1: 64-bit (fixed64, sfixed64, double)
    *   - 2: Length-delimited (string, bytes, embedded messages, packed repeated fields)
    *   - 5: 32-bit (fixed32, sfixed32, float)
+   *   - Note: Wire type 1 (64-bit fixed) is not supported
    *
    * Following https://protobuf.dev/programming-guides/encoding/#structure
    */
@@ -221,11 +238,19 @@ class ProtoWriteBuffer {
 
     this->encode_field_raw(field_id, 2);  // type 2: Length-delimited string
     this->encode_varint_raw(len);
-    auto *data = reinterpret_cast<const uint8_t *>(string);
-    this->buffer_->insert(this->buffer_->end(), data, data + len);
+
+    // Using resize + memcpy instead of insert provides significant performance improvement:
+    // ~10-11x faster for 16-32 byte strings, ~3x faster for 64-byte strings
+    // as it avoids iterator checks and potential element moves that insert performs
+    size_t old_size = this->buffer_->size();
+    this->buffer_->resize(old_size + len);
+    std::memcpy(this->buffer_->data() + old_size, string, len);
   }
   void encode_string(uint32_t field_id, const std::string &value, bool force = false) {
     this->encode_string(field_id, value.data(), value.size(), force);
+  }
+  void encode_string(uint32_t field_id, const StringRef &ref, bool force = false) {
+    this->encode_string(field_id, ref.c_str(), ref.size(), force);
   }
   void encode_bytes(uint32_t field_id, const uint8_t *data, size_t len, bool force = false) {
     this->encode_string(field_id, reinterpret_cast<const char *>(data), len, force);
@@ -258,20 +283,10 @@ class ProtoWriteBuffer {
     this->write((value >> 16) & 0xFF);
     this->write((value >> 24) & 0xFF);
   }
-  void encode_fixed64(uint32_t field_id, uint64_t value, bool force = false) {
-    if (value == 0 && !force)
-      return;
-
-    this->encode_field_raw(field_id, 1);  // type 1: 64-bit fixed64
-    this->write((value >> 0) & 0xFF);
-    this->write((value >> 8) & 0xFF);
-    this->write((value >> 16) & 0xFF);
-    this->write((value >> 24) & 0xFF);
-    this->write((value >> 32) & 0xFF);
-    this->write((value >> 40) & 0xFF);
-    this->write((value >> 48) & 0xFF);
-    this->write((value >> 56) & 0xFF);
-  }
+  // NOTE: Wire type 1 (64-bit fixed: double, fixed64, sfixed64) is intentionally
+  // not supported to reduce overhead on embedded systems. All ESPHome devices are
+  // 32-bit microcontrollers where 64-bit operations are expensive. If 64-bit support
+  // is needed in the future, the necessary encoding/decoding functions must be added.
   void encode_float(uint32_t field_id, float value, bool force = false) {
     if (value == 0.0f && !force)
       return;
@@ -324,7 +339,6 @@ class ProtoMessage {
   virtual ~ProtoMessage() = default;
   // Default implementation for messages with no fields
   virtual void encode(ProtoWriteBuffer buffer) const {}
-  void decode(const uint8_t *buffer, size_t length);
   // Default implementation for messages with no fields
   virtual void calculate_size(uint32_t &total_size) const {}
 #ifdef HAS_PROTO_MESSAGE_DUMP
@@ -332,12 +346,18 @@ class ProtoMessage {
   virtual void dump_to(std::string &out) const = 0;
   virtual const char *message_name() const { return "unknown"; }
 #endif
+};
+
+// Base class for messages that support decoding
+class ProtoDecodableMessage : public ProtoMessage {
+ public:
+  void decode(const uint8_t *buffer, size_t length);
 
  protected:
   virtual bool decode_varint(uint32_t field_id, ProtoVarInt value) { return false; }
   virtual bool decode_length(uint32_t field_id, ProtoLengthDelimited value) { return false; }
   virtual bool decode_32bit(uint32_t field_id, Proto32Bit value) { return false; }
-  virtual bool decode_64bit(uint32_t field_id, Proto64Bit value) { return false; }
+  // NOTE: decode_64bit removed - wire type 1 not supported
 };
 
 class ProtoSize {
@@ -548,23 +568,40 @@ class ProtoSize {
   }
 
   /**
-   * @brief Calculates and adds the size of a fixed field to the total message size
-   *
-   * Fixed fields always take exactly N bytes (4 for fixed32/float, 8 for fixed64/double).
-   *
-   * @tparam NumBytes The number of bytes for this fixed field (4 or 8)
-   * @param is_nonzero Whether the value is non-zero
+   * @brief Calculates and adds the size of a float field to the total message size
    */
-  template<uint32_t NumBytes>
-  static inline void add_fixed_field(uint32_t &total_size, uint32_t field_id_size, bool is_nonzero) {
-    // Skip calculation if value is zero
-    if (!is_nonzero) {
-      return;  // No need to update total_size
+  static inline void add_float_field(uint32_t &total_size, uint32_t field_id_size, float value) {
+    if (value != 0.0f) {
+      total_size += field_id_size + 4;
     }
-
-    // Fixed fields always take exactly NumBytes
-    total_size += field_id_size + NumBytes;
   }
+
+  // NOTE: add_double_field removed - wire type 1 (64-bit: double) not supported
+  // to reduce overhead on embedded systems
+
+  /**
+   * @brief Calculates and adds the size of a fixed32 field to the total message size
+   */
+  static inline void add_fixed32_field(uint32_t &total_size, uint32_t field_id_size, uint32_t value) {
+    if (value != 0) {
+      total_size += field_id_size + 4;
+    }
+  }
+
+  // NOTE: add_fixed64_field removed - wire type 1 (64-bit: fixed64) not supported
+  // to reduce overhead on embedded systems
+
+  /**
+   * @brief Calculates and adds the size of a sfixed32 field to the total message size
+   */
+  static inline void add_sfixed32_field(uint32_t &total_size, uint32_t field_id_size, int32_t value) {
+    if (value != 0) {
+      total_size += field_id_size + 4;
+    }
+  }
+
+  // NOTE: add_sfixed64_field removed - wire type 1 (64-bit: sfixed64) not supported
+  // to reduce overhead on embedded systems
 
   /**
    * @brief Calculates and adds the size of an enum field to the total message size
@@ -662,46 +699,20 @@ class ProtoSize {
     total_size += field_id_size + varint(value);
   }
 
-  /**
-   * @brief Calculates and adds the size of a sint64 field to the total message size
-   *
-   * Sint64 fields use ZigZag encoding, which is more efficient for negative values.
-   */
-  static inline void add_sint64_field(uint32_t &total_size, uint32_t field_id_size, int64_t value) {
-    // Skip calculation if value is zero
-    if (value == 0) {
-      return;  // No need to update total_size
-    }
-
-    // ZigZag encoding for sint64: (n << 1) ^ (n >> 63)
-    uint64_t zigzag = (static_cast<uint64_t>(value) << 1) ^ (static_cast<uint64_t>(value >> 63));
-    total_size += field_id_size + varint(zigzag);
-  }
+  // NOTE: sint64 support functions (add_sint64_field, add_sint64_field_repeated) removed
+  // sint64 type is not supported by ESPHome API to reduce overhead on embedded systems
 
   /**
-   * @brief Calculates and adds the size of a sint64 field to the total message size (repeated field version)
-   *
-   * Sint64 fields use ZigZag encoding, which is more efficient for negative values.
+   * @brief Calculates and adds the size of a string field using length
    */
-  static inline void add_sint64_field_repeated(uint32_t &total_size, uint32_t field_id_size, int64_t value) {
-    // Always calculate size for repeated fields
-    // ZigZag encoding for sint64: (n << 1) ^ (n >> 63)
-    uint64_t zigzag = (static_cast<uint64_t>(value) << 1) ^ (static_cast<uint64_t>(value >> 63));
-    total_size += field_id_size + varint(zigzag);
-  }
-
-  /**
-   * @brief Calculates and adds the size of a string/bytes field to the total message size
-   */
-  static inline void add_string_field(uint32_t &total_size, uint32_t field_id_size, const std::string &str) {
+  static inline void add_string_field(uint32_t &total_size, uint32_t field_id_size, size_t len) {
     // Skip calculation if string is empty
-    if (str.empty()) {
+    if (len == 0) {
       return;  // No need to update total_size
     }
 
-    // Calculate and directly add to total_size
-    const uint32_t str_size = static_cast<uint32_t>(str.size());
-    total_size += field_id_size + varint(str_size) + str_size;
+    // Field ID + length varint + string bytes
+    total_size += field_id_size + varint(static_cast<uint32_t>(len)) + static_cast<uint32_t>(len);
   }
 
   /**
@@ -711,6 +722,19 @@ class ProtoSize {
     // Always calculate size for repeated fields
     const uint32_t str_size = static_cast<uint32_t>(str.size());
     total_size += field_id_size + varint(str_size) + str_size;
+  }
+
+  /**
+   * @brief Calculates and adds the size of a bytes field to the total message size
+   */
+  static inline void add_bytes_field(uint32_t &total_size, uint32_t field_id_size, size_t len) {
+    // Skip calculation if bytes is empty
+    if (len == 0) {
+      return;  // No need to update total_size
+    }
+
+    // Field ID + length varint + data bytes
+    total_size += field_id_size + varint(static_cast<uint32_t>(len)) + static_cast<uint32_t>(len);
   }
 
   /**
@@ -823,8 +847,8 @@ inline void ProtoWriteBuffer::encode_message(uint32_t field_id, const ProtoMessa
   assert(this->buffer_->size() == begin + varint_length_bytes + msg_length_bytes);
 }
 
-// Implementation of decode_to_message - must be after ProtoMessage is defined
-inline void ProtoLengthDelimited::decode_to_message(ProtoMessage &msg) const {
+// Implementation of decode_to_message - must be after ProtoDecodableMessage is defined
+inline void ProtoLengthDelimited::decode_to_message(ProtoDecodableMessage &msg) const {
   msg.decode(this->value_, this->length_);
 }
 
@@ -885,5 +909,4 @@ class ProtoService {
   }
 };
 
-}  // namespace api
-}  // namespace esphome
+}  // namespace esphome::api
