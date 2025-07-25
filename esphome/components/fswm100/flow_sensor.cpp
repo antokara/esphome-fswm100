@@ -152,8 +152,8 @@ void FlowSensor::loop() {
   if (state_delta > this->debug_state_delta_max_) {
     this->debug_state_delta_max_ = state_delta;
   }
-  // publish debug state every second
-  if (millis() - this->last_debug_state_time_ > 1000) {
+  // publish debug state every 5 seconds
+  if (millis() - this->last_debug_state_time_ > 5000) {
     if (this->state == 0) {
       ESP_LOGD(TAG, "Flow: inactive due to IR voltage %.4f state_delta_max", this->debug_state_delta_max_);
     } else {
