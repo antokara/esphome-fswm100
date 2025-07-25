@@ -127,12 +127,12 @@ void FlowSensor::loop() {
   } else if (state_delta > this->effective_noise_floor_) {
     if (this->last_sensor_state_ == 0) {
       // first time we read the sensor, or it was 0 before
-      ESP_LOGD(TAG, "Flow: first reading %.4f", new_sensor_state);
+      ESP_LOGD(TAG, "Flow: first reading voltage %.4f", new_sensor_state);
       this->last_sensor_state_ = new_sensor_state;
       return;  // no need to publish, as we just started
     }
     // active due to IR movement
-    ESP_LOGD(TAG, "Flow: active due to IR %.4f delta", state_delta);
+    ESP_LOGV(TAG, "Flow: active due to IR voltage %.4f delta", state_delta);
     this->active();
     this->last_sensor_state_ = new_sensor_state;
   } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
@@ -152,11 +152,14 @@ void FlowSensor::loop() {
   if (state_delta > this->debug_state_delta_max_) {
     this->debug_state_delta_max_ = state_delta;
   }
-
-  if (this->state == 0 && millis() - this->last_debug_state_time_ > 1000) {
-    // publish debug state every second
+  // publish debug state every second
+  if (millis() - this->last_debug_state_time_ > 1000) {
+    if (this->state == 0) {
+      ESP_LOGD(TAG, "Flow: inactive due to IR voltage %.4f state_delta_max", this->debug_state_delta_max_);
+    } else {
+      ESP_LOGD(TAG, "Flow: active due to IR voltage %.4f state_delta_max", this->debug_state_delta_max_);
+    }
     this->last_debug_state_time_ = millis();
-    ESP_LOGD(TAG, "Flow: inactive due to IR %.4f state_delta_max", this->debug_state_delta_max_);
     this->debug_state_delta_max_ = 0.0f;  // reset
   }
 
