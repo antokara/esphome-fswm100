@@ -83,6 +83,7 @@ class CustomAPIDevice {
   }
 #endif
 
+#ifdef USE_API_HOMEASSISTANT_STATES
   /** Subscribe to the state (or attribute state) of an entity from Home Assistant.
    *
    * Usage:
@@ -134,7 +135,9 @@ class CustomAPIDevice {
     auto f = std::bind(callback, (T *) this, entity_id, std::placeholders::_1);
     global_api_server->subscribe_home_assistant_state(entity_id, optional<std::string>(attribute), f);
   }
+#endif
 
+#ifdef USE_API_HOMEASSISTANT_SERVICES
   /** Call a Home Assistant service from ESPHome.
    *
    * Usage:
@@ -172,7 +175,7 @@ class CustomAPIDevice {
       resp.data.emplace_back();
       auto &kv = resp.data.back();
       kv.set_key(StringRef(it.first));
-      kv.set_value(StringRef(it.second));
+      kv.value = it.second;
     }
     global_api_server->send_homeassistant_service_call(resp);
   }
@@ -215,10 +218,11 @@ class CustomAPIDevice {
       resp.data.emplace_back();
       auto &kv = resp.data.back();
       kv.set_key(StringRef(it.first));
-      kv.set_value(StringRef(it.second));
+      kv.value = it.second;
     }
     global_api_server->send_homeassistant_service_call(resp);
   }
+#endif
 };
 
 }  // namespace esphome::api

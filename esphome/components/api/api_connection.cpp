@@ -242,23 +242,11 @@ void APIConnection::loop() {
   }
 #endif
 
+#ifdef USE_API_HOMEASSISTANT_STATES
   if (state_subs_at_ >= 0) {
-    const auto &subs = this->parent_->get_state_subs();
-    if (state_subs_at_ < static_cast<int>(subs.size())) {
-      auto &it = subs[state_subs_at_];
-      SubscribeHomeAssistantStateResponse resp;
-      resp.set_entity_id(StringRef(it.entity_id));
-      // attribute.value() returns temporary - must store it
-      std::string attribute_value = it.attribute.value();
-      resp.set_attribute(StringRef(attribute_value));
-      resp.once = it.once;
-      if (this->send_message(resp, SubscribeHomeAssistantStateResponse::MESSAGE_TYPE)) {
-        state_subs_at_++;
-      }
-    } else {
-      state_subs_at_ = -1;
-    }
+    this->process_state_subscriptions_();
   }
+#endif
 }
 
 bool APIConnection::send_disconnect_response(const DisconnectRequest &msg) {
@@ -288,8 +276,9 @@ uint16_t APIConnection::encode_message_to_buffer(ProtoMessage &msg, uint8_t mess
 #endif
 
   // Calculate size
-  uint32_t calculated_size = 0;
-  msg.calculate_size(calculated_size);
+  ProtoSize size_calc;
+  msg.calculate_size(size_calc);
+  uint32_t calculated_size = size_calc.get_size();
 
   // Cache frame sizes to avoid repeated virtual calls
   const uint8_t header_padding = conn->helper_->frame_header_padding();
@@ -642,17 +631,13 @@ uint16_t APIConnection::try_send_climate_state(EntityBase *entity, APIConnection
   if (traits.get_supports_fan_modes() && climate->fan_mode.has_value())
     resp.fan_mode = static_cast<enums::ClimateFanMode>(climate->fan_mode.value());
   if (!traits.get_supported_custom_fan_modes().empty() && climate->custom_fan_mode.has_value()) {
-    // custom_fan_mode.value() returns temporary - must store it
-    std::string custom_fan_mode = climate->custom_fan_mode.value();
-    resp.set_custom_fan_mode(StringRef(custom_fan_mode));
+    resp.set_custom_fan_mode(StringRef(climate->custom_fan_mode.value()));
   }
   if (traits.get_supports_presets() && climate->preset.has_value()) {
     resp.preset = static_cast<enums::ClimatePreset>(climate->preset.value());
   }
   if (!traits.get_supported_custom_presets().empty() && climate->custom_preset.has_value()) {
-    // custom_preset.value() returns temporary - must store it
-    std::string custom_preset = climate->custom_preset.value();
-    resp.set_custom_preset(StringRef(custom_preset));
+    resp.set_custom_preset(StringRef(climate->custom_preset.value()));
   }
   if (traits.get_supports_swing_modes())
     resp.swing_mode = static_cast<enums::ClimateSwingMode>(climate->swing_mode);
@@ -1512,6 +1497,7 @@ bool APIConnection::send_device_info_response(const DeviceInfoRequest &msg) {
   return this->send_message(resp, DeviceInfoResponse::MESSAGE_TYPE);
 }
 
+#ifdef USE_API_HOMEASSISTANT_STATES
 void APIConnection::on_home_assistant_state_response(const HomeAssistantStateResponse &msg) {
   for (auto &it : this->parent_->get_state_subs()) {
     if (it.entity_id == msg.entity_id && it.attribute.value() == msg.attribute) {
@@ -1519,6 +1505,7 @@ void APIConnection::on_home_assistant_state_response(const HomeAssistantStateRes
     }
   }
 }
+#endif
 #ifdef USE_API_SERVICES
 void APIConnection::execute_service(const ExecuteServiceRequest &msg) {
   bool found = false;
@@ -1534,25 +1521,26 @@ void APIConnection::execute_service(const ExecuteServiceRequest &msg) {
 #endif
 #ifdef USE_API_NOISE
 bool APIConnection::send_noise_encryption_set_key_response(const NoiseEncryptionSetKeyRequest &msg) {
-  psk_t psk{};
   NoiseEncryptionSetKeyResponse resp;
+  resp.success = false;
+
+  psk_t psk{};
   if (base64_decode(msg.key, psk.data(), msg.key.size()) != psk.size()) {
     ESP_LOGW(TAG, "Invalid encryption key length");
-    resp.success = false;
-    return this->send_message(resp, NoiseEncryptionSetKeyResponse::MESSAGE_TYPE);
-  }
-  if (!this->parent_->save_noise_psk(psk, true)) {
+  } else if (!this->parent_->save_noise_psk(psk, true)) {
     ESP_LOGW(TAG, "Failed to save encryption key");
-    resp.success = false;
-    return this->send_message(resp, NoiseEncryptionSetKeyResponse::MESSAGE_TYPE);
+  } else {
+    resp.success = true;
   }
-  resp.success = true;
+
   return this->send_message(resp, NoiseEncryptionSetKeyResponse::MESSAGE_TYPE);
 }
 #endif
+#ifdef USE_API_HOMEASSISTANT_STATES
 void APIConnection::subscribe_home_assistant_states(const SubscribeHomeAssistantStatesRequest &msg) {
   state_subs_at_ = 0;
 }
+#endif
 bool APIConnection::try_to_clear_buffer(bool log_out_of_space) {
   if (this->flags_.remove)
     return false;
@@ -1590,10 +1578,12 @@ bool APIConnection::send_buffer(ProtoWriteBuffer buffer, uint8_t message_type) {
   // Do not set last_traffic_ on send
   return true;
 }
+#ifdef USE_API_PASSWORD
 void APIConnection::on_unauthenticated_access() {
   this->on_fatal_error();
   ESP_LOGD(TAG, "%s access without authentication", this->get_client_combined_info().c_str());
 }
+#endif
 void APIConnection::on_no_setup_connection() {
   this->on_fatal_error();
   ESP_LOGD(TAG, "%s access without full connection", this->get_client_combined_info().c_str());
@@ -1835,6 +1825,28 @@ uint16_t APIConnection::try_send_ping_request(EntityBase *entity, APIConnection 
   PingRequest req;
   return encode_message_to_buffer(req, PingRequest::MESSAGE_TYPE, conn, remaining_size, is_single);
 }
+
+#ifdef USE_API_HOMEASSISTANT_STATES
+void APIConnection::process_state_subscriptions_() {
+  const auto &subs = this->parent_->get_state_subs();
+  if (this->state_subs_at_ >= static_cast<int>(subs.size())) {
+    this->state_subs_at_ = -1;
+    return;
+  }
+
+  const auto &it = subs[this->state_subs_at_];
+  SubscribeHomeAssistantStateResponse resp;
+  resp.set_entity_id(StringRef(it.entity_id));
+
+  // Avoid string copy by directly using the optional's value if it exists
+  resp.set_attribute(it.attribute.has_value() ? StringRef(it.attribute.value()) : StringRef(""));
+
+  resp.once = it.once;
+  if (this->send_message(resp, SubscribeHomeAssistantStateResponse::MESSAGE_TYPE)) {
+    this->state_subs_at_++;
+  }
+}
+#endif  // USE_API_HOMEASSISTANT_STATES
 
 }  // namespace esphome::api
 #endif
