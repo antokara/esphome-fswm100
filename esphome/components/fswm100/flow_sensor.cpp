@@ -54,12 +54,12 @@ float FlowSensor::calculate_active_flow() {
     const float calculated_flow = (this->rate_time_ * 1000) / (millis() - this->oldest_pulse_sensor_active_time_) *
                                   this->fswm100_->get_pulse_rate_volume();
     if (time_since_newest_pulse > long(time_between_pulses * FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER) ||
-        (!std::isnan(this->state) && calculated_flow > this->state)) {
+        (calculated_flow > this->state)) {
       // if the the current flow is greater than the last published one or
       // if time since the last pulse is greater than the time between pulses,
       // we use the newly calculated flow rate.
       flow = calculated_flow;
-    } else if (!std::isnan(this->state) && this->state > 0) {
+    } else if (this->state > 0) {
       // when not enough time has passed to calculate the new flow rate but there is an active flow,
       // use the last published flow rate
       flow = this->state;
