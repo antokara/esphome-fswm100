@@ -148,19 +148,34 @@ void FlowSensor::loop() {
     this->publish(this->calculate_active_flow());
   }
 
+  // calculate the state active counts
+  if (state_delta > this->effective_noise_floor_ && !this->debug_state_active_counts_previous_) {
+    // increase the counts
+    this->debug_state_active_counts_++;
+    // set the previous state to true
+    this->debug_state_active_counts_previous_ = true;
+  } else if (state_delta <= this->effective_noise_floor_ && this->debug_state_active_counts_previous_) {
+    // reset the previous state to false
+    this->debug_state_active_counts_previous_ = false;
+  }
+
   // keep the max state delta for debug purposes
   if (state_delta > this->debug_state_delta_max_) {
     this->debug_state_delta_max_ = state_delta;
   }
-  // publish debug state every 5 seconds
-  if (millis() - this->last_debug_state_time_ > 5000) {
+  // publish debug state every 30 seconds
+  if (millis() - this->last_debug_state_time_ > 30000) {
     if (this->state == 0) {
-      ESP_LOGD(TAG, "Flow: inactive due to IR voltage %.4f state_delta_max", this->debug_state_delta_max_);
+      ESP_LOGD(TAG, "Flow: inactive due to IR voltage %.4f state_delta_max, counts: %d", this->debug_state_delta_max_,
+               this->debug_state_active_counts_);
     } else {
-      ESP_LOGD(TAG, "Flow: active due to IR voltage %.4f state_delta_max", this->debug_state_delta_max_);
+      ESP_LOGD(TAG, "Flow: active due to IR voltage %.4f state_delta_max, counts: %d", this->debug_state_delta_max_,
+               this->debug_state_active_counts_);
     }
+    // reset
     this->last_debug_state_time_ = millis();
-    this->debug_state_delta_max_ = 0.0f;  // reset
+    this->debug_state_delta_max_ = 0.0f;
+    this->debug_state_active_counts_ = 0;
   }
 
   // update if it just switched (to false)

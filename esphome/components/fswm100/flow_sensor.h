@@ -139,6 +139,23 @@ class FlowSensor : public sensor::Sensor {
   float debug_state_delta_max_{0.0f};
 
   /**
+   * @brief counts of how many times
+   * within the last debug state period
+   * the state went from under the noise floor,
+   * to above the noise floor.
+   */
+  int debug_state_active_counts_{0};
+
+  /**
+   * @brief the previous state used in the
+   * debug state counts calculation.
+   *
+   * (true if it was above the noise floor,
+   * false if it was below the noise floor)
+   */
+  bool debug_state_active_counts_previous_{false};
+
+  /**
    * @brief the last time we published a debug state
    */
   uint32_t last_debug_state_time_{0};
