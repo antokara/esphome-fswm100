@@ -17,8 +17,10 @@ from esphome.const import (
     DEVICE_CLASS_DURATION,
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_PRESSURE,
+    DEVICE_CLASS_PROBLEM,
     DEVICE_CLASS_VOLUME_FLOW_RATE,
     ENTITY_CATEGORY_CONFIG,
+    ENTITY_CATEGORY_DIAGNOSTIC,
     ICON_GAUGE,
     ICON_PULSE,
     ICON_TIMELAPSE,
@@ -63,8 +65,12 @@ CONF_RED = "red"
 CONF_GREEN = "green"
 CONF_BLUE = "blue"
 
+# diagnostic keys
+DIAG_FLOW_PROBLEM = "flow_problem"
+
 # icons
 ICON_TIMER_PLAY_OUTLINE = "mdi:timer-play-outline"
+ICON_ALERT_CIRCLE = "mdi:alert-circle"
 
 # the nameppace for our component
 fswm100_ns = cg.esphome_ns.namespace("fswm100")
@@ -83,6 +89,9 @@ PressureSensorTest = fswm100_ns.class_(
 )
 FlowSensorMinDuration = fswm100_ns.class_(
     "FlowSensorMinDuration", number.Number, cg.Component
+)
+FlowSensorProblemSensor = fswm100_ns.class_(
+    "FlowSensorProblemSensor", binary_sensor.BinarySensor
 )
 
 CONFIG_SCHEMA = cv.Schema(
@@ -215,6 +224,18 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Required(CONF_GREEN): pins.gpio_output_pin_schema,
                 cv.Required(CONF_BLUE): pins.gpio_output_pin_schema,
             }
+        ),
+        # Diagnostic
+        cv.Optional(
+            DIAG_FLOW_PROBLEM,
+            default={
+                CONF_NAME: "Flow Sensor Problem",
+            },
+        ): binary_sensor.binary_sensor_schema(
+            FlowSensorProblemSensor,
+            icon=ICON_ALERT_CIRCLE,
+            device_class=DEVICE_CLASS_PROBLEM,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
     }
 ).extend(cv.COMPONENT_SCHEMA)
@@ -387,6 +408,20 @@ async def to_code(config):
         print(f"  - PressureTestSensor Filters Factory: {filters_factory}")
         # setup the "pressureSensor" class instance, passing it the config
         cg.add(pressureTestSensor.setup(filters_factory))
+    # Diagnostic
+    if diag_flow_problem_config := config.get(DIAG_FLOW_PROBLEM):
+        # create an instance of our custom BinarySensor "PressureSensorCalibration" class
+        # passing the FSWM100 class instance to its constructor
+        flowProblemSensor = cg.new_Pvariable(diag_flow_problem_config[CONF_ID], fswm100)
+        # register the sensor class instance
+        await binary_sensor.register_binary_sensor(
+            flowProblemSensor, diag_flow_problem_config
+        )
+        # set the PressureSensorCalibration class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_flow_problem_sensor(flowProblemSensor))
+        # setup the "flowProblemSensor" class instance, passing it the config
+        cg.add(flowProblemSensor.setup())
 
 
 def filter_key_to_class_name(filter_key):

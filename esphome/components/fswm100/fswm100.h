@@ -11,6 +11,7 @@
 #include "pressure_sensor_test.h"
 #include "flow_sensor.h"
 #include "flow_sensor_min_duration.h"
+#include "flow_sensor_problem_sensor.h"
 
 /**
  * @brief the milliseconds that the component will wait
@@ -104,6 +105,14 @@ class FSWM100 : public Component, public EntityBase {
    * @param pressure_sensor_test
    */
   void set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test);
+
+  /**
+   * @brief sets the flow sensor problem sensor object
+   *  @see __init__.py
+   *
+   * @param flow_sensor_problem_sensor
+   */
+  void set_flow_problem_sensor(FlowSensorProblemSensor *flow_sensor_problem_sensor);
 
   /**
    * @brief returns the pressure sensor calibration multiplier
@@ -222,6 +231,11 @@ class FSWM100 : public Component, public EntityBase {
    * @brief the pressure sensor test flag
    */
   PressureSensorTest *pressure_sensor_test_{nullptr};
+
+  /**
+   * @brief the flow sensor problem sensor
+   */
+  FlowSensorProblemSensor *flow_sensor_problem_sensor_{nullptr};
 
   /**
    * @brief the time (millis) when the last save_state() was called

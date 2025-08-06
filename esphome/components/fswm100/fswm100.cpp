@@ -26,6 +26,9 @@ void FSWM100::set_flow_sensor_min_duration(FlowSensorMinDuration *flow_sensor_mi
 void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test) {
   this->pressure_sensor_test_ = pressure_sensor_test;
 }
+void FSWM100::set_flow_problem_sensor(FlowSensorProblemSensor *flow_sensor_problem_sensor) {
+  this->flow_sensor_problem_sensor_ = flow_sensor_problem_sensor;
+}
 void FSWM100::pressure_test_sensor_process(float pressure) { this->pressure_test_sensor_->process(pressure); }
 void FSWM100::set_status_led(GPIOPin *status_led_red_gpio_pin, GPIOPin *status_led_green_gpio_pin,
                              GPIOPin *status_led_blue_gpio_pin) {
@@ -160,6 +163,7 @@ void FSWM100::loop() {
   this->pulse_sensor_->loop();
   this->flow_sensor_->loop();
   this->pressure_sensor_->loop();
+  this->flow_sensor_problem_sensor_->loop();
 
   /**
    * the status LED states/colors.
