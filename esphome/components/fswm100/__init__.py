@@ -67,6 +67,8 @@ CONF_BLUE = "blue"
 
 # diagnostic keys
 DIAG_FLOW_PROBLEM = "flow_problem"
+DIAG_PULSE_PROBLEM = "pulse_problem"
+DIAG_PRESSURE_PROBLEM = "pressure_problem"
 
 # icons
 ICON_TIMER_PLAY_OUTLINE = "mdi:timer-play-outline"
@@ -92,6 +94,12 @@ FlowSensorMinDuration = fswm100_ns.class_(
 )
 FlowSensorProblemSensor = fswm100_ns.class_(
     "FlowSensorProblemSensor", binary_sensor.BinarySensor
+)
+PulseSensorProblemSensor = fswm100_ns.class_(
+    "PulseSensorProblemSensor", binary_sensor.BinarySensor
+)
+PressureSensorProblemSensor = fswm100_ns.class_(
+    "PressureSensorProblemSensor", binary_sensor.BinarySensor
 )
 
 CONFIG_SCHEMA = cv.Schema(
@@ -233,6 +241,28 @@ CONFIG_SCHEMA = cv.Schema(
             },
         ): binary_sensor.binary_sensor_schema(
             FlowSensorProblemSensor,
+            icon=ICON_ALERT_CIRCLE,
+            device_class=DEVICE_CLASS_PROBLEM,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ),
+        cv.Optional(
+            DIAG_PULSE_PROBLEM,
+            default={
+                CONF_NAME: "Pulse Sensor Problem",
+            },
+        ): binary_sensor.binary_sensor_schema(
+            PulseSensorProblemSensor,
+            icon=ICON_ALERT_CIRCLE,
+            device_class=DEVICE_CLASS_PROBLEM,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ),
+        cv.Optional(
+            DIAG_PRESSURE_PROBLEM,
+            default={
+                CONF_NAME: "Pressure Sensor Problem",
+            },
+        ): binary_sensor.binary_sensor_schema(
+            PressureSensorProblemSensor,
             icon=ICON_ALERT_CIRCLE,
             device_class=DEVICE_CLASS_PROBLEM,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
@@ -410,18 +440,48 @@ async def to_code(config):
         cg.add(pressureTestSensor.setup(filters_factory))
     # Diagnostic
     if diag_flow_problem_config := config.get(DIAG_FLOW_PROBLEM):
-        # create an instance of our custom BinarySensor "PressureSensorCalibration" class
+        # create an instance of our custom BinarySensor "FlowSensorProblemSensor" class
         # passing the FSWM100 class instance to its constructor
         flowProblemSensor = cg.new_Pvariable(diag_flow_problem_config[CONF_ID], fswm100)
         # register the sensor class instance
         await binary_sensor.register_binary_sensor(
             flowProblemSensor, diag_flow_problem_config
         )
-        # set the PressureSensorCalibration class instance reference
+        # set the FlowSensorProblemSensor class instance reference
         # to the FSWM100 class instance
         cg.add(fswm100.set_flow_problem_sensor(flowProblemSensor))
-        # setup the "flowProblemSensor" class instance, passing it the config
+        # setup the "FlowSensorProblemSensor" class instance, passing it the config
         cg.add(flowProblemSensor.setup())
+    if diag_pulse_problem_config := config.get(DIAG_PULSE_PROBLEM):
+        # create an instance of our custom BinarySensor "PulseSensorProblemSensor" class
+        # passing the FSWM100 class instance to its constructor
+        pulseProblemSensor = cg.new_Pvariable(
+            diag_pulse_problem_config[CONF_ID], fswm100
+        )
+        # register the sensor class instance
+        await binary_sensor.register_binary_sensor(
+            pulseProblemSensor, diag_pulse_problem_config
+        )
+        # set the PulseSensorProblemSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_pulse_problem_sensor(pulseProblemSensor))
+        # setup the "PulseSensorProblemSensor" class instance, passing it the config
+        cg.add(pulseProblemSensor.setup())
+    if diag_pressure_problem_config := config.get(DIAG_PRESSURE_PROBLEM):
+        # create an instance of our custom BinarySensor "PressureSensorProblemSensor" class
+        # passing the FSWM100 class instance to its constructor
+        pressureProblemSensor = cg.new_Pvariable(
+            diag_pressure_problem_config[CONF_ID], fswm100
+        )
+        # register the sensor class instance
+        await binary_sensor.register_binary_sensor(
+            pressureProblemSensor, diag_pressure_problem_config
+        )
+        # set the PressureSensorProblemSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_pressure_problem_sensor(pressureProblemSensor))
+        # setup the "PressureSensorProblemSensor" class instance, passing it the config
+        cg.add(pressureProblemSensor.setup())
 
 
 def filter_key_to_class_name(filter_key):

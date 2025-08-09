@@ -13,19 +13,18 @@ namespace fswm100 {
 class FSWM100;
 
 /**
- * @brief the problem sensor, of the flow sensor.
- *        when true, the flow sensor is having a problem:
- *           - we got a pulse but no IR signal
+ * @brief the problem sensor, of the pulse sensor.
+ *        when true, the pulse sensor is having a problem:
  *           - we got an IR signal but no pulse longer than the minimum duration (could be pulse or IR)
- *           - we are getting voltage readings that are not within the expected range
- *        when false, the flow sensor is working properly.
+ *           - we are getting pulses faster than the maximum rate (TODO: add max flow rate)
+ *        when false, the pulse sensor is working properly.
  */
-class FlowSensorProblemSensor : public binary_sensor::BinarySensor {
+class PulseSensorProblemSensor : public binary_sensor::BinarySensor {
  public:
   /**
    * @param fswm100 the parent component class
    */
-  FlowSensorProblemSensor(FSWM100 *fswm100);
+  PulseSensorProblemSensor(FSWM100 *fswm100);
 
   /**
    * @brief setup the sensor
