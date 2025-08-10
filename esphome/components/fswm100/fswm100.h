@@ -216,6 +216,11 @@ class FSWM100 : public Component, public EntityBase {
    *        until the component is restarted (the device is rebooted).
    *        that's to ensure that the user is aware of the fault and
    *        action has been taken to investigate it.
+   *
+   *        This is not using status_set_error()/status_has_error()/mark_failed()
+   *        to ensure the component itself is not marked as failed/unrecoverable,
+   *        since the sensor fault may be a false positive or a temporary issue and
+   *        the component should nto be blocked/etc.
    */
   bool has_fault_{false};
 

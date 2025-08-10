@@ -17,6 +17,7 @@ class FSWM100;
  *        when true, the pressure sensor is having a problem:
  *           - we are getting voltage readings that are not within the expected range
  *           - the reading have not changed for a long time, even though the flow changes
+ *           - I2C or ADS1115 errors
  *        when false, the pressure sensor is working properly.
  */
 class PressureSensorProblemSensor : public binary_sensor::BinarySensor {
