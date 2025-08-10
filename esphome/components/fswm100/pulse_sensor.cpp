@@ -21,6 +21,8 @@ void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume) {
   ESP_LOGCONFIG(TAG, "PulseSensor setup complete.");
 }
 
+bool PulseSensor::has_fault() { return this->has_fault_; }
+
 void PulseSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "PulseSensor:");
   LOG_PIN("  Pin:", this->pin_);

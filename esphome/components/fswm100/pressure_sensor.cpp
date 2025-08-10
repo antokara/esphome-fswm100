@@ -44,6 +44,8 @@ void PressureSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  resolution:", this->resolution_);
 }
 
+bool PressureSensor::has_fault() { return this->has_fault_; }
+
 float PressureSensor::voltage_to_pressure(float voltage) {
   return (voltage - this->min_voltage_) * this->voltage_factor_ + this->min_pressure_;
 }

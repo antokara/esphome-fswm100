@@ -49,7 +49,25 @@ class PressureSensor : public sensor::Sensor {
    */
   void loop();
 
+  /**
+   * @brief if true, the sensor has a self detected fault.
+   *        those are faults that can be determined in isolation.
+   *        e.g. out of range values, etc. but does not include
+   *        faults the require readings/timings from other sensors.
+   *        if false, the sensor as far as it knows, is working fine.
+   */
+  bool has_fault();
+
  private:
+  /**
+   * @brief if true, the sensor has a self detected fault.
+   *        those are faults that can be determined in isolation.
+   *        e.g. out of range values, etc. but does not include
+   *        faults the require readings/timings from other sensors.
+   *        if false, the sensor as far as it knows, is working fine.
+   */
+  bool has_fault_{false};
+
   /**
    * @brief the parent component
    *

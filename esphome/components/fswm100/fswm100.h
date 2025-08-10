@@ -207,6 +207,19 @@ class FSWM100 : public Component, public EntityBase {
 
  private:
   /**
+   * @brief if true, the component has detected a fault and the status LED/log should get updated.
+   *        those faults could be detected by the sensors themselves (in isolation) or by the component
+   *        based on the sensors' readings.
+   *        if false, the component as far as it knows, is working fine.
+   *
+   *        Important: once the flag becomes true, it will not change back to false,
+   *        until the component is restarted (the device is rebooted).
+   *        that's to ensure that the user is aware of the fault and
+   *        action has been taken to investigate it.
+   */
+  bool has_fault_{false};
+
+  /**
    * @brief Pointer to the shared ADS1115 component
    */
   ads1115::ADS1115Component *ads1115_{nullptr};

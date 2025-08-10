@@ -37,6 +37,8 @@ void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  resolution:", this->resolution_);
 }
 
+bool FlowSensor::has_fault() { return this->has_fault_; }
+
 void FlowSensor::active() {
   this->last_active_time_ = millis();
   this->publish(this->calculate_active_flow());

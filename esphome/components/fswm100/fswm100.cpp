@@ -172,14 +172,41 @@ void FSWM100::loop() {
   this->flow_sensor_problem_sensor_->loop();
 
   /**
+   * diagnostic checks for faults.
+   *
+   * we allow for multiple faults to be detected and reported combined.
+   * this is true because we may not be able to isolate the fault to a single sensor and/or
+   * multiple sensors may be affected by the same issue.
+   */
+  if (this->pulse_sensor_->has_fault() && this->pulse_sensor_problem_sensor_->state != true) {
+    ESP_LOGE(TAG, "Pulse Sensor has an internal fault!");
+    this->pulse_sensor_problem_sensor_->publish_state(true);
+    this->has_fault_ = true;
+  }
+  if (this->flow_sensor_->has_fault() && this->flow_sensor_problem_sensor_->state != true) {
+    ESP_LOGE(TAG, "Flow Sensor has an internal fault!");
+    this->flow_sensor_problem_sensor_->publish_state(true);
+    this->has_fault_ = true;
+  }
+  if (this->pressure_sensor_->has_fault() && this->pressure_sensor_problem_sensor_->state != true) {
+    ESP_LOGE(TAG, "Pressure Sensor has an internal fault!");
+    this->pressure_sensor_problem_sensor_->publish_state(true);
+    this->has_fault_ = true;
+  }
+
+  /**
    * the status LED states/colors.
    * the order here is important, as it determines which state/color
    * takes precedence over the others.
    *
    * e.g. if the flow sensor is active, it will override the pressure sensor test state,
-   * and the status LED will be set to blue no matter what else follows.
+   * and the status LED will be set to blue no matter what else follows. But if there
+   * is a fault, if will override any other state and the status LED will be set to red.
    */
-  if (this->flow_sensor_->state > 0) {
+  if (this->has_fault_) {
+    // fault detected
+    this->set_status_led(StatusLEDColor::RED);
+  } else if (this->flow_sensor_->state > 0) {
     // active flow
     this->set_status_led(StatusLEDColor::BLUE);
   } else if (this->pressure_sensor_test_->state == true) {
