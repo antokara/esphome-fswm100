@@ -43,8 +43,8 @@ class FlowSensor : public sensor::Sensor {
    * setup the flow sensor
    */
   void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float effective_noise_floor,
-             float min_volume, float rate_time, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
+             float min_volume, float max_volume, float rate_time, ads1115::ADS1115Multiplexer multiplexer,
+             ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -186,6 +186,16 @@ class FlowSensor : public sensor::Sensor {
    *             this should be set to 0.125
    */
   float min_volume_{0.0f};
+
+  /**
+   * @brief the maximum flow volume the water meter can detect or
+   *       is expected to be detected (e.g. the pipe is unable to provide more than that).
+   *       This is used to detect faults in the flow sensor (e.g. when flow exceeds this).
+   *
+   *       If left/set to 0.0, it will not be used.
+   * @example 15GPM for a residential 3/4" pipe is a good value.
+   */
+  float max_volume_{0.0f};
 
   /**
    * @brief the rate of time used by the water meter, in seconds.

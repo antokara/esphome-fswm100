@@ -57,6 +57,7 @@ CONF_TEST = "test"
 CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
 CONF_MIN_DURATION = "min_duration"
 CONF_MIN_VOLUME = "min_volume"
+CONF_MAX_VOLUME = "max_volume"
 CONF_RATE_VOLUME = "rate_volume"
 CONF_RATE_TIME = "rate_time"
 CONF_PRESSURE_TEST = "pressure_test"
@@ -118,6 +119,7 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.GenerateID(): cv.declare_id(FlowSensor),
                 cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
                 cv.Optional(CONF_MIN_VOLUME, default=0.1): cv.float_,
+                cv.Optional(CONF_MAX_VOLUME, default=0.0): cv.float_,
                 cv.Optional(CONF_RATE_TIME, default=60.0): cv.float_,
                 cv.Optional(
                     CONF_MIN_DURATION,
@@ -333,6 +335,7 @@ async def to_code(config):
                 filters_factory,
                 flow_config[CONF_EFFECTIVE_NOISE_FLOOR],
                 flow_config[CONF_MIN_VOLUME],
+                flow_config[CONF_MAX_VOLUME],
                 flow_config[CONF_RATE_TIME],
                 flow_config[CONF_MULTIPLEXER],
                 flow_config[CONF_GAIN],

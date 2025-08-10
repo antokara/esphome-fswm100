@@ -57,6 +57,7 @@ fswm100:
     # in volts
     effective_noise_floor: 0.05
     min_volume: 0.1
+    max_volume: 15.0
     rate_time: 60.0
     # ADS1115
     multiplexer: "A0_GND"

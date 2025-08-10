@@ -8,13 +8,14 @@ namespace fswm100 {
 FlowSensor::FlowSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
 void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory,
-                       float effective_noise_floor, float min_volume, float rate_time,
+                       float effective_noise_floor, float min_volume, float max_volume, float rate_time,
                        ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
                        ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowSensor setup start.");
   this->filters_factory_ = filters_factory;
   this->effective_noise_floor_ = effective_noise_floor;
   this->min_volume_ = min_volume;
+  this->max_volume_ = max_volume;
   this->rate_time_ = rate_time;
   // ADS1115
   this->multiplexer_ = multiplexer;
@@ -30,6 +31,7 @@ void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "FlowSensor:");
   ESP_LOGCONFIG(TAG, "  effective noise floor:", this->effective_noise_floor_);
   ESP_LOGCONFIG(TAG, "  min volume:", this->min_volume_);
+  ESP_LOGCONFIG(TAG, "  max volume:", this->max_volume_);
   ESP_LOGCONFIG(TAG, "  rate time:", this->rate_time_);
   ESP_LOGCONFIG(TAG, "  multiplexer:", this->multiplexer_);
   ESP_LOGCONFIG(TAG, "  gain:", this->gain_);
