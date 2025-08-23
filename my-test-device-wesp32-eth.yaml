@@ -60,6 +60,9 @@ fswm100:
     accuracy_decimals: 2
     # in volts
     effective_noise_floor: 0.05
+    min_voltage: 2.3
+    max_voltage: 2.8
+    # in GPM
     min_volume: 0.1
     max_volume: 15.0
     rate_time: 60.0

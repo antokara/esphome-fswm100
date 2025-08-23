@@ -120,6 +120,8 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
                 cv.Optional(CONF_MIN_VOLUME, default=0.1): cv.float_,
                 cv.Optional(CONF_MAX_VOLUME, default=0.0): cv.float_,
+                cv.Optional(CONF_MIN_VOLTAGE, default=2.3): cv.float_,
+                cv.Optional(CONF_MAX_VOLTAGE, default=2.8): cv.float_,
                 cv.Optional(CONF_RATE_TIME, default=60.0): cv.float_,
                 cv.Optional(
                     CONF_MIN_DURATION,
@@ -334,6 +336,8 @@ async def to_code(config):
             flowSensor.setup(
                 filters_factory,
                 flow_config[CONF_EFFECTIVE_NOISE_FLOOR],
+                flow_config[CONF_MIN_VOLTAGE],
+                flow_config[CONF_MAX_VOLTAGE],
                 flow_config[CONF_MIN_VOLUME],
                 flow_config[CONF_MAX_VOLUME],
                 flow_config[CONF_RATE_TIME],

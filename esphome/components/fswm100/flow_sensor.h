@@ -18,20 +18,6 @@
  */
 #define FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS 30000
 
-/**
- * @brief The minimum IR voltage that is considered valid.
- *        Below this value, the sensor is considered to be faulty or
- *        should be replaced because it may have reached its end of life.
- */
-#define FLOW_SENSOR_MIN_IR_VOLTAGE 2.3f
-
-/**
- * @brief The maximum IR voltage that is considered valid.
- *        Above this value, the sensor is considered to be faulty or
- *        should be replaced because it may have reached its end of life.
- */
-#define FLOW_SENSOR_MAX_IR_VOLTAGE 2.8f
-
 namespace esphome {
 namespace fswm100 {
 
@@ -63,8 +49,9 @@ class FlowSensor : public sensor::Sensor {
    * setup the flow sensor
    */
   void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float effective_noise_floor,
-             float min_volume, float max_volume, float rate_time, ads1115::ADS1115Multiplexer multiplexer,
-             ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
+             float min_voltage, float max_voltage, float min_volume, float max_volume, float rate_time,
+             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+             ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -230,6 +217,20 @@ class FlowSensor : public sensor::Sensor {
    *        This is used to filter out noise from the flow sensor.
    */
   float effective_noise_floor_{0.0f};
+
+  /**
+   * @brief The minimum IR voltage that is considered valid.
+   *        Below this value, the sensor is considered to be faulty or
+   *        should be replaced because it may have reached its end of life.
+   */
+  float min_voltage_{2.3f};
+
+  /**
+   * @brief The maximum IR voltage that is considered valid.
+   *        Above this value, the sensor is considered to be faulty or
+   *        should be replaced because it may have reached its end of life.
+   */
+  float max_voltage_{2.8f};
 
   /**
    * @brief the minimum flow volume the water meter can detect

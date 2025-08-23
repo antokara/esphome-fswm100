@@ -8,12 +8,15 @@ namespace fswm100 {
 FlowSensor::FlowSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
 void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory,
-                       float effective_noise_floor, float min_volume, float max_volume, float rate_time,
-                       ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-                       ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
+                       float effective_noise_floor, float min_voltage, float max_voltage, float min_volume,
+                       float max_volume, float rate_time, ads1115::ADS1115Multiplexer multiplexer,
+                       ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+                       ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowSensor setup start.");
   this->filters_factory_ = filters_factory;
   this->effective_noise_floor_ = effective_noise_floor;
+  this->min_voltage_ = min_voltage;
+  this->max_voltage_ = max_voltage;
   this->min_volume_ = min_volume;
   this->max_volume_ = max_volume;
   this->rate_time_ = rate_time;
@@ -30,6 +33,8 @@ void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &fil
 void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "FlowSensor:");
   ESP_LOGCONFIG(TAG, "  effective noise floor:", this->effective_noise_floor_);
+  ESP_LOGCONFIG(TAG, "  min voltage:", this->min_voltage_);
+  ESP_LOGCONFIG(TAG, "  max voltage:", this->max_voltage_);
   ESP_LOGCONFIG(TAG, "  min volume:", this->min_volume_);
   ESP_LOGCONFIG(TAG, "  max volume:", this->max_volume_);
   ESP_LOGCONFIG(TAG, "  rate time:", this->rate_time_);
@@ -99,8 +104,7 @@ float FlowSensor::get_state() {
             static_cast<int>(this->multiplexer_), new_sensor_state);
 
   // check if the voltage is within the expected range
-  if (!this->has_fault_ && new_sensor_state < FLOW_SENSOR_MIN_IR_VOLTAGE ||
-      new_sensor_state > FLOW_SENSOR_MAX_IR_VOLTAGE) {
+  if (!this->has_fault_ && new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_) {
     ESP_LOGW(TAG, "'%s': voltage out of range: %.4f V", this->get_name().c_str(), new_sensor_state);
     this->has_fault_ = true;
   }
