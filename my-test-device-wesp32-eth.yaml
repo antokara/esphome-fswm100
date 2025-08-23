@@ -4,6 +4,8 @@ esphome:
 
 esp32:
   board: esp32dev
+  framework:
+    type: arduino
 
 # Enable logging
 logger:
@@ -30,7 +32,9 @@ ethernet:
   type: RTL8201
   mdc_pin: GPIO16
   mdio_pin: GPIO17
-  clk_mode: GPIO0_IN
+  clk:
+    pin: GPIO0
+    mode: CLK_EXT_IN
   phy_addr: 0
   phy_registers:
     - address: 0x10
