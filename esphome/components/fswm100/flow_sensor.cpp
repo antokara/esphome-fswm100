@@ -105,6 +105,7 @@ float FlowSensor::get_state() {
 
   if (std::isnan(new_sensor_state)) {
     ESP_LOGD(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
+    this->has_fault_ = true;
     return 0;  // when it fails
   }
 
@@ -117,8 +118,31 @@ float FlowSensor::get_state() {
 void FlowSensor::loop() {
   float new_sensor_state = this->get_state();
 
-  // has the state changed enough to publish?
+  // calculate the state delta
   float state_delta = abs(this->last_sensor_state_ - new_sensor_state);
+
+  // calculate the state active counts
+  if (state_delta > this->effective_noise_floor_ && !this->debug_state_active_counts_previous_) {
+    // increase the counts
+    this->debug_state_active_counts_++;
+    // set the previous state to true
+    this->debug_state_active_counts_previous_ = true;
+  } else if (state_delta <= this->effective_noise_floor_ && this->debug_state_active_counts_previous_) {
+    // reset the previous state to false
+    this->debug_state_active_counts_previous_ = false;
+  }
+  // keep the max state delta for debug purposes
+  if (state_delta > this->debug_state_delta_max_) {
+    this->debug_state_delta_max_ = state_delta;
+  }
+  // keep the min/max state for debug purposes
+  if (this->debug_state_min_ == 0.0f || new_sensor_state < this->debug_state_min_) {
+    this->debug_state_min_ = new_sensor_state;
+  }
+  if (this->debug_state_max_ == 0.0f || new_sensor_state > this->debug_state_max_) {
+    this->debug_state_max_ = new_sensor_state;
+  }
+
   bool pulse_sensor_state = this->fswm100_->get_pulse_sensor();
   if (pulse_sensor_state != this->last_pulse_sensor_state_ && pulse_sensor_state) {
     // active due to new pulse
@@ -129,6 +153,7 @@ void FlowSensor::loop() {
     this->newest_pulse_sensor_active_time_ = millis();
 
   } else if (state_delta > this->effective_noise_floor_) {
+    // has the state changed enough to publish?
     if (this->last_sensor_state_ == 0) {
       // first time we read the sensor, or it was 0 before
       ESP_LOGD(TAG, "Flow: first reading voltage %.4f", new_sensor_state);
@@ -152,34 +177,23 @@ void FlowSensor::loop() {
     this->publish(this->calculate_active_flow());
   }
 
-  // calculate the state active counts
-  if (state_delta > this->effective_noise_floor_ && !this->debug_state_active_counts_previous_) {
-    // increase the counts
-    this->debug_state_active_counts_++;
-    // set the previous state to true
-    this->debug_state_active_counts_previous_ = true;
-  } else if (state_delta <= this->effective_noise_floor_ && this->debug_state_active_counts_previous_) {
-    // reset the previous state to false
-    this->debug_state_active_counts_previous_ = false;
-  }
-
-  // keep the max state delta for debug purposes
-  if (state_delta > this->debug_state_delta_max_) {
-    this->debug_state_delta_max_ = state_delta;
-  }
-  // publish debug state every 30 seconds
-  if (millis() - this->last_debug_state_time_ > 30000) {
+  // publish debug state meta info every FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS
+  if (millis() - this->last_debug_state_time_ > FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS) {
     if (this->state == 0) {
-      ESP_LOGD(TAG, "Flow: inactive due to IR voltage %.4f state_delta_max, counts: %d", this->debug_state_delta_max_,
-               this->debug_state_active_counts_);
+      ESP_LOGD(TAG, "Flow: inactive due to IR voltage %.4f state_delta_max, counts: %d, min: %d, max: %d",
+               this->debug_state_delta_max_, this->debug_state_active_counts_, this->debug_state_min_,
+               this->debug_state_max_);
     } else {
-      ESP_LOGD(TAG, "Flow: active due to IR voltage %.4f state_delta_max, counts: %d", this->debug_state_delta_max_,
-               this->debug_state_active_counts_);
+      ESP_LOGD(TAG, "Flow: active due to IR voltage %.4f state_delta_max, counts: %d, min: %d, max: %d",
+               this->debug_state_delta_max_, this->debug_state_active_counts_, this->debug_state_min_,
+               this->debug_state_max_);
     }
     // reset
     this->last_debug_state_time_ = millis();
     this->debug_state_delta_max_ = 0.0f;
     this->debug_state_active_counts_ = 0;
+    this->debug_state_min_ = 0.0f;
+    this->debug_state_max_ = 0.0f;
   }
 
   // update if it just switched (to false)

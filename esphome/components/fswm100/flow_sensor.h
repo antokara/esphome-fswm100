@@ -12,6 +12,12 @@
  */
 #define FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER 1.25
 
+/**
+ * @brief The interval in milliseconds to publish the debug state meta information
+ *        of the flow sensor.
+ */
+#define FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS 30000
+
 namespace esphome {
 namespace fswm100 {
 
@@ -150,6 +156,22 @@ class FlowSensor : public sensor::Sensor {
    *        since the last debug state publish
    */
   float debug_state_delta_max_{0.0f};
+
+  /**
+   * @brief the min state value,
+   *        since the last debug state publish.
+   *
+   *        useful to determine expected range of voltage fluctuations.
+   */
+  float debug_state_min_{0.0f};
+
+  /**
+   * @brief the max state value,
+   *        since the last debug state publish
+   *
+   *       useful to determine expected range of voltage fluctuations.
+   */
+  float debug_state_max_{0.0f};
 
   /**
    * @brief counts of how many times
