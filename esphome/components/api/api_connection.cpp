@@ -112,8 +112,7 @@ void APIConnection::start() {
   APIError err = this->helper_->init();
   if (err != APIError::OK) {
     on_fatal_error();
-    ESP_LOGW(TAG, "%s: Helper init failed %s errno=%d", this->get_client_combined_info().c_str(), api_error_to_str(err),
-             errno);
+    this->log_warning_("Helper init failed", err);
     return;
   }
   this->client_info_.peername = helper_->getpeername();
@@ -144,8 +143,7 @@ void APIConnection::loop() {
   APIError err = this->helper_->loop();
   if (err != APIError::OK) {
     on_fatal_error();
-    ESP_LOGW(TAG, "%s: Socket operation failed %s errno=%d", this->get_client_combined_info().c_str(),
-             api_error_to_str(err), errno);
+    this->log_socket_operation_failed_(err);
     return;
   }
 
@@ -161,8 +159,7 @@ void APIConnection::loop() {
         break;
       } else if (err != APIError::OK) {
         on_fatal_error();
-        ESP_LOGW(TAG, "%s: Reading failed %s errno=%d", this->get_client_combined_info().c_str(), api_error_to_str(err),
-                 errno);
+        this->log_warning_("Reading failed", err);
         return;
       } else {
         this->last_traffic_ = now;
@@ -292,16 +289,26 @@ uint16_t APIConnection::encode_message_to_buffer(ProtoMessage &msg, uint8_t mess
     return 0;  // Doesn't fit
   }
 
-  // Allocate buffer space - pass payload size, allocation functions add header/footer space
-  ProtoWriteBuffer buffer = is_single ? conn->allocate_single_message_buffer(calculated_size)
-                                      : conn->allocate_batch_message_buffer(calculated_size);
-
   // Get buffer size after allocation (which includes header padding)
   std::vector<uint8_t> &shared_buf = conn->parent_->get_shared_buffer_ref();
-  size_t size_before_encode = shared_buf.size();
+
+  if (is_single || conn->flags_.batch_first_message) {
+    // Single message or first batch message
+    conn->prepare_first_message_buffer(shared_buf, header_padding, total_calculated_size);
+    if (conn->flags_.batch_first_message) {
+      conn->flags_.batch_first_message = false;
+    }
+  } else {
+    // Batch message second or later
+    // Add padding for previous message footer + this message header
+    size_t current_size = shared_buf.size();
+    shared_buf.reserve(current_size + total_calculated_size);
+    shared_buf.resize(current_size + footer_size + header_padding);
+  }
 
   // Encode directly into buffer
-  msg.encode(buffer);
+  size_t size_before_encode = shared_buf.size();
+  msg.encode({&shared_buf});
 
   // Calculate actual encoded size (not including header that was already added)
   size_t actual_payload_size = shared_buf.size() - size_before_encode;
@@ -413,8 +420,7 @@ uint16_t APIConnection::try_send_fan_info(EntityBase *entity, APIConnection *con
   msg.supports_speed = traits.supports_speed();
   msg.supports_direction = traits.supports_direction();
   msg.supported_speed_count = traits.supported_speed_count();
-  for (auto const &preset : traits.supported_preset_modes())
-    msg.supported_preset_modes.push_back(preset);
+  msg.supported_preset_modes = &traits.supported_preset_modes_for_api_();
   return fill_and_encode_entity_info(fan, msg, ListEntitiesFanResponse::MESSAGE_TYPE, conn, remaining_size, is_single);
 }
 void APIConnection::fan_command(const FanCommandRequest &msg) {
@@ -459,9 +465,7 @@ uint16_t APIConnection::try_send_light_state(EntityBase *entity, APIConnection *
   resp.cold_white = values.get_cold_white();
   resp.warm_white = values.get_warm_white();
   if (light->supports_effects()) {
-    // get_effect_name() returns temporary std::string - must store it
-    std::string effect_name = light->get_effect_name();
-    resp.set_effect(StringRef(effect_name));
+    resp.set_effect(light->get_effect_name_ref());
   }
   return fill_and_encode_entity_state(light, resp, LightStateResponse::MESSAGE_TYPE, conn, remaining_size, is_single);
 }
@@ -470,8 +474,7 @@ uint16_t APIConnection::try_send_light_info(EntityBase *entity, APIConnection *c
   auto *light = static_cast<light::LightState *>(entity);
   ListEntitiesLightResponse msg;
   auto traits = light->get_traits();
-  for (auto mode : traits.get_supported_color_modes())
-    msg.supported_color_modes.push_back(static_cast<enums::ColorMode>(mode));
+  msg.supported_color_modes = &traits.get_supported_color_modes_for_api_();
   if (traits.supports_color_capability(light::ColorCapability::COLOR_TEMPERATURE) ||
       traits.supports_color_capability(light::ColorCapability::COLD_WARM_WHITE)) {
     msg.min_mireds = traits.get_min_mireds();
@@ -657,8 +660,7 @@ uint16_t APIConnection::try_send_climate_info(EntityBase *entity, APIConnection 
   msg.supports_current_humidity = traits.get_supports_current_humidity();
   msg.supports_two_point_target_temperature = traits.get_supports_two_point_target_temperature();
   msg.supports_target_humidity = traits.get_supports_target_humidity();
-  for (auto mode : traits.get_supported_modes())
-    msg.supported_modes.push_back(static_cast<enums::ClimateMode>(mode));
+  msg.supported_modes = &traits.get_supported_modes_for_api_();
   msg.visual_min_temperature = traits.get_visual_min_temperature();
   msg.visual_max_temperature = traits.get_visual_max_temperature();
   msg.visual_target_temperature_step = traits.get_visual_target_temperature_step();
@@ -666,16 +668,11 @@ uint16_t APIConnection::try_send_climate_info(EntityBase *entity, APIConnection 
   msg.visual_min_humidity = traits.get_visual_min_humidity();
   msg.visual_max_humidity = traits.get_visual_max_humidity();
   msg.supports_action = traits.get_supports_action();
-  for (auto fan_mode : traits.get_supported_fan_modes())
-    msg.supported_fan_modes.push_back(static_cast<enums::ClimateFanMode>(fan_mode));
-  for (auto const &custom_fan_mode : traits.get_supported_custom_fan_modes())
-    msg.supported_custom_fan_modes.push_back(custom_fan_mode);
-  for (auto preset : traits.get_supported_presets())
-    msg.supported_presets.push_back(static_cast<enums::ClimatePreset>(preset));
-  for (auto const &custom_preset : traits.get_supported_custom_presets())
-    msg.supported_custom_presets.push_back(custom_preset);
-  for (auto swing_mode : traits.get_supported_swing_modes())
-    msg.supported_swing_modes.push_back(static_cast<enums::ClimateSwingMode>(swing_mode));
+  msg.supported_fan_modes = &traits.get_supported_fan_modes_for_api_();
+  msg.supported_custom_fan_modes = &traits.get_supported_custom_fan_modes_for_api_();
+  msg.supported_presets = &traits.get_supported_presets_for_api_();
+  msg.supported_custom_presets = &traits.get_supported_custom_presets_for_api_();
+  msg.supported_swing_modes = &traits.get_supported_swing_modes_for_api_();
   return fill_and_encode_entity_info(climate, msg, ListEntitiesClimateResponse::MESSAGE_TYPE, conn, remaining_size,
                                      is_single);
 }
@@ -881,8 +878,7 @@ uint16_t APIConnection::try_send_select_info(EntityBase *entity, APIConnection *
                                              bool is_single) {
   auto *select = static_cast<select::Select *>(entity);
   ListEntitiesSelectResponse msg;
-  for (const auto &option : select->traits.get_options())
-    msg.options.push_back(option);
+  msg.options = &select->traits.get_options();
   return fill_and_encode_entity_info(select, msg, ListEntitiesSelectResponse::MESSAGE_TYPE, conn, remaining_size,
                                      is_single);
 }
@@ -1008,6 +1004,7 @@ uint16_t APIConnection::try_send_media_player_info(EntityBase *entity, APIConnec
   ListEntitiesMediaPlayerResponse msg;
   auto traits = media_player->get_traits();
   msg.supports_pause = traits.get_supports_pause();
+  msg.feature_flags = traits.get_feature_flags();
   for (auto &supported_format : traits.get_supported_formats()) {
     msg.supported_formats.emplace_back();
     auto &media_format = msg.supported_formats.back();
@@ -1116,10 +1113,8 @@ void APIConnection::bluetooth_gatt_notify(const BluetoothGATTNotifyRequest &msg)
 
 bool APIConnection::send_subscribe_bluetooth_connections_free_response(
     const SubscribeBluetoothConnectionsFreeRequest &msg) {
-  BluetoothConnectionsFreeResponse resp;
-  resp.free = bluetooth_proxy::global_bluetooth_proxy->get_bluetooth_connections_free();
-  resp.limit = bluetooth_proxy::global_bluetooth_proxy->get_bluetooth_connections_limit();
-  return this->send_message(resp, BluetoothConnectionsFreeResponse::MESSAGE_TYPE);
+  bluetooth_proxy::global_bluetooth_proxy->send_connections_free(this);
+  return true;
 }
 
 void APIConnection::bluetooth_scanner_set_mode(const BluetoothScannerSetModeRequest &msg) {
@@ -1196,9 +1191,7 @@ bool APIConnection::send_voice_assistant_get_configuration_response(const VoiceA
       resp_wake_word.trained_languages.push_back(lang);
     }
   }
-  for (auto &wake_word_id : config.active_wake_words) {
-    resp.active_wake_words.push_back(wake_word_id);
-  }
+  resp.active_wake_words = &config.active_wake_words;
   resp.max_active_wake_words = config.max_active_wake_words;
   return this->send_message(resp, VoiceAssistantConfigurationResponse::MESSAGE_TYPE);
 }
@@ -1376,7 +1369,7 @@ bool APIConnection::send_hello_response(const HelloRequest &msg) {
 
   HelloResponse resp;
   resp.api_version_major = 1;
-  resp.api_version_minor = 10;
+  resp.api_version_minor = 12;
   // Temporary string for concatenation - will be valid during send_message call
   std::string server_info = App.get_name() + " (esphome v" ESPHOME_VERSION ")";
   resp.set_server_info(StringRef(server_info));
@@ -1430,9 +1423,7 @@ bool APIConnection::send_device_info_response(const DeviceInfoRequest &msg) {
   static constexpr auto ESPHOME_VERSION_REF = StringRef::from_lit(ESPHOME_VERSION);
   resp.set_esphome_version(ESPHOME_VERSION_REF);
 
-  // get_compilation_time() returns temporary std::string - must store it
-  std::string compilation_time = App.get_compilation_time();
-  resp.set_compilation_time(StringRef(compilation_time));
+  resp.set_compilation_time(App.get_compilation_time_ref());
 
   // Compile-time StringRef constants for manufacturers
 #if defined(USE_ESP8266) || defined(USE_ESP32)
@@ -1477,18 +1468,22 @@ bool APIConnection::send_device_info_response(const DeviceInfoRequest &msg) {
   resp.api_encryption_supported = true;
 #endif
 #ifdef USE_DEVICES
+  size_t device_index = 0;
   for (auto const &device : App.get_devices()) {
-    resp.devices.emplace_back();
-    auto &device_info = resp.devices.back();
+    if (device_index >= ESPHOME_DEVICE_COUNT)
+      break;
+    auto &device_info = resp.devices[device_index++];
     device_info.device_id = device->get_device_id();
     device_info.set_name(StringRef(device->get_name()));
     device_info.area_id = device->get_area_id();
   }
 #endif
 #ifdef USE_AREAS
+  size_t area_index = 0;
   for (auto const &area : App.get_areas()) {
-    resp.areas.emplace_back();
-    auto &area_info = resp.areas.back();
+    if (area_index >= ESPHOME_AREA_COUNT)
+      break;
+    auto &area_info = resp.areas[area_index++];
     area_info.area_id = area->get_area_id();
     area_info.set_name(StringRef(area->get_name()));
   }
@@ -1550,8 +1545,7 @@ bool APIConnection::try_to_clear_buffer(bool log_out_of_space) {
   APIError err = this->helper_->loop();
   if (err != APIError::OK) {
     on_fatal_error();
-    ESP_LOGW(TAG, "%s: Socket operation failed %s errno=%d", this->get_client_combined_info().c_str(),
-             api_error_to_str(err), errno);
+    this->log_socket_operation_failed_(err);
     return false;
   }
   if (this->helper_->can_write_without_blocking())
@@ -1571,8 +1565,7 @@ bool APIConnection::send_buffer(ProtoWriteBuffer buffer, uint8_t message_type) {
     return false;
   if (err != APIError::OK) {
     on_fatal_error();
-    ESP_LOGW(TAG, "%s: Packet write failed %s errno=%d", this->get_client_combined_info().c_str(),
-             api_error_to_str(err), errno);
+    this->log_warning_("Packet write failed", err);
     return false;
   }
   // Do not set last_traffic_ on send
@@ -1633,14 +1626,6 @@ bool APIConnection::schedule_batch_() {
   return true;
 }
 
-ProtoWriteBuffer APIConnection::allocate_single_message_buffer(uint16_t size) { return this->create_buffer(size); }
-
-ProtoWriteBuffer APIConnection::allocate_batch_message_buffer(uint16_t size) {
-  ProtoWriteBuffer result = this->prepare_message_buffer(size, this->flags_.batch_first_message);
-  this->flags_.batch_first_message = false;
-  return result;
-}
-
 void APIConnection::process_batch_() {
   // Ensure PacketInfo remains trivially destructible for our placement new approach
   static_assert(std::is_trivially_destructible<PacketInfo>::value,
@@ -1657,6 +1642,8 @@ void APIConnection::process_batch_() {
     return;
   }
 
+  // Get shared buffer reference once to avoid multiple calls
+  auto &shared_buf = this->parent_->get_shared_buffer_ref();
   size_t num_items = this->deferred_batch_.size();
 
   // Fast path for single message - allocate exact size needed
@@ -1667,8 +1654,7 @@ void APIConnection::process_batch_() {
     uint16_t payload_size =
         item.creator(item.entity, this, std::numeric_limits<uint16_t>::max(), true, item.message_type);
 
-    if (payload_size > 0 &&
-        this->send_buffer(ProtoWriteBuffer{&this->parent_->get_shared_buffer_ref()}, item.message_type)) {
+    if (payload_size > 0 && this->send_buffer(ProtoWriteBuffer{&shared_buf}, item.message_type)) {
 #ifdef HAS_PROTO_MESSAGE_DUMP
       // Log messages after send attempt for VV debugging
       // It's safe to use the buffer for logging at this point regardless of send result
@@ -1695,20 +1681,18 @@ void APIConnection::process_batch_() {
   const uint8_t footer_size = this->helper_->frame_footer_size();
 
   // Initialize buffer and tracking variables
-  this->parent_->get_shared_buffer_ref().clear();
+  shared_buf.clear();
 
   // Pre-calculate exact buffer size needed based on message types
-  uint32_t total_estimated_size = 0;
+  uint32_t total_estimated_size = num_items * (header_padding + footer_size);
   for (size_t i = 0; i < this->deferred_batch_.size(); i++) {
     const auto &item = this->deferred_batch_[i];
     total_estimated_size += item.estimated_size;
   }
 
   // Calculate total overhead for all messages
-  uint32_t total_overhead = (header_padding + footer_size) * num_items;
-
   // Reserve based on estimated size (much more accurate than 24-byte worst-case)
-  this->parent_->get_shared_buffer_ref().reserve(total_estimated_size + total_overhead);
+  shared_buf.reserve(total_estimated_size);
   this->flags_.batch_first_message = true;
 
   size_t items_processed = 0;
@@ -1749,8 +1733,8 @@ void APIConnection::process_batch_() {
     }
     remaining_size -= payload_size;
     // Calculate where the next message's header padding will start
-    // Current buffer size + footer space (that prepare_message_buffer will add for this message)
-    current_offset = this->parent_->get_shared_buffer_ref().size() + footer_size;
+    // Current buffer size + footer space for this message
+    current_offset = shared_buf.size() + footer_size;
   }
 
   if (items_processed == 0) {
@@ -1760,17 +1744,15 @@ void APIConnection::process_batch_() {
 
   // Add footer space for the last message (for Noise protocol MAC)
   if (footer_size > 0) {
-    auto &shared_buf = this->parent_->get_shared_buffer_ref();
     shared_buf.resize(shared_buf.size() + footer_size);
   }
 
   // Send all collected packets
-  APIError err = this->helper_->write_protobuf_packets(ProtoWriteBuffer{&this->parent_->get_shared_buffer_ref()},
+  APIError err = this->helper_->write_protobuf_packets(ProtoWriteBuffer{&shared_buf},
                                                        std::span<const PacketInfo>(packet_info, packet_count));
   if (err != APIError::OK && err != APIError::WOULD_BLOCK) {
     on_fatal_error();
-    ESP_LOGW(TAG, "%s: Batch write failed %s errno=%d", this->get_client_combined_info().c_str(), api_error_to_str(err),
-             errno);
+    this->log_warning_("Batch write failed", err);
   }
 
 #ifdef HAS_PROTO_MESSAGE_DUMP
@@ -1847,6 +1829,12 @@ void APIConnection::process_state_subscriptions_() {
   }
 }
 #endif  // USE_API_HOMEASSISTANT_STATES
+
+void APIConnection::log_warning_(const char *message, APIError err) {
+  ESP_LOGW(TAG, "%s: %s %s errno=%d", this->get_client_combined_info().c_str(), message, api_error_to_str(err), errno);
+}
+
+void APIConnection::log_socket_operation_failed_(APIError err) { this->log_warning_("Socket operation failed", err); }
 
 }  // namespace esphome::api
 #endif

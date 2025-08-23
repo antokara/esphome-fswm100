@@ -339,9 +339,19 @@ def create_field_type_info(
 ) -> TypeInfo:
     """Create the appropriate TypeInfo instance for a field, handling repeated fields and custom options."""
     if field.label == 3:  # repeated
+        # Check if this repeated field has fixed_array_with_length_define option
+        if (
+            fixed_size := get_field_opt(field, pb.fixed_array_with_length_define)
+        ) is not None:
+            return FixedArrayWithLengthRepeatedType(field, fixed_size)
         # Check if this repeated field has fixed_array_size option
         if (fixed_size := get_field_opt(field, pb.fixed_array_size)) is not None:
             return FixedArrayRepeatedType(field, fixed_size)
+        # Check if this repeated field has fixed_array_size_define option
+        if (
+            size_define := get_field_opt(field, pb.fixed_array_size_define)
+        ) is not None:
+            return FixedArrayRepeatedType(field, size_define)
         return RepeatedTypeInfo(field)
 
     # Check for fixed_array_size option on bytes fields
@@ -539,8 +549,7 @@ class BoolType(TypeInfo):
     wire_type = WireType.VARINT  # Uses wire type 0
 
     def dump(self, name: str) -> str:
-        o = f"out.append(YESNO({name}));"
-        return o
+        return f"out.append(YESNO({name}));"
 
     def get_size_calculation(self, name: str, force: bool = False) -> str:
         return self._get_simple_size_calculation(name, force, "add_bool")
@@ -592,9 +601,8 @@ class StringType(TypeInfo):
         if no_zero_copy:
             # Use the std::string directly
             return f"buffer.encode_string({self.number}, this->{self.field_name});"
-        else:
-            # Use the StringRef
-            return f"buffer.encode_string({self.number}, this->{self.field_name}_ref_);"
+        # Use the StringRef
+        return f"buffer.encode_string({self.number}, this->{self.field_name}_ref_);"
 
     def dump(self, name):
         # Check if no_zero_copy option is set
@@ -716,8 +724,7 @@ class MessageType(TypeInfo):
         return f"case {self.number}: value.decode_to_message(this->{self.field_name}); break;"
 
     def dump(self, name: str) -> str:
-        o = f"{name}.dump_to(out);"
-        return o
+        return f"{name}.dump_to(out);"
 
     @property
     def dump_content(self) -> str:
@@ -865,8 +872,7 @@ class FixedArrayBytesType(TypeInfo):
         return f"buffer.encode_bytes({self.number}, this->{self.field_name}, this->{self.field_name}_len);"
 
     def dump(self, name: str) -> str:
-        o = f"out.append(format_hex_pretty({name}, {name}_len));"
-        return o
+        return f"out.append(format_hex_pretty({name}, {name}_len));"
 
     @property
     def dump_content(self) -> str:
@@ -883,9 +889,8 @@ class FixedArrayBytesType(TypeInfo):
         if force:
             # For repeated fields, always calculate size (no zero check)
             return f"size.add_length_force({field_id_size}, {length_field});"
-        else:
-            # For non-repeated fields, add_length already checks for zero
-            return f"size.add_length({field_id_size}, {length_field});"
+        # For non-repeated fields, add_length already checks for zero
+        return f"size.add_length({field_id_size}, {length_field});"
 
     def get_estimated_size(self) -> int:
         # Estimate based on typical BLE advertisement size
@@ -940,8 +945,7 @@ class EnumType(TypeInfo):
         return f"buffer.{self.encode_func}({self.number}, static_cast<uint32_t>(this->{self.field_name}));"
 
     def dump(self, name: str) -> str:
-        o = f"out.append(proto_enum_to_string<{self.cpp_type}>({name}));"
-        return o
+        return f"out.append(proto_enum_to_string<{self.cpp_type}>({name}));"
 
     def dump_field_value(self, value: str) -> str:
         # Enums need explicit cast for the template
@@ -1053,7 +1057,7 @@ def _generate_array_dump_content(
     """
     o = f"for (const auto {'' if is_bool else '&'}it : {field_name}) {{\n"
     # Check if underlying type can use dump_field
-    if type(ti).can_use_dump_field():
+    if ti.can_use_dump_field():
         # For types that have dump_field overloads, use them with extra indent
         o += f'  dump_field(out, "{name}", {ti.dump_field_value("it")}, 4);\n'
     else:
@@ -1072,12 +1076,24 @@ class FixedArrayRepeatedType(TypeInfo):
     control how many items we receive when decoding.
     """
 
-    def __init__(self, field: descriptor.FieldDescriptorProto, size: int) -> None:
+    def __init__(self, field: descriptor.FieldDescriptorProto, size: int | str) -> None:
         super().__init__(field)
         self.array_size = size
+        self.is_define = isinstance(size, str)
+        # Check if we should skip encoding when all elements are zero
+        # Use getattr to handle older versions of api_options_pb2
+        self.skip_zero = get_field_opt(
+            field, getattr(pb, "fixed_array_skip_zero", None), False
+        )
         # Create the element type info
         validate_field_type(field.type, field.name)
         self._ti: TypeInfo = TYPE_INFO[field.type](field)
+
+    def _encode_element(self, element: str) -> str:
+        """Helper to generate encode statement for a single element."""
+        if isinstance(self._ti, EnumType):
+            return f"buffer.{self._ti.encode_func}({self.number}, static_cast<uint32_t>({element}), true);"
+        return f"buffer.{self._ti.encode_func}({self.number}, {element}, true);"
 
     @property
     def cpp_type(self) -> str:
@@ -1106,26 +1122,46 @@ class FixedArrayRepeatedType(TypeInfo):
 
     @property
     def encode_content(self) -> str:
-        # Helper to generate encode statement for a single element
-        def encode_element(element: str) -> str:
-            if isinstance(self._ti, EnumType):
-                return f"buffer.{self._ti.encode_func}({self.number}, static_cast<uint32_t>({element}), true);"
-            else:
-                return f"buffer.{self._ti.encode_func}({self.number}, {element}, true);"
+        # If skip_zero is enabled, wrap encoding in a zero check
+        if self.skip_zero:
+            if self.is_define:
+                # When using a define, we need to use a loop-based approach
+                o = f"for (const auto &it : this->{self.field_name}) {{\n"
+                o += "  if (it != 0) {\n"
+                o += f"    {self._encode_element('it')}\n"
+                o += "  }\n"
+                o += "}"
+                return o
+            # Build the condition to check if at least one element is non-zero
+            non_zero_checks = " || ".join(
+                [f"this->{self.field_name}[{i}] != 0" for i in range(self.array_size)]
+            )
+            encode_lines = [
+                f"  {self._encode_element(f'this->{self.field_name}[{i}]')}"
+                for i in range(self.array_size)
+            ]
+            return f"if ({non_zero_checks}) {{\n" + "\n".join(encode_lines) + "\n}"
+
+        # When using a define, always use loop-based approach
+        if self.is_define:
+            o = f"for (const auto &it : this->{self.field_name}) {{\n"
+            o += f"  {self._encode_element('it')}\n"
+            o += "}"
+            return o
 
         # Unroll small arrays for efficiency
         if self.array_size == 1:
-            return encode_element(f"this->{self.field_name}[0]")
-        elif self.array_size == 2:
+            return self._encode_element(f"this->{self.field_name}[0]")
+        if self.array_size == 2:
             return (
-                encode_element(f"this->{self.field_name}[0]")
+                self._encode_element(f"this->{self.field_name}[0]")
                 + "\n  "
-                + encode_element(f"this->{self.field_name}[1]")
+                + self._encode_element(f"this->{self.field_name}[1]")
             )
 
         # Use loops for larger arrays
         o = f"for (const auto &it : this->{self.field_name}) {{\n"
-        o += f"  {encode_element('it')}\n"
+        o += f"  {self._encode_element('it')}\n"
         o += "}"
         return o
 
@@ -1141,6 +1177,33 @@ class FixedArrayRepeatedType(TypeInfo):
         return ""
 
     def get_size_calculation(self, name: str, force: bool = False) -> str:
+        # If skip_zero is enabled, wrap size calculation in a zero check
+        if self.skip_zero:
+            if self.is_define:
+                # When using a define, we need to use a loop-based approach
+                o = f"for (const auto &it : {name}) {{\n"
+                o += "  if (it != 0) {\n"
+                o += f"    {self._ti.get_size_calculation('it', True)}\n"
+                o += "  }\n"
+                o += "}"
+                return o
+            # Build the condition to check if at least one element is non-zero
+            non_zero_checks = " || ".join(
+                [f"{name}[{i}] != 0" for i in range(self.array_size)]
+            )
+            size_lines = [
+                f"  {self._ti.get_size_calculation(f'{name}[{i}]', True)}"
+                for i in range(self.array_size)
+            ]
+            return f"if ({non_zero_checks}) {{\n" + "\n".join(size_lines) + "\n}"
+
+        # When using a define, always use loop-based approach
+        if self.is_define:
+            o = f"for (const auto &it : {name}) {{\n"
+            o += f"  {self._ti.get_size_calculation('it', True)}\n"
+            o += "}"
+            return o
+
         # For fixed arrays, we always encode all elements
 
         # Special case for single-element arrays - no loop needed
@@ -1164,12 +1227,81 @@ class FixedArrayRepeatedType(TypeInfo):
     def get_estimated_size(self) -> int:
         # For fixed arrays, estimate underlying type size * array size
         underlying_size = self._ti.get_estimated_size()
+        if self.is_define:
+            # When using a define, we don't know the actual size so just guess 3
+            # This is only used for documentation and never actually used since
+            # fixed arrays are only for SOURCE_SERVER (encode-only) messages
+            return underlying_size * 3
         return underlying_size * self.array_size
+
+
+class FixedArrayWithLengthRepeatedType(FixedArrayRepeatedType):
+    """Special type for fixed-size repeated fields with variable length tracking.
+
+    Similar to FixedArrayRepeatedType but generates an additional length field
+    to track how many elements are actually in use. Only encodes/sends elements
+    up to the current length.
+
+    Fixed arrays with length are only supported for encoding (SOURCE_SERVER) since
+    we cannot control how many items we receive when decoding.
+    """
+
+    @property
+    def public_content(self) -> list[str]:
+        # Return both the array and the length field
+        return [
+            f"{self.cpp_type} {self.field_name}{{}};",
+            f"uint16_t {self.field_name}_len{{0}};",
+        ]
+
+    @property
+    def encode_content(self) -> str:
+        # Always use a loop up to the current length
+        o = f"for (uint16_t i = 0; i < this->{self.field_name}_len; i++) {{\n"
+        o += f"  {self._encode_element(f'this->{self.field_name}[i]')}\n"
+        o += "}"
+        return o
+
+    @property
+    def dump_content(self) -> str:
+        # Dump only the active elements
+        o = f"for (uint16_t i = 0; i < this->{self.field_name}_len; i++) {{\n"
+        # Check if underlying type can use dump_field
+        if self._ti.can_use_dump_field():
+            o += f'  dump_field(out, "{self.name}", {self._ti.dump_field_value(f"this->{self.field_name}[i]")}, 4);\n'
+        else:
+            o += f'  out.append("  {self.name}: ");\n'
+            o += indent(self._ti.dump(f"this->{self.field_name}[i]")) + "\n"
+            o += '  out.append("\\n");\n'
+        o += "}"
+        return o
+
+    def get_size_calculation(self, name: str, force: bool = False) -> str:
+        # Calculate size only for active elements
+        o = f"for (uint16_t i = 0; i < {name}_len; i++) {{\n"
+        o += f"  {self._ti.get_size_calculation(f'{name}[i]', True)}\n"
+        o += "}"
+        return o
+
+    def get_estimated_size(self) -> int:
+        # For fixed arrays with length, estimate based on typical usage
+        # Assume on average half the array is used
+        underlying_size = self._ti.get_estimated_size()
+        if self.is_define:
+            # When using a define, estimate 8 elements as typical
+            return underlying_size * 8
+        return underlying_size * (
+            self.array_size // 2 if self.array_size > 2 else self.array_size
+        )
 
 
 class RepeatedTypeInfo(TypeInfo):
     def __init__(self, field: descriptor.FieldDescriptorProto) -> None:
         super().__init__(field)
+        # Check if this is a pointer field by looking for container_pointer option
+        self._container_type = get_field_opt(field, pb.container_pointer, "")
+        self._use_pointer = bool(self._container_type)
+
         # For repeated fields, we need to get the base type info
         # but we can't call create_field_type_info as it would cause recursion
         # So we extract just the type creation logic
@@ -1185,6 +1317,13 @@ class RepeatedTypeInfo(TypeInfo):
 
     @property
     def cpp_type(self) -> str:
+        if self._use_pointer and self._container_type:
+            # For pointer fields, use the specified container type
+            # If the container type already includes the element type (e.g., std::set<climate::ClimateMode>)
+            # use it as-is, otherwise append the element type
+            if "<" in self._container_type and ">" in self._container_type:
+                return f"const {self._container_type}*"
+            return f"const {self._container_type}<{self._ti.cpp_type}>*"
         return f"std::vector<{self._ti.cpp_type}>"
 
     @property
@@ -1205,6 +1344,9 @@ class RepeatedTypeInfo(TypeInfo):
 
     @property
     def decode_varint_content(self) -> str:
+        # Pointer fields don't support decoding
+        if self._use_pointer:
+            return None
         content = self._ti.decode_varint
         if content is None:
             return None
@@ -1214,6 +1356,9 @@ class RepeatedTypeInfo(TypeInfo):
 
     @property
     def decode_length_content(self) -> str:
+        # Pointer fields don't support decoding
+        if self._use_pointer:
+            return None
         content = self._ti.decode_length
         if content is None and isinstance(self._ti, MessageType):
             # Special handling for non-template message decoding
@@ -1226,6 +1371,9 @@ class RepeatedTypeInfo(TypeInfo):
 
     @property
     def decode_32bit_content(self) -> str:
+        # Pointer fields don't support decoding
+        if self._use_pointer:
+            return None
         content = self._ti.decode_32bit
         if content is None:
             return None
@@ -1235,6 +1383,9 @@ class RepeatedTypeInfo(TypeInfo):
 
     @property
     def decode_64bit_content(self) -> str:
+        # Pointer fields don't support decoding
+        if self._use_pointer:
+            return None
         content = self._ti.decode_64bit
         if content is None:
             return None
@@ -1249,6 +1400,15 @@ class RepeatedTypeInfo(TypeInfo):
 
     @property
     def encode_content(self) -> str:
+        if self._use_pointer:
+            # For pointer fields, just dereference (pointer should never be null in our use case)
+            o = f"for (const auto &it : *this->{self.field_name}) {{\n"
+            if isinstance(self._ti, EnumType):
+                o += f"  buffer.{self._ti.encode_func}({self.number}, static_cast<uint32_t>(it), true);\n"
+            else:
+                o += f"  buffer.{self._ti.encode_func}({self.number}, it, true);\n"
+            o += "}"
+            return o
         o = f"for (auto {'' if self._ti_is_bool else '&'}it : this->{self.field_name}) {{\n"
         if isinstance(self._ti, EnumType):
             o += f"  buffer.{self._ti.encode_func}({self.number}, static_cast<uint32_t>(it), true);\n"
@@ -1259,6 +1419,11 @@ class RepeatedTypeInfo(TypeInfo):
 
     @property
     def dump_content(self) -> str:
+        if self._use_pointer:
+            # For pointer fields, dereference and use the existing helper
+            return _generate_array_dump_content(
+                self._ti, f"*this->{self.field_name}", self.name, is_bool=False
+            )
         return _generate_array_dump_content(
             self._ti, f"this->{self.field_name}", self.name, is_bool=self._ti_is_bool
         )
@@ -1269,30 +1434,34 @@ class RepeatedTypeInfo(TypeInfo):
     def get_size_calculation(self, name: str, force: bool = False) -> str:
         # For repeated fields, we always need to pass force=True to the underlying type's calculation
         # This is because the encode method always sets force=true for repeated fields
+
+        # Handle message types separately as they use a dedicated helper
         if isinstance(self._ti, MessageType):
-            # For repeated messages, use the dedicated helper that handles iteration internally
             field_id_size = self._ti.calculate_field_id_size()
-            o = f"size.add_repeated_message({field_id_size}, {name});"
-            return o
+            container = f"*{name}" if self._use_pointer else name
+            return f"size.add_repeated_message({field_id_size}, {container});"
 
-        # For other repeated types, use the underlying type's size calculation with force=True
-        o = f"if (!{name}.empty()) {{\n"
+        # For non-message types, generate size calculation with iteration
+        container_ref = f"*{name}" if self._use_pointer else name
+        empty_check = f"{name}->empty()" if self._use_pointer else f"{name}.empty()"
 
-        # Check if this is a fixed-size type by seeing if it has a fixed byte count
+        o = f"if (!{empty_check}) {{\n"
+
+        # Check if this is a fixed-size type
         num_bytes = self._ti.get_fixed_size_bytes()
         if num_bytes is not None:
-            # Fixed types have constant size per element, so we can multiply
+            # Fixed types have constant size per element
             field_id_size = self._ti.calculate_field_id_size()
-            # Pre-calculate the total bytes per element
             bytes_per_element = field_id_size + num_bytes
-            o += (
-                f"  size.add_precalculated_size({name}.size() * {bytes_per_element});\n"
-            )
+            size_expr = f"{name}->size()" if self._use_pointer else f"{name}.size()"
+            o += f"  size.add_precalculated_size({size_expr} * {bytes_per_element});\n"
         else:
             # Other types need the actual value
-            o += f"  for (const auto {'' if self._ti_is_bool else '&'}it : {name}) {{\n"
+            auto_ref = "" if self._ti_is_bool else "&"
+            o += f"  for (const auto {auto_ref}it : {container_ref}) {{\n"
             o += f"    {self._ti.get_size_calculation('it', True)}\n"
             o += "  }\n"
+
         o += "}"
         return o
 
@@ -1607,6 +1776,19 @@ def build_message_type(
                 f"since we cannot trust or control the number of items received from clients."
             )
 
+        # Validate that fixed_array_with_length_define is only used in encode-only messages
+        if (
+            needs_decode
+            and field.label == 3
+            and get_field_opt(field, pb.fixed_array_with_length_define) is not None
+        ):
+            raise ValueError(
+                f"Message '{desc.name}' uses fixed_array_with_length_define on field '{field.name}' "
+                f"but has source={SOURCE_NAMES[source]}. "
+                f"Fixed arrays with length are only supported for SOURCE_SERVER (encode-only) messages "
+                f"since we cannot trust or control the number of items received from clients."
+            )
+
         ti = create_field_type_info(field, needs_decode, needs_encode)
 
         # Skip field declarations for fields that are in the base class
@@ -1770,7 +1952,7 @@ def build_message_type(
     dump_impl += "}\n"
 
     if base_class:
-        out = f"class {desc.name} : public {base_class} {{\n"
+        out = f"class {desc.name} final : public {base_class} {{\n"
     else:
         # Check if message has any non-deprecated fields
         has_fields = any(not field.options.deprecated for field in desc.field)
@@ -1779,7 +1961,7 @@ def build_message_type(
             base_class = "ProtoDecodableMessage"
         else:
             base_class = "ProtoMessage"
-        out = f"class {desc.name} : public {base_class} {{\n"
+        out = f"class {desc.name} final : public {base_class} {{\n"
     out += " public:\n"
     out += indent("\n".join(public_content)) + "\n"
     out += "\n"
@@ -2080,6 +2262,7 @@ def main() -> None:
     d = descriptor.FileDescriptorSet.FromString(proto_content)
 
     file = d.file[0]
+
     content = FILE_HEADER
     content += """\
 #pragma once
@@ -2088,7 +2271,10 @@ def main() -> None:
 #include "esphome/core/string_ref.h"
 
 #include "proto.h"
+#include "api_pb2_includes.h"
+"""
 
+    content += """
 namespace esphome::api {
 
 """

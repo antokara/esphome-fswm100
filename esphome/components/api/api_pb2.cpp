@@ -115,12 +115,12 @@ void DeviceInfoResponse::encode(ProtoWriteBuffer buffer) const {
   buffer.encode_bool(19, this->api_encryption_supported);
 #endif
 #ifdef USE_DEVICES
-  for (auto &it : this->devices) {
+  for (const auto &it : this->devices) {
     buffer.encode_message(20, it, true);
   }
 #endif
 #ifdef USE_AREAS
-  for (auto &it : this->areas) {
+  for (const auto &it : this->areas) {
     buffer.encode_message(21, it, true);
   }
 #endif
@@ -167,10 +167,14 @@ void DeviceInfoResponse::calculate_size(ProtoSize &size) const {
   size.add_bool(2, this->api_encryption_supported);
 #endif
 #ifdef USE_DEVICES
-  size.add_repeated_message(2, this->devices);
+  for (const auto &it : this->devices) {
+    size.add_message_object_force(2, it);
+  }
 #endif
 #ifdef USE_AREAS
-  size.add_repeated_message(2, this->areas);
+  for (const auto &it : this->areas) {
+    size.add_message_object_force(2, it);
+  }
 #endif
 #ifdef USE_AREAS
   size.add_message_object(2, this->area);
@@ -331,7 +335,7 @@ void ListEntitiesFanResponse::encode(ProtoWriteBuffer buffer) const {
   buffer.encode_string(10, this->icon_ref_);
 #endif
   buffer.encode_uint32(11, static_cast<uint32_t>(this->entity_category));
-  for (auto &it : this->supported_preset_modes) {
+  for (const auto &it : *this->supported_preset_modes) {
     buffer.encode_string(12, it, true);
   }
 #ifdef USE_DEVICES
@@ -351,8 +355,8 @@ void ListEntitiesFanResponse::calculate_size(ProtoSize &size) const {
   size.add_length(1, this->icon_ref_.size());
 #endif
   size.add_uint32(1, static_cast<uint32_t>(this->entity_category));
-  if (!this->supported_preset_modes.empty()) {
-    for (const auto &it : this->supported_preset_modes) {
+  if (!this->supported_preset_modes->empty()) {
+    for (const auto &it : *this->supported_preset_modes) {
       size.add_length_force(1, it.size());
     }
   }
@@ -447,7 +451,7 @@ void ListEntitiesLightResponse::encode(ProtoWriteBuffer buffer) const {
   buffer.encode_string(1, this->object_id_ref_);
   buffer.encode_fixed32(2, this->key);
   buffer.encode_string(3, this->name_ref_);
-  for (auto &it : this->supported_color_modes) {
+  for (const auto &it : *this->supported_color_modes) {
     buffer.encode_uint32(12, static_cast<uint32_t>(it), true);
   }
   buffer.encode_float(9, this->min_mireds);
@@ -468,8 +472,8 @@ void ListEntitiesLightResponse::calculate_size(ProtoSize &size) const {
   size.add_length(1, this->object_id_ref_.size());
   size.add_fixed32(1, this->key);
   size.add_length(1, this->name_ref_.size());
-  if (!this->supported_color_modes.empty()) {
-    for (const auto &it : this->supported_color_modes) {
+  if (!this->supported_color_modes->empty()) {
+    for (const auto &it : *this->supported_color_modes) {
       size.add_uint32_force(1, static_cast<uint32_t>(it));
     }
   }
@@ -1064,26 +1068,26 @@ void ListEntitiesClimateResponse::encode(ProtoWriteBuffer buffer) const {
   buffer.encode_string(3, this->name_ref_);
   buffer.encode_bool(5, this->supports_current_temperature);
   buffer.encode_bool(6, this->supports_two_point_target_temperature);
-  for (auto &it : this->supported_modes) {
+  for (const auto &it : *this->supported_modes) {
     buffer.encode_uint32(7, static_cast<uint32_t>(it), true);
   }
   buffer.encode_float(8, this->visual_min_temperature);
   buffer.encode_float(9, this->visual_max_temperature);
   buffer.encode_float(10, this->visual_target_temperature_step);
   buffer.encode_bool(12, this->supports_action);
-  for (auto &it : this->supported_fan_modes) {
+  for (const auto &it : *this->supported_fan_modes) {
     buffer.encode_uint32(13, static_cast<uint32_t>(it), true);
   }
-  for (auto &it : this->supported_swing_modes) {
+  for (const auto &it : *this->supported_swing_modes) {
     buffer.encode_uint32(14, static_cast<uint32_t>(it), true);
   }
-  for (auto &it : this->supported_custom_fan_modes) {
+  for (const auto &it : *this->supported_custom_fan_modes) {
     buffer.encode_string(15, it, true);
   }
-  for (auto &it : this->supported_presets) {
+  for (const auto &it : *this->supported_presets) {
     buffer.encode_uint32(16, static_cast<uint32_t>(it), true);
   }
-  for (auto &it : this->supported_custom_presets) {
+  for (const auto &it : *this->supported_custom_presets) {
     buffer.encode_string(17, it, true);
   }
   buffer.encode_bool(18, this->disabled_by_default);
@@ -1106,8 +1110,8 @@ void ListEntitiesClimateResponse::calculate_size(ProtoSize &size) const {
   size.add_length(1, this->name_ref_.size());
   size.add_bool(1, this->supports_current_temperature);
   size.add_bool(1, this->supports_two_point_target_temperature);
-  if (!this->supported_modes.empty()) {
-    for (const auto &it : this->supported_modes) {
+  if (!this->supported_modes->empty()) {
+    for (const auto &it : *this->supported_modes) {
       size.add_uint32_force(1, static_cast<uint32_t>(it));
     }
   }
@@ -1115,28 +1119,28 @@ void ListEntitiesClimateResponse::calculate_size(ProtoSize &size) const {
   size.add_float(1, this->visual_max_temperature);
   size.add_float(1, this->visual_target_temperature_step);
   size.add_bool(1, this->supports_action);
-  if (!this->supported_fan_modes.empty()) {
-    for (const auto &it : this->supported_fan_modes) {
+  if (!this->supported_fan_modes->empty()) {
+    for (const auto &it : *this->supported_fan_modes) {
       size.add_uint32_force(1, static_cast<uint32_t>(it));
     }
   }
-  if (!this->supported_swing_modes.empty()) {
-    for (const auto &it : this->supported_swing_modes) {
+  if (!this->supported_swing_modes->empty()) {
+    for (const auto &it : *this->supported_swing_modes) {
       size.add_uint32_force(1, static_cast<uint32_t>(it));
     }
   }
-  if (!this->supported_custom_fan_modes.empty()) {
-    for (const auto &it : this->supported_custom_fan_modes) {
+  if (!this->supported_custom_fan_modes->empty()) {
+    for (const auto &it : *this->supported_custom_fan_modes) {
       size.add_length_force(1, it.size());
     }
   }
-  if (!this->supported_presets.empty()) {
-    for (const auto &it : this->supported_presets) {
+  if (!this->supported_presets->empty()) {
+    for (const auto &it : *this->supported_presets) {
       size.add_uint32_force(2, static_cast<uint32_t>(it));
     }
   }
-  if (!this->supported_custom_presets.empty()) {
-    for (const auto &it : this->supported_custom_presets) {
+  if (!this->supported_custom_presets->empty()) {
+    for (const auto &it : *this->supported_custom_presets) {
       size.add_length_force(2, it.size());
     }
   }
@@ -1371,7 +1375,7 @@ void ListEntitiesSelectResponse::encode(ProtoWriteBuffer buffer) const {
 #ifdef USE_ENTITY_ICON
   buffer.encode_string(5, this->icon_ref_);
 #endif
-  for (auto &it : this->options) {
+  for (const auto &it : *this->options) {
     buffer.encode_string(6, it, true);
   }
   buffer.encode_bool(7, this->disabled_by_default);
@@ -1387,8 +1391,8 @@ void ListEntitiesSelectResponse::calculate_size(ProtoSize &size) const {
 #ifdef USE_ENTITY_ICON
   size.add_length(1, this->icon_ref_.size());
 #endif
-  if (!this->options.empty()) {
-    for (const auto &it : this->options) {
+  if (!this->options->empty()) {
+    for (const auto &it : *this->options) {
       size.add_length_force(1, it.size());
     }
   }
@@ -1725,6 +1729,7 @@ void ListEntitiesMediaPlayerResponse::encode(ProtoWriteBuffer buffer) const {
 #ifdef USE_DEVICES
   buffer.encode_uint32(10, this->device_id);
 #endif
+  buffer.encode_uint32(11, this->feature_flags);
 }
 void ListEntitiesMediaPlayerResponse::calculate_size(ProtoSize &size) const {
   size.add_length(1, this->object_id_ref_.size());
@@ -1740,6 +1745,7 @@ void ListEntitiesMediaPlayerResponse::calculate_size(ProtoSize &size) const {
 #ifdef USE_DEVICES
   size.add_uint32(1, this->device_id);
 #endif
+  size.add_uint32(1, this->feature_flags);
 }
 void MediaPlayerStateResponse::encode(ProtoWriteBuffer buffer) const {
   buffer.encode_fixed32(1, this->key);
@@ -1837,12 +1843,14 @@ void BluetoothLERawAdvertisement::calculate_size(ProtoSize &size) const {
   size.add_length(1, this->data_len);
 }
 void BluetoothLERawAdvertisementsResponse::encode(ProtoWriteBuffer buffer) const {
-  for (auto &it : this->advertisements) {
-    buffer.encode_message(1, it, true);
+  for (uint16_t i = 0; i < this->advertisements_len; i++) {
+    buffer.encode_message(1, this->advertisements[i], true);
   }
 }
 void BluetoothLERawAdvertisementsResponse::calculate_size(ProtoSize &size) const {
-  size.add_repeated_message(1, this->advertisements);
+  for (uint16_t i = 0; i < this->advertisements_len; i++) {
+    size.add_message_object_force(1, this->advertisements[i]);
+  }
 }
 bool BluetoothDeviceRequest::decode_varint(uint32_t field_id, ProtoVarInt value) {
   switch (field_id) {
@@ -1886,52 +1894,72 @@ bool BluetoothGATTGetServicesRequest::decode_varint(uint32_t field_id, ProtoVarI
   return true;
 }
 void BluetoothGATTDescriptor::encode(ProtoWriteBuffer buffer) const {
-  buffer.encode_uint64(1, this->uuid[0], true);
-  buffer.encode_uint64(1, this->uuid[1], true);
+  if (this->uuid[0] != 0 || this->uuid[1] != 0) {
+    buffer.encode_uint64(1, this->uuid[0], true);
+    buffer.encode_uint64(1, this->uuid[1], true);
+  }
   buffer.encode_uint32(2, this->handle);
+  buffer.encode_uint32(3, this->short_uuid);
 }
 void BluetoothGATTDescriptor::calculate_size(ProtoSize &size) const {
-  size.add_uint64_force(1, this->uuid[0]);
-  size.add_uint64_force(1, this->uuid[1]);
+  if (this->uuid[0] != 0 || this->uuid[1] != 0) {
+    size.add_uint64_force(1, this->uuid[0]);
+    size.add_uint64_force(1, this->uuid[1]);
+  }
   size.add_uint32(1, this->handle);
+  size.add_uint32(1, this->short_uuid);
 }
 void BluetoothGATTCharacteristic::encode(ProtoWriteBuffer buffer) const {
-  buffer.encode_uint64(1, this->uuid[0], true);
-  buffer.encode_uint64(1, this->uuid[1], true);
+  if (this->uuid[0] != 0 || this->uuid[1] != 0) {
+    buffer.encode_uint64(1, this->uuid[0], true);
+    buffer.encode_uint64(1, this->uuid[1], true);
+  }
   buffer.encode_uint32(2, this->handle);
   buffer.encode_uint32(3, this->properties);
   for (auto &it : this->descriptors) {
     buffer.encode_message(4, it, true);
   }
+  buffer.encode_uint32(5, this->short_uuid);
 }
 void BluetoothGATTCharacteristic::calculate_size(ProtoSize &size) const {
-  size.add_uint64_force(1, this->uuid[0]);
-  size.add_uint64_force(1, this->uuid[1]);
+  if (this->uuid[0] != 0 || this->uuid[1] != 0) {
+    size.add_uint64_force(1, this->uuid[0]);
+    size.add_uint64_force(1, this->uuid[1]);
+  }
   size.add_uint32(1, this->handle);
   size.add_uint32(1, this->properties);
   size.add_repeated_message(1, this->descriptors);
+  size.add_uint32(1, this->short_uuid);
 }
 void BluetoothGATTService::encode(ProtoWriteBuffer buffer) const {
-  buffer.encode_uint64(1, this->uuid[0], true);
-  buffer.encode_uint64(1, this->uuid[1], true);
+  if (this->uuid[0] != 0 || this->uuid[1] != 0) {
+    buffer.encode_uint64(1, this->uuid[0], true);
+    buffer.encode_uint64(1, this->uuid[1], true);
+  }
   buffer.encode_uint32(2, this->handle);
   for (auto &it : this->characteristics) {
     buffer.encode_message(3, it, true);
   }
+  buffer.encode_uint32(4, this->short_uuid);
 }
 void BluetoothGATTService::calculate_size(ProtoSize &size) const {
-  size.add_uint64_force(1, this->uuid[0]);
-  size.add_uint64_force(1, this->uuid[1]);
+  if (this->uuid[0] != 0 || this->uuid[1] != 0) {
+    size.add_uint64_force(1, this->uuid[0]);
+    size.add_uint64_force(1, this->uuid[1]);
+  }
   size.add_uint32(1, this->handle);
   size.add_repeated_message(1, this->characteristics);
+  size.add_uint32(1, this->short_uuid);
 }
 void BluetoothGATTGetServicesResponse::encode(ProtoWriteBuffer buffer) const {
   buffer.encode_uint64(1, this->address);
-  buffer.encode_message(2, this->services[0], true);
+  for (auto &it : this->services) {
+    buffer.encode_message(2, it, true);
+  }
 }
 void BluetoothGATTGetServicesResponse::calculate_size(ProtoSize &size) const {
   size.add_uint64(1, this->address);
-  size.add_message_object_force(1, this->services[0]);
+  size.add_repeated_message(1, this->services);
 }
 void BluetoothGATTGetServicesDoneResponse::encode(ProtoWriteBuffer buffer) const {
   buffer.encode_uint64(1, this->address);
@@ -2051,15 +2079,17 @@ void BluetoothGATTNotifyDataResponse::calculate_size(ProtoSize &size) const {
 void BluetoothConnectionsFreeResponse::encode(ProtoWriteBuffer buffer) const {
   buffer.encode_uint32(1, this->free);
   buffer.encode_uint32(2, this->limit);
-  for (auto &it : this->allocated) {
-    buffer.encode_uint64(3, it, true);
+  for (const auto &it : this->allocated) {
+    if (it != 0) {
+      buffer.encode_uint64(3, it, true);
+    }
   }
 }
 void BluetoothConnectionsFreeResponse::calculate_size(ProtoSize &size) const {
   size.add_uint32(1, this->free);
   size.add_uint32(1, this->limit);
-  if (!this->allocated.empty()) {
-    for (const auto &it : this->allocated) {
+  for (const auto &it : this->allocated) {
+    if (it != 0) {
       size.add_uint64_force(1, it);
     }
   }
@@ -2332,15 +2362,15 @@ void VoiceAssistantConfigurationResponse::encode(ProtoWriteBuffer buffer) const 
   for (auto &it : this->available_wake_words) {
     buffer.encode_message(1, it, true);
   }
-  for (auto &it : this->active_wake_words) {
+  for (const auto &it : *this->active_wake_words) {
     buffer.encode_string(2, it, true);
   }
   buffer.encode_uint32(3, this->max_active_wake_words);
 }
 void VoiceAssistantConfigurationResponse::calculate_size(ProtoSize &size) const {
   size.add_repeated_message(1, this->available_wake_words);
-  if (!this->active_wake_words.empty()) {
-    for (const auto &it : this->active_wake_words) {
+  if (!this->active_wake_words->empty()) {
+    for (const auto &it : *this->active_wake_words) {
       size.add_length_force(1, it.size());
     }
   }
