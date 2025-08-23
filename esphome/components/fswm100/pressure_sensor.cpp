@@ -61,7 +61,7 @@ void PressureSensor::loop() {
       this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
 
   if (std::isnan(new_sensor_state)) {
-    ESP_LOGW(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
+    ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
     this->has_fault_ = true;
     return;
   }

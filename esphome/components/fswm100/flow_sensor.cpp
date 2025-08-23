@@ -86,31 +86,24 @@ void FlowSensor::publish(float flow, bool immediate) {
 }
 
 float FlowSensor::get_state() {
-  /**
-   *  - Black Surface/Low reflection leads to
-   *    decreased phototransistor conductivity,
-   *    causing the output voltage to be higher, closer to Vcc.
-   *
-   *  - White Surface/High reflection leads to
-   *    increased phototransistor conductivity,
-   *    causing the output voltage to be lower, closer to GND.
-   *
-   * The precision we can achieve with our circuit
-   * (power supply, ADS1115 and the TCR5000) is about 0.05V.
-   * This means that any voltage flactuation below 0.05V
-   * should be ignored...
-   */
   float new_sensor_state = abs(this->fswm100_->get_ads1115()->request_measurement(
       this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
 
   if (std::isnan(new_sensor_state)) {
-    ESP_LOGD(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
+    ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
     this->has_fault_ = true;
     return 0;  // when it fails
   }
 
   ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
             static_cast<int>(this->multiplexer_), new_sensor_state);
+
+  // check if the voltage is within the expected range
+  if (!this->has_fault_ && new_sensor_state < FLOW_SENSOR_MIN_IR_VOLTAGE ||
+      new_sensor_state > FLOW_SENSOR_MAX_IR_VOLTAGE) {
+    ESP_LOGW(TAG, "'%s': voltage out of range: %.4f V", this->get_name().c_str(), new_sensor_state);
+    this->has_fault_ = true;
+  }
 
   return new_sensor_state;
 }

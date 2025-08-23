@@ -18,6 +18,20 @@
  */
 #define FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS 30000
 
+/**
+ * @brief The minimum IR voltage that is considered valid.
+ *        Below this value, the sensor is considered to be faulty or
+ *        should be replaced because it may have reached its end of life.
+ */
+#define FLOW_SENSOR_MIN_IR_VOLTAGE 2.3f
+
+/**
+ * @brief The maximum IR voltage that is considered valid.
+ *        Above this value, the sensor is considered to be faulty or
+ *        should be replaced because it may have reached its end of life.
+ */
+#define FLOW_SENSOR_MAX_IR_VOLTAGE 2.8f
+
 namespace esphome {
 namespace fswm100 {
 
@@ -54,6 +68,19 @@ class FlowSensor : public sensor::Sensor {
 
   /**
    * @brief get the state of the flow sensor
+   *
+   *  - Black Surface/Low reflection leads to
+   *    decreased phototransistor conductivity,
+   *    causing the output voltage to be higher, closer to Vcc (4.9V raw).
+   *
+   *  - White Surface/High reflection leads to
+   *    increased phototransistor conductivity,
+   *    causing the output voltage to be lower, closer to GND (0.1V raw).
+   *
+   * The precision we can achieve with our circuit
+   * (power supply, ADS1115 and the TCR5000) is about 0.05V.
+   * This means that any voltage flactuation below 0.05V
+   * should be ignored...
    *
    * @return float the voltage read from the ADS1115 channel
    *               that corresponds to the flow sensor.
@@ -160,16 +187,18 @@ class FlowSensor : public sensor::Sensor {
   /**
    * @brief the min state value,
    *        since the last debug state publish.
+   *        useful to determine expected/normal range of voltage.
    *
-   *        useful to determine expected range of voltage fluctuations.
+   *  @example 2.5059
    */
   float debug_state_min_{0.0f};
 
   /**
    * @brief the max state value,
    *        since the last debug state publish
+   *        useful to determine expected/normal range of voltage.
    *
-   *       useful to determine expected range of voltage fluctuations.
+   * @example 2.6359
    */
   float debug_state_max_{0.0f};
 
