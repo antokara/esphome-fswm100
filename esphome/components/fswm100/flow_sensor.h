@@ -7,8 +7,11 @@
 /**
  * @brief The multiplier applied to the time between pulses
  *        to determine if the flow rate should be re-calculated.
+ *
  *        This is used to avoid re-calculating the flow rate too often,
  *        which leads to spikes in the flow rate.
+ *
+ *        It's also used to calculate the pulse flow timeout period.
  */
 #define FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER 1.25
 

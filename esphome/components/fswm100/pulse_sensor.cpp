@@ -44,6 +44,19 @@ void PulseSensor::loop() {
       this->has_fault_ = true;
     }
   }
+
+  // check if the pulse sensor has not toggled for a long time while there is active flow (i.e. IR sensor appears to be
+  // active) by comparing the time passed since the last pulse against the calculated pulse flow timeout
+  if (!this->has_fault_ && this->fswm100_->get_flow_sensor_state() > 0 &&
+      millis() - this->last_toggle_time_ > this->rate_volume_ / this->fswm100_->get_flow_sensor_min_volume() *
+                                               this->fswm100_->get_flow_sensor_rate_time() * 1000 *
+                                               FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER) {
+    ESP_LOGW(TAG,
+             "'%s': No pulse has been detected for a long period, while the IR appears to be active."
+             "Either the IR is having problems (false positive), or the pulse sensor is not working (false negative).",
+             this->get_name().c_str());
+    this->has_fault_ = true;
+  }
 }
 
 float PulseSensor::get_rate_volume() { return this->rate_volume_; }
