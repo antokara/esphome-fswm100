@@ -158,6 +158,11 @@ class FSWM100 : public Component, public EntityBase {
   float get_flow_sensor_max_volume();
 
   /**
+   * @brief returns the flow sensor rate time in seconds
+   */
+  float get_flow_sensor_rate_time();
+
+  /**
    * @brief returns the pulse rate volume
    */
   float get_pulse_rate_volume();

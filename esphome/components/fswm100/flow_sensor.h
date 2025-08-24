@@ -87,6 +87,12 @@ class FlowSensor : public sensor::Sensor {
   float get_max_volume();
 
   /**
+   * @brief returns the rate time in seconds.
+   *       This is useful for diagnostics.
+   */
+  float get_rate_time();
+
+  /**
    * @brief to be called in the loop() method of the parent component
    * it checks if the state has changed and if it should be published.
    * if yes, it publishes the state.

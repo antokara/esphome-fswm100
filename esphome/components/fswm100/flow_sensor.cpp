@@ -47,6 +47,7 @@ void FlowSensor::dump_config() {
 bool FlowSensor::has_fault() { return this->has_fault_; }
 float FlowSensor::get_min_volume() { return this->min_volume_; }
 float FlowSensor::get_max_volume() { return this->max_volume_; }
+float FlowSensor::get_rate_time() { return this->rate_time_; }
 
 void FlowSensor::active() {
   this->last_active_time_ = millis();
