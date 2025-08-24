@@ -37,7 +37,7 @@ void PulseSensor::loop() {
     this->publish_state(new_state);
     this->last_toggle_time_ = millis();
 
-    // check if the pulse toggles too fast to be correct...
+    // diagnostics: check if the pulse toggles too fast to be correct...
     if (!this->has_fault_ && this->fswm100_->get_flow_sensor_state() > this->fswm100_->get_flow_sensor_max_volume()) {
       ESP_LOGW(TAG, "'%s': pulse rate volume exceeded max flow volume: %.4f > %.4f", this->get_name().c_str(),
                this->fswm100_->get_flow_sensor_state(), this->fswm100_->get_flow_sensor_max_volume());
@@ -45,8 +45,8 @@ void PulseSensor::loop() {
     }
   }
 
-  // check if the pulse sensor has not toggled for a long time while there is active flow (i.e. IR sensor appears to be
-  // active) by comparing the time passed since the last pulse against the calculated pulse flow timeout
+  // diagnostics: check if the pulse sensor has not toggled for a long time while there is active flow (i.e. IR sensor
+  // appears to be active) by comparing the time passed since the last pulse against the calculated pulse flow timeout
   if (!this->has_fault_ && this->fswm100_->get_flow_sensor_state() > 0 &&
       millis() - this->last_toggle_time_ > this->rate_volume_ / this->fswm100_->get_flow_sensor_min_volume() *
                                                this->fswm100_->get_flow_sensor_rate_time() * 1000 *

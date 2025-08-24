@@ -176,7 +176,7 @@ void FSWM100::loop() {
   this->flow_sensor_problem_sensor_->loop();
 
   /**
-   * diagnostic checks for faults.
+   * diagnostic: checks for faults.
    *
    * we allow for multiple faults to be detected and reported combined.
    * this is true because we may not be able to isolate the fault to a single sensor and/or
@@ -199,7 +199,7 @@ void FSWM100::loop() {
   }
 
   /**
-   * the status LED states/colors.
+   * diagnostics: check to set the status LED states/colors.
    * the order here is important, as it determines which state/color
    * takes precedence over the others.
    *

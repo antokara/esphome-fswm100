@@ -60,6 +60,7 @@ void PressureSensor::loop() {
   float new_sensor_state = abs(this->fswm100_->get_ads1115()->request_measurement(
       this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
 
+  // diagnostics: check for invalid reading
   if (std::isnan(new_sensor_state)) {
     ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
     this->has_fault_ = true;
@@ -69,7 +70,7 @@ void PressureSensor::loop() {
   ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
             static_cast<int>(this->multiplexer_), new_sensor_state);
 
-  // check if the voltage is within the expected range
+  // diagnostics: check if the voltage is within the expected range
   if (!this->has_fault_ && new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_) {
     ESP_LOGW(TAG, "'%s': Voltage %.4f V is out of range (%.4f V - %.4f V).", this->get_name().c_str(), new_sensor_state,
              this->min_voltage_, this->max_voltage_);
