@@ -35,6 +35,13 @@ void PulseSensor::loop() {
   // check if the state has changed or if this is the first time
   if (new_state != this->state) {
     this->publish_state(new_state);
+
+    // check if the pulse toggles too fast to be correct...
+    if (!this->has_fault_ && this->fswm100_->get_flow_sensor_state() > this->fswm100_->get_flow_sensor_max_volume()) {
+      ESP_LOGW(TAG, "'%s': pulse rate volume exceeded max flow volume: %.4f > %.4f", this->get_name().c_str(),
+               this->fswm100_->get_flow_sensor_state(), this->fswm100_->get_flow_sensor_max_volume());
+      this->has_fault_ = true;
+    }
   }
 }
 

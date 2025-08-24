@@ -143,6 +143,16 @@ class FSWM100 : public Component, public EntityBase {
   float get_flow_sensor_min_duration();
 
   /**
+   * @brief returns the flow sensor state (e.g. flow rate in gpm)
+   */
+  float get_flow_sensor_state();
+
+  /**
+   * @brief returns the max flow volume the meter is supposed to detect.
+   */
+  float get_flow_sensor_max_volume();
+
+  /**
    * @brief returns the pulse rate volume
    */
   float get_pulse_rate_volume();

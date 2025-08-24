@@ -75,6 +75,12 @@ class FlowSensor : public sensor::Sensor {
   float get_state();
 
   /**
+   * @brief get the max flow volume the meter is supposed to detect.
+   *        This is useful for diagnostics.
+   */
+  float get_max_volume();
+
+  /**
    * @brief to be called in the loop() method of the parent component
    * it checks if the state has changed and if it should be published.
    * if yes, it publishes the state.
