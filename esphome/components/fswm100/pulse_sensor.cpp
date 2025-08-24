@@ -35,6 +35,7 @@ void PulseSensor::loop() {
   // check if the state has changed or if this is the first time
   if (new_state != this->state) {
     this->publish_state(new_state);
+    this->last_toggle_time_ = millis();
 
     // check if the pulse toggles too fast to be correct...
     if (!this->has_fault_ && this->fswm100_->get_flow_sensor_state() > this->fswm100_->get_flow_sensor_max_volume()) {
@@ -46,6 +47,7 @@ void PulseSensor::loop() {
 }
 
 float PulseSensor::get_rate_volume() { return this->rate_volume_; }
+uint32_t PulseSensor::get_last_toggle_time() { return this->last_toggle_time_; }
 
 }  // namespace fswm100
 }  // namespace esphome

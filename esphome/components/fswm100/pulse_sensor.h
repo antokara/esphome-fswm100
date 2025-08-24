@@ -47,6 +47,12 @@ class PulseSensor : public binary_sensor::BinarySensor {
   float get_rate_volume();
 
   /**
+   * @brief returns the last time the pulse sensor toggled.
+   *        it is used for diagnostics.
+   */
+  uint32_t get_last_toggle_time();
+
+  /**
    * @brief if true, the sensor has a self detected fault.
    *        those are faults that can be determined in isolation.
    *        e.g. out of range values, etc. but does not include
@@ -87,6 +93,12 @@ class PulseSensor : public binary_sensor::BinarySensor {
    *          this should be set to 1.0
    */
   float rate_volume_{1.0};
+
+  /**
+   * @brief the last time the pulse sensor toggled.
+   *        it is used for diagnostics.
+   */
+  uint32_t last_toggle_time_{0};
 };
 
 }  // namespace fswm100
