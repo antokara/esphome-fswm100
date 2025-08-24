@@ -90,13 +90,6 @@ class FlowSensor : public sensor::Sensor {
   void dump_config();
 
   /**
-   * @brief to be called when there's active flow.
-   *        it could be when it just switched to active or
-   *        when it's sustained active flow.
-   */
-  void active();
-
-  /**
    * @brief calculate and return the active flow,
    *        based on the time since the last pulse sensor state change,
    *       the rate time and the pulse rate volume.
@@ -165,6 +158,13 @@ class FlowSensor : public sensor::Sensor {
    * @brief ADS1115 resolution
    */
   ads1115::ADS1115Resolution resolution_;
+
+  /**
+   * @brief to be called when there's active flow.
+   *        it could be when it just switched to active or
+   *        when it's sustained active flow.
+   */
+  void active();
 
   /**
    * @brief the last sensor state
@@ -263,7 +263,8 @@ class FlowSensor : public sensor::Sensor {
   float rate_time_{60.0f};
 
   /**
-   * @brief the last time the flow was active
+   * @brief the last time the flow was switched to active.
+   *        (could be due to pulse sensor or IR voltage change).
    */
   uint32_t last_active_time_{0};
 
