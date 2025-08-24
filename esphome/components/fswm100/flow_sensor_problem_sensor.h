@@ -15,8 +15,7 @@ class FSWM100;
 /**
  * @brief the problem sensor, of the flow sensor.
  *        when true, the flow sensor is having a problem:
- *           - we got a pulse but no IR signal
- *           - we got an IR signal but no pulse longer than the minimum duration (could be pulse or IR)
+ *           - we got a pulse but no IR signal, within the flow sensor min duration
  *           - we are getting voltage readings that are not within the expected range
  *           - I2C or ADS1115 errors
  *        when false, the flow sensor is working properly.

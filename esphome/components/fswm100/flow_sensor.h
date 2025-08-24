@@ -308,6 +308,12 @@ class FlowSensor : public sensor::Sensor {
   uint32_t newest_pulse_sensor_active_time_{0};
 
   /**
+   * @brief the last time we had any IR activity above the noise floor.
+   *        This is used for diagnostics.
+   */
+  uint32_t last_ir_activity_time_{0};
+
+  /**
    *  A function object that knows how to create a new set of filters
    * e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new
    * esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }

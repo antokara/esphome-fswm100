@@ -97,6 +97,7 @@ float FlowSensor::get_state() {
   float new_sensor_state = abs(this->fswm100_->get_ads1115()->request_measurement(
       this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
 
+  // diagnostics: check for invalid reading
   if (std::isnan(new_sensor_state)) {
     ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
     this->has_fault_ = true;
@@ -106,7 +107,7 @@ float FlowSensor::get_state() {
   ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
             static_cast<int>(this->multiplexer_), new_sensor_state);
 
-  // check if the voltage is within the expected range
+  // diagnostics: check if the voltage is within the expected range
   if (!this->has_fault_ && new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_) {
     ESP_LOGW(TAG, "'%s': voltage out of range: %.4f V", this->get_name().c_str(), new_sensor_state);
     this->has_fault_ = true;
@@ -158,12 +159,14 @@ void FlowSensor::loop() {
       // first time we read the sensor, or it was 0 before
       ESP_LOGD(TAG, "Flow: first reading voltage %.4f", new_sensor_state);
       this->last_sensor_state_ = new_sensor_state;
+      this->last_ir_activity_time_ = millis();
       return;  // no need to publish, as we just started
     }
     // active due to IR movement
     ESP_LOGV(TAG, "Flow: active due to IR voltage %.4f delta", state_delta);
     this->active();
     this->last_sensor_state_ = new_sensor_state;
+    this->last_ir_activity_time_ = millis();
   } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
     // inactive. no pulse or IR and timed out
     if (this->state > 0) {
@@ -175,6 +178,19 @@ void FlowSensor::loop() {
   } else if (this->state > 0) {
     // active but not yet timed out
     this->publish(this->calculate_active_flow());
+
+    // diagnostics: if we have gotten a pulse lately, within the min duration but
+    // there has been no IR activity within the min duration, we have a problem
+    if (!this->has_fault_ &&
+        millis() - this->newest_pulse_sensor_active_time_ < this->fswm100_->get_flow_sensor_min_duration() &&
+        millis() - this->last_ir_activity_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
+      ESP_LOGW(TAG,
+               "'%s': No IR activity has been detected, while the Pulse appears to have been toggled."
+               "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
+               "positive).",
+               this->get_name().c_str());
+      this->has_fault_ = true;
+    }
   }
 
   // publish debug state meta info every FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS
