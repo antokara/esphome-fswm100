@@ -148,6 +148,11 @@ class FSWM100 : public Component, public EntityBase {
   float get_flow_sensor_state();
 
   /**
+   * @brief returns the min flow volume the meter is supposed to detect.
+   */
+  float get_flow_sensor_min_volume();
+
+  /**
    * @brief returns the max flow volume the meter is supposed to detect.
    */
   float get_flow_sensor_max_volume();

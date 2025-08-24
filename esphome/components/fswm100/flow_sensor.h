@@ -75,6 +75,12 @@ class FlowSensor : public sensor::Sensor {
   float get_state();
 
   /**
+   * @brief get the min flow volume the meter is supposed to detect.
+   *        This is useful for diagnostics.
+   */
+  float get_min_volume();
+
+  /**
    * @brief get the max flow volume the meter is supposed to detect.
    *        This is useful for diagnostics.
    */
