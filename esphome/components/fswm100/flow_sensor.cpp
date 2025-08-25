@@ -48,9 +48,15 @@ bool FlowSensor::has_fault() { return this->has_fault_; }
 float FlowSensor::get_min_volume() { return this->min_volume_; }
 float FlowSensor::get_max_volume() { return this->max_volume_; }
 float FlowSensor::get_rate_time() { return this->rate_time_; }
+uint32_t FlowSensor::get_last_switched_to_active_time() { return this->last_switched_to_active_time_; }
 
 void FlowSensor::active() {
+  // update the last active time (not switched to active)
   this->last_active_time_ = millis();
+  // set the last switched to active time (if we were inactive before)
+  if (this->state == 0) {
+    this->last_switched_to_active_time_ = this->last_active_time_;
+  }
   this->publish(this->calculate_active_flow());
 }
 

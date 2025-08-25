@@ -96,6 +96,13 @@ class FlowSensor : public sensor::Sensor {
   float get_rate_time();
 
   /**
+   * @brief returns the last time (in milliseconds since boot)
+   *        the flow switched to active from inactive.
+   *        This is useful for diagnostics.
+   */
+  uint32_t get_last_switched_to_active_time();
+
+  /**
    * @brief to be called in the loop() method of the parent component
    * it checks if the state has changed and if it should be published.
    * if yes, it publishes the state.
@@ -278,10 +285,16 @@ class FlowSensor : public sensor::Sensor {
   float rate_time_{60.0f};
 
   /**
-   * @brief the last time the flow was switched to active.
+   * @brief the last time the flow was active (not switched to active).
    *        (could be due to pulse sensor or IR voltage change).
    */
   uint32_t last_active_time_{0};
+
+  /**
+   * @brief the time (millis) when the flow last switched to active
+   *        from inactive (zero flow).
+   */
+  uint32_t last_switched_to_active_time_{0};
 
   /**
    * @brief the last pulse sensor state we got.

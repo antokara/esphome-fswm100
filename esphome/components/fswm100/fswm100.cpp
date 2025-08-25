@@ -103,6 +103,9 @@ float FSWM100::get_flow_sensor_state() { return this->flow_sensor_->state; }
 float FSWM100::get_flow_sensor_min_volume() { return this->flow_sensor_->get_min_volume(); }
 float FSWM100::get_flow_sensor_max_volume() { return this->flow_sensor_->get_max_volume(); }
 float FSWM100::get_flow_sensor_rate_time() { return this->flow_sensor_->get_rate_time(); }
+uint32_t FSWM100::get_flow_sensor_last_switched_to_active_time() {
+  return this->flow_sensor_->get_last_switched_to_active_time();
+}
 bool FSWM100::get_pressure_sensor_test_flag() { return this->pressure_sensor_test_->state; }
 bool FSWM100::get_pulse_sensor() { return this->pulse_sensor_->state; }
 float FSWM100::get_pulse_rate_volume() { return this->pulse_sensor_->get_rate_volume(); }
