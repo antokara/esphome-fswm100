@@ -61,7 +61,8 @@ void PulseSensor::loop() {
       last_time = this->last_toggle_time_;
     if (millis() - last_time >
         (this->rate_volume_ / this->fswm100_->get_flow_sensor_min_volume() *
-         this->fswm100_->get_flow_sensor_rate_time() * 1000 * FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER)) {
+         this->fswm100_->get_flow_sensor_rate_time() * 1000 * FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER *
+         PULSE_SENSOR_TIME_BETWEEN_PULSES_MULTIPLIER)) {
       ESP_LOGW(
           TAG,
           "'%s': No pulse has been detected for a long period, while the IR appears to be active."

@@ -3,6 +3,17 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 
+/**
+ * @brief The multiplier applied to the time between pulses
+ *        to determine if the pulse flow timeout period has been exceeded and
+ *        a pulse sensor fault should be triggered.
+ *
+ *        This exceeds the FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER because
+ *        the pulse sensor timeout should be more lenient than the flow rate calculation,
+ *        to avoid false positive faults.
+ */
+#define PULSE_SENSOR_TIME_BETWEEN_PULSES_MULTIPLIER 0.6
+
 namespace esphome {
 namespace fswm100 {
 
