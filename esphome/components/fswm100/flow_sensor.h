@@ -13,7 +13,7 @@
  *
  *        It's also used to calculate the pulse flow timeout period.
  */
-#define FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER 1.25
+#define FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER 1.5
 
 /**
  * @brief The interval in milliseconds to publish the debug state meta information
