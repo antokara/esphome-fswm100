@@ -188,10 +188,11 @@ void FlowSensor::loop() {
     this->publish(this->calculate_active_flow());
 
     // diagnostics: if we have gotten a pulse lately, within the min duration but
-    // there has been no IR activity within the min duration, we have a problem
+    // there has been no IR activity within the min duration x the multiplier, we have a problem
     if (!this->has_fault_ &&
         millis() - this->newest_pulse_sensor_active_time_ < this->fswm100_->get_flow_sensor_min_duration() &&
-        millis() - this->last_ir_activity_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
+        millis() - this->last_ir_activity_time_ >
+            this->fswm100_->get_flow_sensor_min_duration() * IR_SENSOR_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER) {
       ESP_LOGW(TAG,
                "'%s': No IR activity has been detected, while the Pulse appears to have been toggled. "
                "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "

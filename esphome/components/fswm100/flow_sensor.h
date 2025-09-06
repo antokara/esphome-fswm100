@@ -16,6 +16,19 @@
 #define FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER 1.25
 
 /**
+ * @brief The multiplier applied to the time since last activity
+ *        to determine if the IR sensor is faulty (stuck on active),
+ *        when there is a pulse sensor toggle.
+ *
+ *        This is needed because the the IR sensor can be active for small
+ *        "bursts/periods" and then inactive longer than the flow_sensor_min_duration,
+ *        because the flow is ultra low, to the point that it gets missed by the flow sensor.
+ *
+ *        Therefore, we need to give it some extra time before we declare it faulty.
+ */
+#define IR_SENSOR_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER 3.0
+
+/**
  * @brief The interval in milliseconds to publish the debug state meta information
  *        of the flow sensor.
  */
