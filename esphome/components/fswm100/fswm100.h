@@ -22,6 +22,12 @@
 #define SAVE_STATE_DEBOUNCE_FREQUENCY 15000
 
 /**
+ * @brief the frequency in milliseconds to log faults,
+ * if any, to avoid spamming the logs.
+ */
+#define LOG_FAULTS_FREQUENCY 60000
+
+/**
  * @brief the state that can be saved/loaded from Flash Memory
  * which perists device restarts
  */
@@ -232,6 +238,11 @@ class FSWM100 : public Component, public EntityBase {
    */
   void set_status_led(StatusLEDColor color);
 
+  /**
+   * @brief adds a fault to the faults list, if not already present.
+   */
+  void add_fault(const std::string &fault);
+
  private:
   /**
    * @brief if true, the component has detected a fault and the status LED/log should get updated.
@@ -250,6 +261,25 @@ class FSWM100 : public Component, public EntityBase {
    *        the component should nto be blocked/etc.
    */
   bool has_fault_{false};
+
+  /**
+   * @brief a list of faults detected by the component.
+   *        it is used for diagnostics and reporting.
+   */
+  std::vector<std::string> faults = {};
+
+  /**
+   * @brief the last time (in milliseconds since boot)
+   *        the faults list was logged, to avoid flooding the logs.
+   */
+  uint32_t last_fault_log_time_{0};
+
+  /**
+   * @brief logs the faults to the ESPHome log, if any.
+   *        it will only log once every LOG_FAULTS_FREQUENCY milliseconds,
+   *        to avoid flooding the logs.
+   */
+  void log_faults();
 
   /**
    * @brief Pointer to the shared ADS1115 component

@@ -106,6 +106,7 @@ float FlowSensor::get_state() {
   // diagnostics: check for invalid reading
   if (std::isnan(new_sensor_state)) {
     ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
+    this->fswm100_->add_fault("Failed to read from ADS1115 channel for flow sensor. Result was NaN.");
     this->has_fault_ = true;
     return 0;  // when it fails
   }
@@ -116,6 +117,7 @@ float FlowSensor::get_state() {
   // diagnostics: check if the voltage is within the expected range
   if (!this->has_fault_ && new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_) {
     ESP_LOGW(TAG, "'%s': voltage out of range: %.4f V", this->get_name().c_str(), new_sensor_state);
+    this->fswm100_->add_fault("Flow sensor voltage out of range: " + std::to_string(new_sensor_state) + " V");
     this->has_fault_ = true;
   }
 
@@ -191,10 +193,14 @@ void FlowSensor::loop() {
         millis() - this->newest_pulse_sensor_active_time_ < this->fswm100_->get_flow_sensor_min_duration() &&
         millis() - this->last_ir_activity_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
       ESP_LOGW(TAG,
-               "'%s': No IR activity has been detected, while the Pulse appears to have been toggled."
+               "'%s': No IR activity has been detected, while the Pulse appears to have been toggled. "
                "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
                "positive).",
                this->get_name().c_str());
+      this->fswm100_->add_fault(
+          "No IR activity has been detected, while the Pulse appears to have been toggled. "
+          "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
+          "positive).");
       this->has_fault_ = true;
     }
   }

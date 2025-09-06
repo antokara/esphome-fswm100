@@ -153,8 +153,24 @@ void FSWM100::save_state_pending_check_() {
   }
 }
 
+void FSWM100::log_faults() {
+  if (millis() - this->last_fault_log_time_ > LOG_FAULTS_FREQUENCY && this->faults.size() > 0) {
+    this->last_fault_log_time_ = millis();
+    for (const std::string &fault : this->faults) {
+      ESP_LOGE(TAG, fault.c_str());
+    }
+  }
+}
+
+void FSWM100::add_fault(const std::string &fault) {
+  if (std::find(this->faults.begin(), this->faults.end(), fault) == this->faults.end()) {
+    this->faults.push_back(fault);
+  }
+}
+
 void FSWM100::setup() {
   ESP_LOGCONFIG(TAG, "Setting up FSWM100 started...");
+
   // check ADS component
   if (!this->ads1115_) {
     ESP_LOGE(TAG, "ADS1115 shared component was not set. Cannot proceed.");
@@ -163,9 +179,6 @@ void FSWM100::setup() {
   }
 
   this->load_state_();
-  // TODO: use these to calculate, etc.
-  // this->flow_sensor_->get_unit_of_measurement();
-  // this->pressure_sensor_->get_unit_of_measurement();
   ESP_LOGCONFIG(TAG, "Setting up FSWM100 completed...");
 };
 
@@ -224,22 +237,24 @@ void FSWM100::loop() {
     this->set_status_led(StatusLEDColor::GREEN);
   }
 
-  //   // this->status_set_warning();
-  //   //  this->status_clear_warning();
-  //   // ESP_LOGE(TAG, "error log!");
-  //   // ESP_LOGE - error
-  //   // ESP_LOGW - warning
-  //   // ESP_LOGI - info
-  //   // ESP_LOGD - debug
-  //   // ESP_LOGV - verbose
-  //   // ESP_LOGVV - very verbose
-  //   // ESP_LOGCONFIG - config log
-  //   //   #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERY_VERBOSE
-  //   //   {
-  //   //     std::string s = format_hex_pretty(this->raw_data_, sizeof(this->raw_data_));
-  //   //     ESP_LOGVV(TAG, "Raw data: %s", s.c_str());
-  //   //   }
-  //   // #endif
+  this->log_faults();
+
+  // this->status_set_warning();
+  //  this->status_clear_warning();
+  // ESP_LOGE(TAG, "error log!");
+  // ESP_LOGE - error
+  // ESP_LOGW - warning
+  // ESP_LOGI - info
+  // ESP_LOGD - debug
+  // ESP_LOGV - verbose
+  // ESP_LOGVV - very verbose
+  // ESP_LOGCONFIG - config log
+  //   #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERY_VERBOSE
+  //   {
+  //     std::string s = format_hex_pretty(this->raw_data_, sizeof(this->raw_data_));
+  //     ESP_LOGVV(TAG, "Raw data: %s", s.c_str());
+  //   }
+  // #endif
 }
 void FSWM100::dump_config() { ESP_LOGCONFIG(TAG, "FSWM100..."); }
 

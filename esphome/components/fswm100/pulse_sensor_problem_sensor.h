@@ -12,7 +12,7 @@
  *        the pulse sensor timeout should be more lenient than the flow rate calculation,
  *        to avoid false positive faults.
  */
-#define PULSE_SENSOR_TIME_BETWEEN_PULSES_MULTIPLIER 1.4
+#define PULSE_SENSOR_TIME_BETWEEN_PULSES_MULTIPLIER 1
 
 namespace esphome {
 namespace fswm100 {

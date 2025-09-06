@@ -41,6 +41,9 @@ void PulseSensor::loop() {
     if (!this->has_fault_ && this->fswm100_->get_flow_sensor_state() > this->fswm100_->get_flow_sensor_max_volume()) {
       ESP_LOGW(TAG, "'%s': pulse rate volume exceeded max flow volume: %.4f > %.4f", this->get_name().c_str(),
                this->fswm100_->get_flow_sensor_state(), this->fswm100_->get_flow_sensor_max_volume());
+      this->fswm100_->add_fault(
+          "Pulse rate volume exceeded max flow volume: " + std::to_string(this->fswm100_->get_flow_sensor_state()) +
+          " > " + std::to_string(this->fswm100_->get_flow_sensor_max_volume()));
       this->has_fault_ = true;
     }
   }
@@ -65,9 +68,14 @@ void PulseSensor::loop() {
          PULSE_SENSOR_TIME_BETWEEN_PULSES_MULTIPLIER)) {
       ESP_LOGW(
           TAG,
-          "'%s': No pulse has been detected for a long period, while the IR appears to be active."
-          "Either the IR is having problems (false positive), or the pulse sensor is not working (false negative).",
+          "'%s': No pulse has been detected for a long period, while the IR appears to be active. "
+          "Either the IR is having problems (false positive), or the pulse sensor is not working (false negative). "
+          "The minimum volume may also be set too high.",
           this->get_name().c_str());
+      this->fswm100_->add_fault(
+          "No pulse has been detected for a long period, while the IR appears to be active. "
+          "Either the IR is having problems (false positive), or the pulse sensor is not working (false negative). "
+          "The minimum volume may also be set too high.");
       this->has_fault_ = true;
     }
   }
