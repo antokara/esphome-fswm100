@@ -141,6 +141,9 @@ void PressureSensor::loop() {
     if (this->flow_pressure_correlation_pending_ &&
         millis() - this->fswm100_->get_flow_sensor_last_switched_to_active_time() >=
             this->fswm100_->get_flow_sensor_min_duration()) {
+      // clear the pending flag, so that we don't check again until the next time the flow sensor switches to active
+      this->flow_pressure_correlation_pending_ = false;
+
       /**
        * the period which we look back for activity
        * either on last flow switched to inactive or significant pressure drop
