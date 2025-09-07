@@ -152,7 +152,7 @@ void PressureSensor::loop() {
         // increase the fault counter, since we have active flow but no recent pressure drop correlation
         flow_pressure_correlation_fault_counter_++;
         // if the counter exceeds the threshold, we have a fault
-        if (flow_pressure_correlation_fault_counter_ >= FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD &&) {
+        if (flow_pressure_correlation_fault_counter_ >= FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD) {
           ESP_LOGE(TAG, "'%s': Flow sensor switched to active but no pressure drop correlation detected.",
                    this->get_name().c_str());
           this->fswm100_->add_fault("Flow sensor switched to active but no pressure drop correlation detected.");
