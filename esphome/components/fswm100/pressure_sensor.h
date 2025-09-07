@@ -211,6 +211,11 @@ class PressureSensor : public sensor::Sensor {
    *        to know if is just switched to active, inactive, etc.
    */
   float last_flow_sensor_state_{0.0f};
+
+  /**
+   * @brief if true, a flow/pressure correlation check is pending.
+   */
+  bool flow_pressure_correlation_pending_{false};
 };
 
 }  // namespace fswm100

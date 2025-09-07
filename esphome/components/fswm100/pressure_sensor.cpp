@@ -128,10 +128,19 @@ void PressureSensor::loop() {
     this->fswm100_->pressure_test_sensor_process(pressure);
   }
 
-  // diagnostics: check flow/pressure correlation, when the flow sensor switches to active
-  if (!this->has_fault_ && this->fswm100_->get_flow_sensor_state() != this->last_flow_sensor_state_) {
-    // check if it switched to active
+  // diagnostics: check flow/pressure correlation, when the flow sensor state changed or we have a pending check
+  if (!this->has_fault_ && (this->fswm100_->get_flow_sensor_state() != this->last_flow_sensor_state_ ||
+                            this->flow_pressure_correlation_pending_)) {
+    // when the flow sensor just switched to active, start a pending check
     if (this->fswm100_->get_flow_sensor_state() > 0 && this->last_flow_sensor_state_ == 0.0) {
+      this->flow_pressure_correlation_pending_ = true;
+    }
+
+    // when we have a pending check, after a delay so that the pressure had time to react
+    // check if there's a correlation between the flow and pressure drop
+    if (this->flow_pressure_correlation_pending_ &&
+        millis() - this->fswm100_->get_flow_sensor_last_switched_to_active_time() >=
+            this->fswm100_->get_flow_sensor_min_duration()) {
       /**
        * the period which we look back for activity
        * either on last flow switched to inactive or significant pressure drop
