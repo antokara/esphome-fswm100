@@ -49,6 +49,7 @@ float FlowSensor::get_min_volume() { return this->min_volume_; }
 float FlowSensor::get_max_volume() { return this->max_volume_; }
 float FlowSensor::get_rate_time() { return this->rate_time_; }
 uint32_t FlowSensor::get_last_switched_to_active_time() { return this->last_switched_to_active_time_; }
+uint32_t FlowSensor::get_last_switched_to_inactive_time() { return this->last_switched_to_inactive_time_; }
 
 void FlowSensor::active() {
   // update the last active time (not switched to active)
@@ -104,7 +105,7 @@ float FlowSensor::get_state() {
       this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
 
   // diagnostics: check for invalid reading
-  if (std::isnan(new_sensor_state)) {
+  if (!this->has_fault_ && std::isnan(new_sensor_state)) {
     ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
     this->fswm100_->add_fault("Failed to read from ADS1115 channel for flow sensor. Result was NaN.");
     this->has_fault_ = true;
@@ -181,6 +182,7 @@ void FlowSensor::loop() {
       // just switched to inactive
       ESP_LOGD(TAG, "Flow: switched to inactive");
       this->publish(0);
+      this->last_switched_to_inactive_time_ = millis();
     }
 
   } else if (this->state > 0) {

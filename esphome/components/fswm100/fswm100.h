@@ -176,6 +176,13 @@ class FSWM100 : public Component, public EntityBase {
   uint32_t get_flow_sensor_last_switched_to_active_time();
 
   /**
+   * @brief returns the last time (in milliseconds since boot)
+   *        the flow sensor switched to inactive from active.
+   *        This is useful for diagnostics.
+   */
+  uint32_t get_flow_sensor_last_switched_to_inactive_time();
+
+  /**
    * @brief returns the pulse rate volume
    */
   float get_pulse_rate_volume();

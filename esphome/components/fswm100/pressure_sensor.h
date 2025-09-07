@@ -4,6 +4,19 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/ads1115/ads1115.h"
 
+/**
+ * @brief The considerable percentage drop in pressure that can be correlated
+ *        to water flow switching to active.
+ */
+#define CONSIDERABLE_PRESSURE_DROP_PERCENTAGE -5.0
+
+/**
+ * @brief The number of consecutive mismatches between
+ *       active flow and pressure drop, to consider
+ *       it a fault.
+ */
+#define FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD 5
+
 namespace esphome {
 namespace fswm100 {
 
@@ -175,6 +188,29 @@ class PressureSensor : public sensor::Sensor {
    *        stable pressure sensor in the future...
    */
   float effective_noise_floor_{0.0f};
+
+  /**
+   * @brief the last time (in milliseconds since boot)
+   *        the pressure dropped considerably (
+   *        more than the defined threshold).
+   * @see CONSIDERABLE_PRESSURE_DROP_PERCENTAGE
+   */
+  uint32_t last_time_pressure_dropped_considerably_{0};
+
+  /**
+   * @brief counts how many times in a row
+   *        we had a mismatch between active flow and pressure drop.
+   *
+   *       if this exceeds a threshold, we have a fault.
+   * @see FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD
+   */
+  int flow_pressure_correlation_fault_counter_{0};
+
+  /**
+   * @brief for diagnostics, we keep the last flow sensor state
+   *        to know if is just switched to active, inactive, etc.
+   */
+  float last_flow_sensor_state_{0.0f};
 };
 
 }  // namespace fswm100

@@ -61,7 +61,7 @@ void PressureSensor::loop() {
       this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
 
   // diagnostics: check for invalid reading
-  if (std::isnan(new_sensor_state)) {
+  if (!this->has_fault_ && std::isnan(new_sensor_state)) {
     ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
     this->fswm100_->add_fault("Failed to read from ADS1115 channel for pressure sensor. Result was NaN.");
     this->has_fault_ = true;
@@ -98,6 +98,13 @@ void PressureSensor::loop() {
       pressure = this->max_pressure_;
     }
 
+    // when the pressure has dropped considerably (e.g. -5% or more),
+    // keep track of the last time this happened, for diagnostics
+    if (this->state != 0.0f &&
+        ((pressure - this->state) / this->state) * 100.0f <= CONSIDERABLE_PRESSURE_DROP_PERCENTAGE) {
+      this->last_time_pressure_dropped_considerably_ = millis();
+    }
+
     // attempt to publish (this uses filters)
     this->publish_state(pressure);
 
@@ -119,6 +126,45 @@ void PressureSensor::loop() {
     }
 
     this->fswm100_->pressure_test_sensor_process(pressure);
+  }
+
+  // diagnostics: check flow/pressure correlation, when the flow sensor switches to active
+  if (!this->has_fault_ && this->fswm100_->get_flow_sensor_state() != this->last_flow_sensor_state_) {
+    // check if it switched to active
+    if (this->fswm100_->get_flow_sensor_state() > 0 && this->last_flow_sensor_state_ == 0.0) {
+      /**
+       * the period which we look back for activity
+       * either on last flow switched to inactive or significant pressure drop
+       */
+      float lookback_period =
+          this->fswm100_->get_flow_sensor_min_duration() * IR_SENSOR_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER;
+      /**
+       * 1. has enough time passed, since the last time we switched to inactive?
+       * (i.e. avoid too frequent switching active/inactive, e.g. when the meter can barely detect the ultra low flow
+       * since when that happens, the pressure is most likely to remain stable, since the flow does not really
+       * start/stop, we just have a difficulty detecting it)
+       *
+       * 2. has enough time passed, since the last time the pressure dropped considerably?
+       * (i.e. if the pressure dropped recently, that means that the correlation is there and everything is normal)
+       */
+      if (millis() - this->fswm100_->get_flow_sensor_last_switched_to_inactive_time() > lookback_period &&
+          millis() - this->last_time_pressure_dropped_considerably_ > lookback_period) {
+        // increase the fault counter, since we have active flow but no recent pressure drop correlation
+        flow_pressure_correlation_fault_counter_++;
+        // if the counter exceeds the threshold, we have a fault
+        if (flow_pressure_correlation_fault_counter_ >= FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD &&) {
+          ESP_LOGE(TAG, "'%s': Flow sensor switched to active but no pressure drop correlation detected.",
+                   this->get_name().c_str());
+          this->fswm100_->add_fault("Flow sensor switched to active but no pressure drop correlation detected.");
+          this->has_fault_ = true;
+        }
+      } else {
+        // reset the counter, since everything appears normal
+        flow_pressure_correlation_fault_counter_ = 0;
+      }
+    }
+    // update the last known state
+    this->last_flow_sensor_state_ = this->fswm100_->get_flow_sensor_state();
   }
 }
 

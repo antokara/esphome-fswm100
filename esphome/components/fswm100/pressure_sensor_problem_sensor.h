@@ -16,7 +16,8 @@ class FSWM100;
  * @brief the problem sensor, of the pressure sensor.
  *        when true, the pressure sensor is having a problem:
  *           - we are getting voltage readings that are not within the expected range
- *           - the reading have not changed for a long time, even though the flow changes
+ *           - the pressure has not dropped significantly, even though the flow sensor
+ *             has switched to active, a number of times in a row
  *           - I2C or ADS1115 errors
  *        when false, the pressure sensor is working properly.
  */
