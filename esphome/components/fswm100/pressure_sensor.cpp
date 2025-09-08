@@ -98,7 +98,7 @@ void PressureSensor::loop() {
       pressure = this->max_pressure_;
     }
 
-    // when the pressure has dropped considerably (e.g. -5% or more),
+    // diagnostics: when the pressure has dropped considerably (e.g. -5% or more),
     // keep track of the last time this happened, for diagnostics
     if (this->correlation_last_pressure_sensor_state_ != 0.0f) {
       float pressure_percentage_change =
