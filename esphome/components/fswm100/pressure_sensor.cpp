@@ -103,6 +103,7 @@ void PressureSensor::loop() {
     if (this->state != 0.0f &&
         ((pressure - this->state) / this->state) * 100.0f <= CONSIDERABLE_PRESSURE_DROP_PERCENTAGE) {
       this->last_time_pressure_dropped_considerably_ = millis();
+      ESP_LOGD(TAG, "'%s': Pressure dropped considerably", this->get_name().c_str());
     }
 
     // attempt to publish (this uses filters)
@@ -134,6 +135,7 @@ void PressureSensor::loop() {
     // when the flow sensor just switched to active, start a pending check
     if (this->fswm100_->get_flow_sensor_state() > 0 && this->last_flow_sensor_state_ == 0.0) {
       this->flow_pressure_correlation_pending_ = true;
+      ESP_LOGD(TAG, "'%s': Pressure correlation check pending", this->get_name().c_str());
     }
 
     // when we have a pending check, after a delay so that the pressure had time to react
@@ -173,6 +175,7 @@ void PressureSensor::loop() {
       } else {
         // reset the counter, since everything appears normal
         flow_pressure_correlation_fault_counter_ = 0;
+        ESP_LOGD(TAG, "'%s': Pressure correlation reset as normal", this->get_name().c_str());
       }
     }
     // update the last known state
