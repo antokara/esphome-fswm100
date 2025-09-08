@@ -213,6 +213,12 @@ class PressureSensor : public sensor::Sensor {
   float last_flow_sensor_state_{0.0f};
 
   /**
+   * @brief the pressure sensor value set last
+   *        for the flow/pressure correlation diagnostics check.
+   */
+  float correlation_last_pressure_sensor_state_{0.0f};
+
+  /**
    * @brief if true, a flow/pressure correlation check is pending.
    */
   bool flow_pressure_correlation_pending_{false};
