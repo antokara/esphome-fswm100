@@ -191,7 +191,6 @@ void PressureSensor::loop() {
       } else {
         // reset the counter, since everything appears normal
         flow_pressure_correlation_fault_counter_ = 0;
-        ESP_LOGD(TAG, "'%s': Pressure correlation reset as normal", this->get_name().c_str());
       }
     }
     // update the last known state
