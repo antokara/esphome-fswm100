@@ -15,7 +15,7 @@
  *       active flow and pressure drop, to consider
  *       it a fault.
  */
-#define FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD 1
+#define FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD 3
 
 namespace esphome {
 namespace fswm100 {
