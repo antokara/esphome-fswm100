@@ -100,10 +100,13 @@ void PressureSensor::loop() {
 
     // when the pressure has dropped considerably (e.g. -5% or more),
     // keep track of the last time this happened, for diagnostics
-    if (this->state != 0.0f &&
-        ((pressure - this->state) / this->state) * 100.0f <= CONSIDERABLE_PRESSURE_DROP_PERCENTAGE) {
-      this->last_time_pressure_dropped_considerably_ = millis();
-      ESP_LOGD(TAG, "'%s': Pressure dropped considerably", this->get_name().c_str());
+    if (this->state != 0.0f) {
+      float pressure_drop_percentage = ((pressure - this->state) / this->state) * 100.0f;
+      ESP_LOGD(TAG, "'%s': Pressure drop percentage: %.2f%%", this->get_name().c_str(), pressure_drop_percentage);
+      if (pressure_drop_percentage <= CONSIDERABLE_PRESSURE_DROP_PERCENTAGE) {
+        this->last_time_pressure_dropped_considerably_ = millis();
+        ESP_LOGD(TAG, "'%s': Pressure dropped considerably", this->get_name().c_str());
+      }
     }
 
     // attempt to publish (this uses filters)
