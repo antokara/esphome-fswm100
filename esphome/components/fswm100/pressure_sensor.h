@@ -5,15 +5,8 @@
 #include "esphome/components/ads1115/ads1115.h"
 
 /**
- * @brief The considerable percentage drop in pressure that can be correlated
- *        to water flow switching to active.
- */
-#define CONSIDERABLE_PRESSURE_DROP_PERCENTAGE -5.0
-
-/**
  * @brief The number of consecutive mismatches between
- *       active flow and pressure drop, to consider
- *       it a fault.
+ *       active flow and expected pressure drop, to consider it a fault.
  */
 #define FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD 3
 
@@ -47,8 +40,8 @@ class PressureSensor : public sensor::Sensor {
    * setup the pressure sensor
    */
   void setup(float effective_noise_floor, float min_voltage, float max_voltage, float min_pressure, float max_pressure,
-             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
-             ads1115::ADS1115Resolution resolution);
+             float pressure_drop_perc_on_flow, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
+             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   void dump_config();
 
@@ -129,6 +122,12 @@ class PressureSensor : public sensor::Sensor {
   float max_pressure_;
 
   /**
+   * @brief for diagnostics, the expected percentage drop in pressure,
+   *        that can be correlated to water flow (when switching to active).
+   */
+  float pressure_drop_perc_on_flow_{5.0f};
+
+  /**
    * @brief the voltage factor
    *
    * This is used to convert the voltage to pressure.
@@ -190,15 +189,14 @@ class PressureSensor : public sensor::Sensor {
   float effective_noise_floor_{0.0f};
 
   /**
-   * @brief the last time (in milliseconds since boot)
-   *        the pressure dropped considerably (
-   *        more than the defined threshold).
-   * @see CONSIDERABLE_PRESSURE_DROP_PERCENTAGE
+   * @brief for diagnostics, the last time (in milliseconds since boot)
+   *        the pressure dropped more than the defined threshold.
+   * * @see pressure_drop_perc_on_flow_
    */
-  uint32_t last_time_pressure_dropped_considerably_{0};
+  uint32_t last_time_pressure_dropped_on_flow_{0};
 
   /**
-   * @brief counts how many times in a row
+   * @brief for diagnostics, counts how many times in a row
    *        we had a mismatch between active flow and pressure drop.
    *
    *       if this exceeds a threshold, we have a fault.
@@ -213,13 +211,13 @@ class PressureSensor : public sensor::Sensor {
   float last_flow_sensor_state_{0.0f};
 
   /**
-   * @brief the pressure sensor value set last
+   * @brief for diagnostics, the pressure sensor value set last
    *        for the flow/pressure correlation diagnostics check.
    */
   float correlation_last_pressure_sensor_state_{0.0f};
 
   /**
-   * @brief if true, a flow/pressure correlation check is pending.
+   * @brief for diagnostics, if true, a flow/pressure correlation check is pending.
    */
   bool flow_pressure_correlation_pending_{false};
 };

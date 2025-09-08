@@ -92,6 +92,7 @@ fswm100:
     max_voltage: 5
     min_pressure: 0
     max_pressure: 100
+    pressure_drop_perc_on_flow: 5.0
     # in volts
     effective_noise_floor: 0.1
     # ADS1115

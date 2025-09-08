@@ -52,6 +52,7 @@ CONF_MIN_VOLTAGE = "min_voltage"
 CONF_MAX_VOLTAGE = "max_voltage"
 CONF_MIN_PRESSURE = "min_pressure"
 CONF_MAX_PRESSURE = "max_pressure"
+CONF_PRESSURE_DROP_PERC_ON_FLOW = "pressure_drop_perc_on_flow"
 CONF_CALIBRATION = "calibration"
 CONF_TEST = "test"
 CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
@@ -176,6 +177,7 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_MAX_VOLTAGE, default=4.5): cv.float_,
                 cv.Optional(CONF_MIN_PRESSURE, default=0): cv.float_,
                 cv.Optional(CONF_MAX_PRESSURE, default=100): cv.float_,
+                cv.Optional(CONF_PRESSURE_DROP_PERC_ON_FLOW, default=5.0): cv.float_,
                 cv.Optional(
                     CONF_CALIBRATION,
                     default={
@@ -384,6 +386,7 @@ async def to_code(config):
                 pressure_config[CONF_MAX_VOLTAGE],
                 pressure_config[CONF_MIN_PRESSURE],
                 pressure_config[CONF_MAX_PRESSURE],
+                pressure_config[CONF_PRESSURE_DROP_PERC_ON_FLOW],
                 # ADS1115 properties
                 pressure_config[CONF_MULTIPLEXER],
                 pressure_config[CONF_GAIN],
