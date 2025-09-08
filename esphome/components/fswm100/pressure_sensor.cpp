@@ -101,11 +101,16 @@ void PressureSensor::loop() {
     // when the pressure has dropped considerably (e.g. -5% or more),
     // keep track of the last time this happened, for diagnostics
     if (this->correlation_last_pressure_sensor_state_ != 0.0f) {
-      if (((pressure - this->correlation_last_pressure_sensor_state_) / this->correlation_last_pressure_sensor_state_) *
-              100.0f <=
-          CONSIDERABLE_PRESSURE_DROP_PERCENTAGE) {
+      float pressure_percentage_change =
+          ((pressure - this->correlation_last_pressure_sensor_state_) / this->correlation_last_pressure_sensor_state_) *
+          100.0f;
+      if (pressure_percentage_change <= CONSIDERABLE_PRESSURE_DROP_PERCENTAGE) {
         this->last_time_pressure_dropped_considerably_ = millis();
         ESP_LOGD(TAG, "'%s': Pressure dropped considerably", this->get_name().c_str());
+        // update the last known pressure state for correlation checks
+        this->correlation_last_pressure_sensor_state_ = pressure;
+      } else if (pressure_percentage_change > abs(CONSIDERABLE_PRESSURE_DROP_PERCENTAGE)) {
+        ESP_LOGD(TAG, "'%s': Pressure rised considerably", this->get_name().c_str());
         // update the last known pressure state for correlation checks
         this->correlation_last_pressure_sensor_state_ = pressure;
       }
