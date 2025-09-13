@@ -53,100 +53,29 @@ float PressureSensor::voltage_to_pressure(float voltage) {
   return (voltage - this->min_voltage_) * this->voltage_factor_ + this->min_pressure_;
 }
 
-void PressureSensor::loop() {
-  /**
-   * the voltage has already been adjusted for gain and resolution.
-   * meaning, we get the proper min/max voltage for the range it can provide.
-   *
-   * @example 0-4.96 (V) for the IC L7805
-   */
-  float new_sensor_state = abs(this->fswm100_->get_ads1115()->request_measurement(
-      this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
-
-  // diagnostics: check for invalid reading
-  if (!this->has_fault_ && std::isnan(new_sensor_state)) {
-    ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
-    this->fswm100_->add_fault("Failed to read from ADS1115 channel for pressure sensor. Result was NaN.");
-    this->has_fault_ = true;
-    return;
-  }
-
-  ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
-            static_cast<int>(this->multiplexer_), new_sensor_state);
-
-  // diagnostics: check if the voltage is within the expected range
-  if (!this->has_fault_ && new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_) {
-    ESP_LOGW(TAG, "'%s': Voltage %.4f V is out of range (%.4f V - %.4f V).", this->get_name().c_str(), new_sensor_state,
-             this->min_voltage_, this->max_voltage_);
-    this->fswm100_->add_fault("Pressure sensor voltage out of range: " + std::to_string(new_sensor_state) +
-                              " V. Expected range: " + std::to_string(this->min_voltage_) + " V - " +
-                              std::to_string(this->max_voltage_) + " V.");
-    this->has_fault_ = true;
-  }
-
-  // has the state changed enough to publish?
-  if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
-    float pressure =
-        this->voltage_to_pressure(new_sensor_state) * this->fswm100_->get_pressure_sensor_calibration_multiplier();
-
-    ESP_LOGVV(TAG, "'%s': %.4f Voltage", this->get_name().c_str(), new_sensor_state);
-    ESP_LOGVV(TAG, "'%s': Voltage Delta %.4f", this->get_name().c_str(),
-              abs(this->last_sensor_state_ - new_sensor_state));
-    ESP_LOGVV(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
-
-    if (pressure < this->min_pressure_) {
-      pressure = this->min_pressure_;
-    }
-    if (pressure > this->max_pressure_) {
-      pressure = this->max_pressure_;
-    }
-
-    // diagnostics: when the pressure has changed more than the "pressure_drop_perc_on_flow_" threshold,
-    // keep track of the last time this happened.
-    if (this->correlation_last_pressure_sensor_state_ != 0.0f) {
-      float pressure_percentage_change =
-          ((pressure - this->correlation_last_pressure_sensor_state_) / this->correlation_last_pressure_sensor_state_) *
-          100.0f;
-      if (pressure_percentage_change <= -this->pressure_drop_perc_on_flow_) {
-        // pressure dropped
-        // record the time, so that we can correlate it to active flow
-        this->last_time_pressure_dropped_on_flow_ = millis();
-        // update the last known pressure state for correlation checks
-        this->correlation_last_pressure_sensor_state_ = pressure;
-      } else if (pressure_percentage_change > this->pressure_drop_perc_on_flow_) {
-        // pressure raised/recovered
-        // update the last known pressure state for correlation checks
-        this->correlation_last_pressure_sensor_state_ = pressure;
-      }
-    } else {
-      // first time, initialize
+void PressureSensor::track_pressure_changes(float pressure) {
+  if (this->correlation_last_pressure_sensor_state_ != 0.0f) {
+    float pressure_percentage_change =
+        ((pressure - this->correlation_last_pressure_sensor_state_) / this->correlation_last_pressure_sensor_state_) *
+        100.0f;
+    if (pressure_percentage_change <= -this->pressure_drop_perc_on_flow_) {
+      // pressure dropped
+      // record the time, so that we can correlate it to active flow
+      this->last_time_pressure_dropped_on_flow_ = millis();
+      // update the last known pressure state for correlation checks
+      this->correlation_last_pressure_sensor_state_ = pressure;
+    } else if (pressure_percentage_change > this->pressure_drop_perc_on_flow_) {
+      // pressure raised/recovered
+      // update the last known pressure state for correlation checks
       this->correlation_last_pressure_sensor_state_ = pressure;
     }
-
-    // attempt to publish (this uses filters)
-    this->publish_state(pressure);
-
-    // when the pressure sensor calibration multiplier changed,
-    // force an immediate publish of the current pressure (without filters),
-    // so the user can see the new value immediately, during the calibration process.
-    if (this->last_pressure_sensor_calibration_multiplier_ !=
-        this->fswm100_->get_pressure_sensor_calibration_multiplier()) {
-      this->last_pressure_sensor_calibration_multiplier_ = this->fswm100_->get_pressure_sensor_calibration_multiplier();
-      this->internal_send_state_to_frontend(pressure);
-    }
-
-    // when the test starts/ends, force an immediate publish of the current pressure
-    // so that there's an absolute pressure value tied to those points in time, besides
-    // the relative pressure value changes.
-    if (this->fswm100_->get_pressure_sensor_test_flag() != this->last_pressure_sensor_test_flag_) {
-      this->last_pressure_sensor_test_flag_ = this->fswm100_->get_pressure_sensor_test_flag();
-      this->internal_send_state_to_frontend(pressure);
-    }
-
-    this->fswm100_->pressure_test_sensor_process(pressure);
+  } else {
+    // first time, initialize
+    this->correlation_last_pressure_sensor_state_ = pressure;
   }
+}
 
-  // diagnostics: check flow/pressure correlation, when the flow sensor state changed or we have a pending check
+void PressureSensor::check_flow_pressure_correlation() {
   if (!this->has_fault_ && (this->fswm100_->get_flow_sensor_state() != this->last_flow_sensor_state_ ||
                             this->flow_pressure_correlation_pending_)) {
     // when the flow sensor just switched to active, start a pending check
@@ -195,6 +124,83 @@ void PressureSensor::loop() {
     }
     // update the last known state
     this->last_flow_sensor_state_ = this->fswm100_->get_flow_sensor_state();
+  }
+}
+
+void PressureSensor::loop() {
+  /**
+   * the voltage has already been adjusted for gain and resolution.
+   * meaning, we get the proper min/max voltage for the range it can provide.
+   *
+   * @example 0-4.96 (V) for the IC L7805
+   */
+  float new_sensor_state = abs(this->fswm100_->get_ads1115()->request_measurement(
+      this->multiplexer_, this->gain_, this->resolution_, this->sample_rate_));
+
+  // diagnostics: check for invalid reading
+  if (!this->has_fault_ && std::isnan(new_sensor_state)) {
+    ESP_LOGE(TAG, "Failed to read from ADS1115 channel for '%s'. Result was NaN.", this->get_name().c_str());
+    this->fswm100_->add_fault("Failed to read from ADS1115 channel for pressure sensor. Result was NaN.");
+    this->has_fault_ = true;
+    return;
+  }
+
+  ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
+            static_cast<int>(this->multiplexer_), new_sensor_state);
+
+  // diagnostics: check if the voltage is within the expected range
+  if (!this->has_fault_ && new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_) {
+    ESP_LOGW(TAG, "'%s': Voltage %.4f V is out of range (%.4f V - %.4f V).", this->get_name().c_str(), new_sensor_state,
+             this->min_voltage_, this->max_voltage_);
+    this->fswm100_->add_fault("Pressure sensor voltage out of range: " + std::to_string(new_sensor_state) +
+                              " V. Expected range: " + std::to_string(this->min_voltage_) + " V - " +
+                              std::to_string(this->max_voltage_) + " V.");
+    this->has_fault_ = true;
+  }
+
+  // has the state changed enough to publish?
+  if (abs(this->last_sensor_state_ - new_sensor_state) > this->effective_noise_floor_) {
+    float pressure =
+        this->voltage_to_pressure(new_sensor_state) * this->fswm100_->get_pressure_sensor_calibration_multiplier();
+
+    ESP_LOGVV(TAG, "'%s': %.4f Voltage", this->get_name().c_str(), new_sensor_state);
+    ESP_LOGVV(TAG, "'%s': Voltage Delta %.4f", this->get_name().c_str(),
+              abs(this->last_sensor_state_ - new_sensor_state));
+    ESP_LOGVV(TAG, "'%s': Converted to %.4f pressure", this->get_name().c_str(), pressure);
+
+    // keep the pressure within the defined min/max range
+    if (pressure < this->min_pressure_) {
+      pressure = this->min_pressure_;
+    } else if (pressure > this->max_pressure_) {
+      pressure = this->max_pressure_;
+    }
+
+    // attempt to publish (this uses filters)
+    this->publish_state(pressure);
+
+    // when the pressure sensor calibration multiplier changed,
+    // force an immediate publish of the current pressure (without filters),
+    // so the user can see the new value immediately, during the calibration process.
+    if (this->last_pressure_sensor_calibration_multiplier_ !=
+        this->fswm100_->get_pressure_sensor_calibration_multiplier()) {
+      this->last_pressure_sensor_calibration_multiplier_ = this->fswm100_->get_pressure_sensor_calibration_multiplier();
+      this->internal_send_state_to_frontend(pressure);
+    }
+
+    // when the test starts/ends, force an immediate publish of the current pressure
+    // so that there's an absolute pressure value tied to those points in time, besides
+    // the relative pressure value changes.
+    if (this->fswm100_->get_pressure_sensor_test_flag() != this->last_pressure_sensor_test_flag_) {
+      this->last_pressure_sensor_test_flag_ = this->fswm100_->get_pressure_sensor_test_flag();
+      this->internal_send_state_to_frontend(pressure);
+    }
+
+    // notify the pressure test sensor of the new pressure value
+    this->fswm100_->pressure_test_sensor_process(pressure);
+
+    // for diagnostics
+    this->track_pressure_changes(pressure);
+    this->check_flow_pressure_correlation();
   }
 }
 

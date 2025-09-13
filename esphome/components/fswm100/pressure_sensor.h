@@ -220,6 +220,18 @@ class PressureSensor : public sensor::Sensor {
    * @brief for diagnostics, if true, a flow/pressure correlation check is pending.
    */
   bool flow_pressure_correlation_pending_{false};
+
+  /**
+   * @brief for diagnostics, when the pressure has changed more than the
+   * "pressure_drop_perc_on_flow_" threshold, keep track of the last time this happened.
+   */
+  void track_pressure_changes(float pressure);
+
+  /**
+   * @brief for diagnostics, check flow/pressure correlation
+   * when the flow sensor state changed or we have a pending check
+   */
+  void check_flow_pressure_correlation();
 };
 
 }  // namespace fswm100
