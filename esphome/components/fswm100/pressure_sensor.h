@@ -8,7 +8,7 @@
  * @brief The number of consecutive mismatches between
  *       active flow and expected pressure drop, to consider it a fault.
  */
-#define FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD 3
+#define FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD 5
 
 namespace esphome {
 namespace fswm100 {
