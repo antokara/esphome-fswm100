@@ -4,6 +4,10 @@
 #include "esphome/core/component.h"
 #include "esphome/components/number/number.h"
 
+/**
+ * @brief the default value for the pressure sensor calibration multiplier
+ *        which is 1.0 (i.e. no calibration)
+ */
 #define PRESSURE_SENSOR_CALIBRATION_DEFAULT_VALUE 1.0f
 
 namespace esphome {

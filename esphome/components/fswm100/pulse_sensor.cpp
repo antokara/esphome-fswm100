@@ -7,7 +7,7 @@ namespace fswm100 {
 
 PulseSensor::PulseSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume) {
+void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume, float fault_flow_timeout_multiplier) {
   ESP_LOGCONFIG(TAG, "PulseSensor setup start.");
   if (pulse_sensor_gpio_pin == nullptr) {
     ESP_LOGE(TAG, "PulseSensor pin not set!");
@@ -16,6 +16,7 @@ void PulseSensor::setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume) {
   this->pin_ = pulse_sensor_gpio_pin;
   this->pin_->pin_mode(gpio::Flags::FLAG_INPUT);
   this->rate_volume_ = rate_volume;
+  this->fault_flow_timeout_multiplier_ = fault_flow_timeout_multiplier;
   // initial state publish
   this->publish_state(false);
   ESP_LOGCONFIG(TAG, "PulseSensor setup complete.");
@@ -27,6 +28,7 @@ void PulseSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "PulseSensor:");
   LOG_PIN("  Pin:", this->pin_);
   ESP_LOGCONFIG(TAG, "  Pin:", this->rate_volume_);
+  ESP_LOGCONFIG(TAG, "  Fault flow timeout multiplier:", this->fault_flow_timeout_multiplier_);
 }
 
 void PulseSensor::loop() {
@@ -62,10 +64,11 @@ void PulseSensor::loop() {
     // but if the pulse sensor toggled more recently, use that time instead
     if (last_time < this->last_toggle_time_)
       last_time = this->last_toggle_time_;
-    if (millis() - last_time >
-        (this->rate_volume_ / this->fswm100_->get_flow_sensor_min_volume() *
-         this->fswm100_->get_flow_sensor_rate_time() * 1000 * FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER *
-         PULSE_SENSOR_TIME_BETWEEN_PULSES_MULTIPLIER)) {
+    // calculate the maximum time it takes for the flow to time out (switch to no flow),
+    // when there is no pulse activity...
+    float flow_timeout_period = this->rate_volume_ / this->fswm100_->get_flow_sensor_min_volume() *
+                                this->fswm100_->get_flow_sensor_rate_time() * 1000;
+    if (millis() - last_time > (flow_timeout_period * this->fault_flow_timeout_multiplier_)) {
       ESP_LOGW(
           TAG,
           "'%s': No pulse has been detected for a long period, while the IR appears to be active. "

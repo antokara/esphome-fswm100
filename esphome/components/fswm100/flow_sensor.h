@@ -4,36 +4,6 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/ads1115/ads1115.h"
 
-/**
- * @brief The multiplier applied to the time between pulses
- *        to determine if the flow rate should be re-calculated.
- *
- *        This is used to avoid re-calculating the flow rate too often,
- *        which leads to spikes in the flow rate.
- *
- *        It's also used to calculate the pulse flow timeout period.
- */
-#define FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER 1.25
-
-/**
- * @brief The multiplier applied to the time since last activity
- *        to determine if the IR sensor is faulty (stuck on active),
- *        when there is a pulse sensor toggle.
- *
- *        This is needed because the the IR sensor can be active for small
- *        "bursts/periods" and then inactive longer than the flow_sensor_min_duration,
- *        because the flow is ultra low, to the point that it gets missed by the flow sensor.
- *
- *        Therefore, we need to give it some extra time before we declare it faulty.
- */
-#define IR_SENSOR_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER 3.0
-
-/**
- * @brief The interval in milliseconds to publish the debug state meta information
- *        of the flow sensor.
- */
-#define FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS 30000
-
 namespace esphome {
 namespace fswm100 {
 
@@ -66,8 +36,9 @@ class FlowSensor : public sensor::Sensor {
    */
   void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float effective_noise_floor,
              float min_voltage, float max_voltage, float min_volume, float max_volume, float rate_time,
-             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
-             ads1115::ADS1115Resolution resolution);
+             float flow_rate_time_between_pulses_multiplier, float fault_time_since_activity_multiplier,
+             uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
+             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -359,6 +330,36 @@ class FlowSensor : public sensor::Sensor {
    * esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
    */
   std::function<std::vector<sensor::Filter *>()> filters_factory_;
+
+  /**
+   * @brief The multiplier applied to the time between pulses
+   *        to determine if the flow rate should be re-calculated.
+   *
+   *        This is used to avoid re-calculating the flow rate too often,
+   *        which leads to spikes in the flow rate.
+   *
+   *        It's also used to calculate the pulse flow timeout period.
+   */
+  float flow_rate_time_between_pulses_multiplier_{1.25f};
+
+  /**
+   * @brief The multiplier applied to the time since last activity
+   *        to determine if the IR sensor is faulty (stuck on active),
+   *        when there is a pulse sensor toggle.
+   *
+   *        This is needed because the IR sensor can be active for small
+   *        "bursts/periods" and then inactive longer than the flow_sensor_min_duration,
+   *        because the flow is ultra low, to the point that it gets missed by the flow sensor.
+   *
+   *        Therefore, we need to give it some extra time before we declare it faulty.
+   */
+  float fault_time_since_activity_multiplier_{3.0f};
+
+  /**
+   * @brief The interval in milliseconds to publish the debug state meta information
+   *        of the flow sensor.
+   */
+  uint32_t debug_publish_interval_ms_{30000};
 };
 
 }  // namespace fswm100

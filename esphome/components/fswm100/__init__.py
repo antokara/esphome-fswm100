@@ -57,6 +57,12 @@ CONF_FLOW_CORRELATION_WINDOW_MULTIPLIER = "flow_correlation_window_multiplier"
 CONF_FLOW_CORRELATION_FAULT_COUNTER_THRESHOLD = (
     "flow_correlation_fault_counter_threshold"
 )
+CONF_FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER = (
+    "flow_rate_time_between_pulses_multiplier"
+)
+CONF_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER = "fault_time_since_activity_multiplier"
+CONF_FAULT_FLOW_TIMEOUT_MULTIPLIER = "fault_flow_timeout_multiplier"
+CONF_DEBUG_PUBLISH_INTERVAL_MS = "debug_publish_interval_ms"
 CONF_CALIBRATION = "calibration"
 CONF_TEST = "test"
 CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
@@ -129,6 +135,13 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_MAX_VOLTAGE, default=3.0): cv.float_,
                 cv.Optional(CONF_RATE_TIME, default=60.0): cv.float_,
                 cv.Optional(
+                    CONF_FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER, default=1.25
+                ): cv.float_,
+                cv.Optional(
+                    CONF_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER, default=3.0
+                ): cv.float_,
+                cv.Optional(CONF_DEBUG_PUBLISH_INTERVAL_MS, default=30000): cv.int_,
+                cv.Optional(
                     CONF_MIN_DURATION,
                     default={
                         CONF_NAME: "Min. Flow Duration",
@@ -165,6 +178,7 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.GenerateID(): cv.declare_id(PulseSensor),
                 cv.Required(CONF_GPIO_PIN_KEY): pins.gpio_input_pin_schema,
                 cv.Optional(CONF_RATE_VOLUME, default=1): cv.float_,
+                cv.Optional(CONF_FAULT_FLOW_TIMEOUT_MULTIPLIER, default=1.5): cv.float_,
             }
         ),
         # Pressure Sensor
@@ -322,7 +336,13 @@ async def to_code(config):
         # create a configuration object instance from the "pulse.gpio_pin" config
         pulse_sensor_pin = await cg.gpio_pin_expression(pulse_config[CONF_GPIO_PIN_KEY])
         # setup the "pulseSensor" class instance, passing it the config
-        cg.add(pulseSensor.setup(pulse_sensor_pin, pulse_config[CONF_RATE_VOLUME]))
+        cg.add(
+            pulseSensor.setup(
+                pulse_sensor_pin,
+                pulse_config[CONF_RATE_VOLUME],
+                pulse_config[CONF_FAULT_FLOW_TIMEOUT_MULTIPLIER],
+            )
+        )
 
     # Flow
     if flow_config := config.get(CONF_FLOW):
@@ -353,6 +373,9 @@ async def to_code(config):
                 flow_config[CONF_MIN_VOLUME],
                 flow_config[CONF_MAX_VOLUME],
                 flow_config[CONF_RATE_TIME],
+                flow_config[CONF_FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER],
+                flow_config[CONF_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER],
+                flow_config[CONF_DEBUG_PUBLISH_INTERVAL_MS],
                 flow_config[CONF_MULTIPLEXER],
                 flow_config[CONF_GAIN],
                 flow_config[CONF_SAMPLE_RATE],

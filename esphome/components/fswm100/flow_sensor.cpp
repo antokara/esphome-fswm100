@@ -9,9 +9,10 @@ FlowSensor::FlowSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
 void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory,
                        float effective_noise_floor, float min_voltage, float max_voltage, float min_volume,
-                       float max_volume, float rate_time, ads1115::ADS1115Multiplexer multiplexer,
-                       ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
-                       ads1115::ADS1115Resolution resolution) {
+                       float max_volume, float rate_time, float flow_rate_time_between_pulses_multiplier,
+                       float fault_time_since_activity_multiplier, uint32_t debug_publish_interval_ms,
+                       ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
+                       ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowSensor setup start.");
   this->filters_factory_ = filters_factory;
   this->effective_noise_floor_ = effective_noise_floor;
@@ -20,6 +21,9 @@ void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &fil
   this->min_volume_ = min_volume;
   this->max_volume_ = max_volume;
   this->rate_time_ = rate_time;
+  this->flow_rate_time_between_pulses_multiplier_ = flow_rate_time_between_pulses_multiplier;
+  this->fault_time_since_activity_multiplier_ = fault_time_since_activity_multiplier;
+  this->debug_publish_interval_ms_ = debug_publish_interval_ms;
   // ADS1115
   this->multiplexer_ = multiplexer;
   this->gain_ = gain;
@@ -38,6 +42,10 @@ void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  min volume:", this->min_volume_);
   ESP_LOGCONFIG(TAG, "  max volume:", this->max_volume_);
   ESP_LOGCONFIG(TAG, "  rate time:", this->rate_time_);
+  ESP_LOGCONFIG(TAG, "  flow rate time between pulses multiplier:", this->flow_rate_time_between_pulses_multiplier_);
+  ESP_LOGCONFIG(TAG, "  fault time since activity multiplier:", this->fault_time_since_activity_multiplier_);
+  ESP_LOGCONFIG(TAG, "  debug publish interval ms:", this->debug_publish_interval_ms_);
+  ESP_LOGCONFIG(TAG, "  ADS1115 configuration:");
   ESP_LOGCONFIG(TAG, "  multiplexer:", this->multiplexer_);
   ESP_LOGCONFIG(TAG, "  gain:", this->gain_);
   ESP_LOGCONFIG(TAG, "  sample rate:", this->sample_rate_);
@@ -72,7 +80,7 @@ float FlowSensor::calculate_active_flow() {
     const uint32_t time_since_newest_pulse = abs(long(millis() - this->newest_pulse_sensor_active_time_));
     const float calculated_flow = (this->rate_time_ * 1000) / (millis() - this->oldest_pulse_sensor_active_time_) *
                                   this->fswm100_->get_pulse_rate_volume();
-    if (time_since_newest_pulse > long(time_between_pulses * FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER) ||
+    if (time_since_newest_pulse > long(time_between_pulses * this->flow_rate_time_between_pulses_multiplier_) ||
         (calculated_flow > this->state)) {
       // if the the current flow is greater than the last published one or
       // if time since the last pulse is greater than the time between pulses,
@@ -194,7 +202,7 @@ void FlowSensor::loop() {
     if (!this->has_fault_ &&
         millis() - this->newest_pulse_sensor_active_time_ < this->fswm100_->get_flow_sensor_min_duration() &&
         millis() - this->last_ir_activity_time_ >
-            this->fswm100_->get_flow_sensor_min_duration() * IR_SENSOR_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER) {
+            this->fswm100_->get_flow_sensor_min_duration() * this->fault_time_since_activity_multiplier_) {
       ESP_LOGW(TAG,
                "'%s': No IR activity has been detected, while the Pulse appears to have been toggled. "
                "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
@@ -209,7 +217,7 @@ void FlowSensor::loop() {
   }
 
   // publish debug state meta info every FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS
-  if (millis() - this->last_debug_state_time_ > FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS) {
+  if (millis() - this->last_debug_state_time_ > this->debug_publish_interval_ms_) {
     if (this->state == 0) {
       ESP_LOGD(TAG, "Flow: inactive due to IR voltage %.4f state_delta_max, counts: %d, min: %.4f, max: %.4f",
                this->debug_state_delta_max_, this->debug_state_active_counts_, this->debug_state_min_,

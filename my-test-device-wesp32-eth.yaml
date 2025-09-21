@@ -66,6 +66,10 @@ fswm100:
     min_volume: 0.07
     max_volume: 15.0
     rate_time: 60.0
+    flow_rate_time_between_pulses_multiplier: 1.25
+    # diagnostics
+    fault_time_since_activity_multiplier: 3.0
+    debug_publish_interval_ms: 30000
     # ADS1115
     multiplexer: "A0_GND"
     gain: 6.144
@@ -78,6 +82,7 @@ fswm100:
   pulse:
     name: Water Meter Pulse
     rate_volume: 1
+    fault_flow_timeout_multiplier: 1.5
     gpio_pin:
       number: GPIO23
       mode:

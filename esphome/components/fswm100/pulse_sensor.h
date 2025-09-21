@@ -27,11 +27,8 @@ class PulseSensor : public binary_sensor::BinarySensor {
 
   /**
    * @brief setup the pulse sensor
-   *
-   * @param pulse_sensor_gpio_pin the GPIO pin to use
-   * @param rate_volume the rate volume
    */
-  void setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume);
+  void setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume, float fault_flow_timeout_multiplier);
   void dump_config();
 
   /**
@@ -99,6 +96,15 @@ class PulseSensor : public binary_sensor::BinarySensor {
    *        it is used for diagnostics.
    */
   uint32_t last_toggle_time_{0};
+
+  /**
+   * @brief The multiplier applied to the flow time out period
+   *        to determine if the pulse sensor is faulty (has not toggled for too long).
+   *
+   *        We use a multiplier to avoid false positives due to slight variations
+   *        in the real flow time out period and the expected one.
+   */
+  float fault_flow_timeout_multiplier_{1.5f};
 };
 
 }  // namespace fswm100

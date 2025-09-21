@@ -4,6 +4,10 @@
 #include "esphome/core/component.h"
 #include "esphome/components/number/number.h"
 
+/**
+ * @brief the default value for the flow sensor minimum duration
+ *        which is 20 seconds.
+ */
 #define FLOW_SENSOR_MIN_DURATION_DEFAULT_VALUE 20.0f
 
 namespace esphome {
