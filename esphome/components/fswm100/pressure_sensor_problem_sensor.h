@@ -17,7 +17,9 @@ class FSWM100;
  *        when true, the pressure sensor is having a problem:
  *           - we are getting voltage readings that are not within the expected range
  *           - the pressure has not dropped significantly, even though the flow sensor
- *             has switched to active, a number of times in a row
+ *             has switched to active for gte (flow_correlation_fault_counter_threshold)
+ *             in a row, within the flow correlation window (flow_correlation_window_multiplier).
+ *             If a correlation is found, the fault counter gets reset.
  *           - I2C or ADS1115 errors
  *        when false, the pressure sensor is working properly.
  */

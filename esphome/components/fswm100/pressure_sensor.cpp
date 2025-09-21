@@ -8,7 +8,8 @@ namespace fswm100 {
 PressureSensor::PressureSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
 void PressureSensor::setup(float effective_noise_floor, float min_voltage, float max_voltage, float min_pressure,
-                           float max_pressure, float pressure_drop_perc_on_flow,
+                           float max_pressure, float flow_correlation_drop_perc,
+                           float flow_correlation_window_multiplier, int flow_correlation_fault_counter_threshold,
                            ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
                            ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "PressureSensor setup start.");
@@ -17,7 +18,9 @@ void PressureSensor::setup(float effective_noise_floor, float min_voltage, float
   this->max_voltage_ = max_voltage;
   this->min_pressure_ = min_pressure;
   this->max_pressure_ = max_pressure;
-  this->pressure_drop_perc_on_flow_ = pressure_drop_perc_on_flow;
+  this->flow_correlation_drop_perc_ = flow_correlation_drop_perc;
+  this->flow_correlation_window_multiplier_ = flow_correlation_window_multiplier;
+  this->flow_correlation_fault_counter_threshold_ = flow_correlation_fault_counter_threshold;
   // calculate
   this->voltage_factor_ = (max_pressure - min_pressure) / (max_voltage - min_voltage);
   // ADS1115
@@ -37,7 +40,9 @@ void PressureSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  max voltage:", this->max_voltage_);
   ESP_LOGCONFIG(TAG, "  min pressure:", this->min_pressure_);
   ESP_LOGCONFIG(TAG, "  max pressure:", this->max_pressure_);
-  ESP_LOGCONFIG(TAG, "  pressure drop perc. on flow:", this->pressure_drop_perc_on_flow_);
+  ESP_LOGCONFIG(TAG, "  flow correlation drop perc:", this->flow_correlation_drop_perc_);
+  ESP_LOGCONFIG(TAG, "  flow correlation window multiplier:", this->flow_correlation_window_multiplier_);
+  ESP_LOGCONFIG(TAG, "  flow correlation fault counter threshold:", this->flow_correlation_fault_counter_threshold_);
   // calculated
   ESP_LOGCONFIG(TAG, "  voltage factor:", this->voltage_factor_);
   // ADS1115
@@ -58,13 +63,13 @@ void PressureSensor::track_pressure_changes(float pressure) {
     float pressure_percentage_change =
         ((pressure - this->correlation_last_pressure_sensor_state_) / this->correlation_last_pressure_sensor_state_) *
         100.0f;
-    if (pressure_percentage_change <= -this->pressure_drop_perc_on_flow_) {
+    if (pressure_percentage_change <= -this->flow_correlation_drop_perc_) {
       // pressure dropped
       // record the time, so that we can correlate it to active flow
       this->last_time_pressure_dropped_on_flow_ = millis();
       // update the last known pressure state for correlation checks
       this->correlation_last_pressure_sensor_state_ = pressure;
-    } else if (pressure_percentage_change > this->pressure_drop_perc_on_flow_) {
+    } else if (pressure_percentage_change > this->flow_correlation_drop_perc_) {
       // pressure raised/recovered
       // update the last known pressure state for correlation checks
       this->correlation_last_pressure_sensor_state_ = pressure;
@@ -92,11 +97,11 @@ void PressureSensor::check_flow_pressure_correlation() {
       this->flow_pressure_correlation_pending_ = false;
 
       /**
-       * the period which we look back for activity
+       * the time window which we look back for activity
        * either on last flow switched to inactive or significant pressure drop
        */
-      float lookback_period =
-          this->fswm100_->get_flow_sensor_min_duration() * IR_SENSOR_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER;
+      float diagnostics_window =
+          this->fswm100_->get_flow_sensor_min_duration() * this->flow_correlation_window_multiplier_;
       /**
        * 1. has enough time passed, since the last time we switched to inactive?
        * (i.e. avoid too frequent switching active/inactive, e.g. when the meter can barely detect the ultra low flow
@@ -106,12 +111,12 @@ void PressureSensor::check_flow_pressure_correlation() {
        * 2. has enough time passed, since the last time the pressure dropped considerably?
        * (i.e. if the pressure dropped recently, that means that the correlation is there and everything is normal)
        */
-      if (millis() - this->fswm100_->get_flow_sensor_last_switched_to_inactive_time() > lookback_period &&
-          millis() - this->last_time_pressure_dropped_on_flow_ > lookback_period) {
+      if (millis() - this->fswm100_->get_flow_sensor_last_switched_to_inactive_time() > diagnostics_window &&
+          millis() - this->last_time_pressure_dropped_on_flow_ > diagnostics_window) {
         // increase the fault counter, since we have active flow but no recent pressure drop correlation
         flow_pressure_correlation_fault_counter_++;
         // if the counter exceeds the threshold, we have a fault
-        if (flow_pressure_correlation_fault_counter_ >= FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD) {
+        if (flow_pressure_correlation_fault_counter_ >= this->flow_correlation_fault_counter_threshold_) {
           ESP_LOGE(TAG, "'%s': Flow sensor switched to active but no pressure drop correlation detected.",
                    this->get_name().c_str());
           this->fswm100_->add_fault("Flow sensor switched to active but no pressure drop correlation detected.");

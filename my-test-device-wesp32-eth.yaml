@@ -92,7 +92,19 @@ fswm100:
     max_voltage: 5
     min_pressure: 0
     max_pressure: 100
-    pressure_drop_perc_on_flow: 5.0
+    # the expected pressure drop percentage
+    # when there is flow, to be cosnsidered normal
+    # if that does not happen, a fault count is registered
+    flow_correlation_drop_perc: 5.0
+    # the number to multiply the flow_sensor_min_duration by
+    # in order to get the diagnostics window for the
+    # flow/pressure correlation.
+    # the higher the number, the less false positives
+    flow_correlation_window_multiplier: 3.0
+    # the number of correlation faults that must happen
+    # within the diagnostics window (gte),
+    # to consider the pressure sensor as faulty
+    flow_correlation_fault_counter_threshold: 5
     # in volts
     effective_noise_floor: 0.1
     # ADS1115

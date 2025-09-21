@@ -4,12 +4,6 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/ads1115/ads1115.h"
 
-/**
- * @brief The number of consecutive mismatches between
- *       active flow and expected pressure drop, to consider it a fault.
- */
-#define FLOW_PRESSURE_CORRELATION_FAULT_THRESHOLD 5
-
 namespace esphome {
 namespace fswm100 {
 
@@ -40,8 +34,9 @@ class PressureSensor : public sensor::Sensor {
    * setup the pressure sensor
    */
   void setup(float effective_noise_floor, float min_voltage, float max_voltage, float min_pressure, float max_pressure,
-             float pressure_drop_perc_on_flow, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
+             float flow_correlation_drop_perc, float flow_correlation_window_multiplier,
+             int flow_correlation_fault_counter_threshold, ads1115::ADS1115Multiplexer multiplexer,
+             ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   void dump_config();
 
@@ -125,7 +120,7 @@ class PressureSensor : public sensor::Sensor {
    * @brief for diagnostics, the expected percentage drop in pressure,
    *        that can be correlated to water flow (when switching to active).
    */
-  float pressure_drop_perc_on_flow_{5.0f};
+  float flow_correlation_drop_perc_{5.0f};
 
   /**
    * @brief the voltage factor
@@ -191,7 +186,7 @@ class PressureSensor : public sensor::Sensor {
   /**
    * @brief for diagnostics, the last time (in milliseconds since boot)
    *        the pressure dropped more than the defined threshold.
-   * * @see pressure_drop_perc_on_flow_
+   * * @see flow_correlation_drop_perc_
    */
   uint32_t last_time_pressure_dropped_on_flow_{0};
 
@@ -223,7 +218,7 @@ class PressureSensor : public sensor::Sensor {
 
   /**
    * @brief for diagnostics, when the pressure has changed more than the
-   * "pressure_drop_perc_on_flow_" threshold, keep track of the last time this happened.
+   * "flow_correlation_drop_perc_" threshold, keep track of the last time this happened.
    */
   void track_pressure_changes(float pressure);
 
@@ -232,6 +227,27 @@ class PressureSensor : public sensor::Sensor {
    * when the flow sensor state changed or we have a pending check
    */
   void check_flow_pressure_correlation();
+
+  /**
+   * @brief the multiplier applied to the time between pulses
+   *        to determine the lookback window period for
+   *        the flow/pressure correlation check.
+   *
+   *        This is multiplied by the flow_sensor_min_duration,
+   *        to get the lookback window period.
+   *
+   *        The default value of 3.0 means that we look back
+   *        3 times the flow_sensor_min_duration, which should
+   *        be enough to find a correlation.
+   */
+  float flow_correlation_window_multiplier_{3.0f};
+
+  /**
+   * @brief The number of consecutive mismatches between
+   *       active flow and expected pressure drop, to consider it a fault.
+   *       (gte)
+   */
+  int flow_correlation_fault_counter_threshold_{5};
 };
 
 }  // namespace fswm100
