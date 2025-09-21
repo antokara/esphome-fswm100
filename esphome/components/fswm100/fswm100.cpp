@@ -185,7 +185,6 @@ void FSWM100::setup() {
   ESP_LOGCONFIG(TAG, "Setting up FSWM100 completed...");
 };
 
-// TODO: refactor to add loop to each sensor and maybe let them access parent and do their thing to publish or not
 void FSWM100::loop() {
   save_state_pending_check_();
 

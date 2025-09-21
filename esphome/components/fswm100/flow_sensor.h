@@ -37,8 +37,9 @@ class FlowSensor : public sensor::Sensor {
   void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float effective_noise_floor,
              float min_voltage, float max_voltage, float min_volume, float max_volume, float rate_time,
              float flow_rate_time_between_pulses_multiplier, float fault_time_since_activity_multiplier,
-             uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
+             uint32_t debug_publish_interval_ms, int inactivity_fault_counter_threshold,
+             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+             ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief get the state of the flow sensor
@@ -337,8 +338,6 @@ class FlowSensor : public sensor::Sensor {
    *
    *        This is used to avoid re-calculating the flow rate too often,
    *        which leads to spikes in the flow rate.
-   *
-   *        It's also used to calculate the pulse flow timeout period.
    */
   float flow_rate_time_between_pulses_multiplier_{1.25f};
 
@@ -360,6 +359,18 @@ class FlowSensor : public sensor::Sensor {
    *        of the flow sensor.
    */
   uint32_t debug_publish_interval_ms_{30000};
+
+  /**
+   * @brief the current number of inactivity faults
+   * that have happened in a row.
+   */
+  int inactivity_fault_counter_{0};
+
+  /**
+   * @brief the number of inactivity faults that must happen
+   * in a row, to consider the sensor as faulty.
+   */
+  int inactivity_fault_counter_threshold_{3};
 };
 
 }  // namespace fswm100

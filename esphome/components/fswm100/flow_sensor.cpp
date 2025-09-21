@@ -11,8 +11,9 @@ void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &fil
                        float effective_noise_floor, float min_voltage, float max_voltage, float min_volume,
                        float max_volume, float rate_time, float flow_rate_time_between_pulses_multiplier,
                        float fault_time_since_activity_multiplier, uint32_t debug_publish_interval_ms,
-                       ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-                       ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution) {
+                       int inactivity_fault_counter_threshold, ads1115::ADS1115Multiplexer multiplexer,
+                       ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+                       ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowSensor setup start.");
   this->filters_factory_ = filters_factory;
   this->effective_noise_floor_ = effective_noise_floor;
@@ -24,6 +25,7 @@ void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &fil
   this->flow_rate_time_between_pulses_multiplier_ = flow_rate_time_between_pulses_multiplier;
   this->fault_time_since_activity_multiplier_ = fault_time_since_activity_multiplier;
   this->debug_publish_interval_ms_ = debug_publish_interval_ms;
+  this->inactivity_fault_counter_threshold_ = inactivity_fault_counter_threshold;
   // ADS1115
   this->multiplexer_ = multiplexer;
   this->gain_ = gain;
@@ -45,6 +47,7 @@ void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  flow rate time between pulses multiplier:", this->flow_rate_time_between_pulses_multiplier_);
   ESP_LOGCONFIG(TAG, "  fault time since activity multiplier:", this->fault_time_since_activity_multiplier_);
   ESP_LOGCONFIG(TAG, "  debug publish interval ms:", this->debug_publish_interval_ms_);
+  ESP_LOGCONFIG(TAG, "  inactivity fault counter threshold:", this->inactivity_fault_counter_threshold_);
   ESP_LOGCONFIG(TAG, "  ADS1115 configuration:");
   ESP_LOGCONFIG(TAG, "  multiplexer:", this->multiplexer_);
   ESP_LOGCONFIG(TAG, "  gain:", this->gain_);
@@ -197,22 +200,34 @@ void FlowSensor::loop() {
     // active but not yet timed out
     this->publish(this->calculate_active_flow());
 
-    // diagnostics: if we have gotten a pulse lately, within the min duration but
-    // there has been no IR activity within the min duration x the multiplier, we have a problem
+    // diagnostics: if we have gotten a pulse lately, within the min duration
     if (!this->has_fault_ &&
-        millis() - this->newest_pulse_sensor_active_time_ < this->fswm100_->get_flow_sensor_min_duration() &&
-        millis() - this->last_ir_activity_time_ >
-            this->fswm100_->get_flow_sensor_min_duration() * this->fault_time_since_activity_multiplier_) {
-      ESP_LOGW(TAG,
-               "'%s': No IR activity has been detected, while the Pulse appears to have been toggled. "
-               "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
-               "positive).",
-               this->get_name().c_str());
-      this->fswm100_->add_fault(
-          "No IR activity has been detected, while the Pulse appears to have been toggled. "
-          "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
-          "positive).");
-      this->has_fault_ = true;
+        millis() - this->newest_pulse_sensor_active_time_ < this->fswm100_->get_flow_sensor_min_duration()) {
+      // but there has been no IR activity within the min duration x the multiplier, so we may have a problem
+      if (millis() - this->last_ir_activity_time_ >
+          this->fswm100_->get_flow_sensor_min_duration() * this->fault_time_since_activity_multiplier_) {
+        // increase the inactivity fault counter and log a warning
+        this->inactivity_fault_counter_++;
+        ESP_LOGW(TAG, "'%s': inactivity fault counter: %d", this->get_name().c_str(), this->inactivity_fault_counter_);
+
+        // if we have reached the threshold, we have a fault
+        if (this->inactivity_fault_counter_ >= this->inactivity_fault_counter_threshold_) {
+          ESP_LOGW(
+              TAG,
+              "'%s': No IR activity has been detected, while the Pulse appears to have been toggled. "
+              "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
+              "positive).",
+              this->get_name().c_str());
+          this->fswm100_->add_fault(
+              "No IR activity has been detected, while the Pulse appears to have been toggled. "
+              "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
+              "positive).");
+          this->has_fault_ = true;
+        }
+      } else {
+        // reset the fault counter, as we have had IR activity within the allowed time
+        this->inactivity_fault_counter_ = 0;
+      }
     }
   }
 

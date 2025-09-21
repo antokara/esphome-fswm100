@@ -16,7 +16,6 @@ class FSWM100;
  * @brief the problem sensor, of the pulse sensor.
  *        when true, the pulse sensor is having a problem:
  *           - we got an IR signal but no pulse longer than the minimum duration (could be pulse or IR)
- *           TODO: add configurable counts and counts window period
  *           - we are getting pulses faster than the maximum rate
  *        when false, the pulse sensor is working properly.
  */

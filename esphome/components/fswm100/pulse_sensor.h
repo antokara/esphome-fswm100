@@ -28,7 +28,8 @@ class PulseSensor : public binary_sensor::BinarySensor {
   /**
    * @brief setup the pulse sensor
    */
-  void setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume, float fault_flow_timeout_multiplier);
+  void setup(GPIOPin *pulse_sensor_gpio_pin, float rate_volume, float fault_flow_timeout_multiplier,
+             int inactivity_fault_counter_threshold);
   void dump_config();
 
   /**
@@ -105,6 +106,18 @@ class PulseSensor : public binary_sensor::BinarySensor {
    *        in the real flow time out period and the expected one.
    */
   float fault_flow_timeout_multiplier_{1.5f};
+
+  /**
+   * @brief the current number of inactivity faults
+   * that have happened in a row.
+   */
+  int inactivity_fault_counter_{0};
+
+  /**
+   * @brief the number of inactivity faults that must happen
+   * in a row, to consider the sensor as faulty.
+   */
+  int inactivity_fault_counter_threshold_{3};
 };
 
 }  // namespace fswm100
