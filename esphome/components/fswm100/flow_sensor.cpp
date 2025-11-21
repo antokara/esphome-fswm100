@@ -259,7 +259,10 @@ void FlowSensor::loop() {
 void FlowSensor::reset_filters() {
   if (this->filters_factory_) {
     ESP_LOGD(TAG, "FlowSensor Resetting filters by creating new filter instances...");
-    this->set_filters(this->filters_factory_());
+    this->clear_filters();
+    for (auto *filter : this->filters_factory_()) {
+      this->add_filter(filter);
+    }
   } else {
     ESP_LOGW(TAG, "FlowSensor No filter factory set, cannot reset filters.");
   }
