@@ -200,9 +200,11 @@ void FlowSensor::loop() {
     // active but not yet timed out
     this->publish(this->calculate_active_flow());
 
-    // diagnostics: if we have gotten a pulse lately, within the min duration
-    if (!this->has_fault_ &&
-        millis() - this->newest_pulse_sensor_active_time_ < this->fswm100_->get_flow_sensor_min_duration()) {
+    // diagnostics: if we have gotten a pulse lately, within the min duration but not too soon that
+    //              maybe the IR hasn't picked it up yet (it's possible)
+    uint32_t time_since_newest_pulse = abs(long(millis() - this->newest_pulse_sensor_active_time_));
+    if (!this->has_fault_ && time_since_newest_pulse < this->fswm100_->get_flow_sensor_min_duration() &&
+        time_since_newest_pulse > (this->fswm100_->get_flow_sensor_min_duration() / 2)) {
       // but there has been no IR activity within the min duration x the multiplier, so we may have a problem
       if (millis() - this->last_ir_activity_time_ >
           this->fswm100_->get_flow_sensor_min_duration() * this->fault_time_since_activity_multiplier_) {
