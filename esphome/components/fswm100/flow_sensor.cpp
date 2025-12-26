@@ -70,6 +70,8 @@ void FlowSensor::active() {
     this->last_switched_to_active_time_ = this->last_active_time_;
   }
   this->publish(this->calculate_active_flow());
+  // for diagnostics, mark that a flow/pulse correlation check is pending
+  this->flow_pulse_correlation_pending_ = true;
 }
 
 float FlowSensor::calculate_active_flow() {
@@ -194,6 +196,7 @@ void FlowSensor::loop() {
       ESP_LOGD(TAG, "Flow: switched to inactive");
       this->publish(0);
       this->last_switched_to_inactive_time_ = millis();
+      this->flow_pulse_correlation_pending_ = false;
     }
 
   } else if (this->state > 0) {
@@ -203,7 +206,8 @@ void FlowSensor::loop() {
     // diagnostics: if we have gotten a pulse lately, within the min duration but not too soon that
     //              maybe the IR hasn't picked it up yet (it's possible)
     uint32_t time_since_newest_pulse = abs(long(millis() - this->newest_pulse_sensor_active_time_));
-    if (!this->has_fault_ && time_since_newest_pulse < this->fswm100_->get_flow_sensor_min_duration() &&
+    if (!this->has_fault_ && this->flow_pulse_correlation_pending_ &&
+        time_since_newest_pulse < this->fswm100_->get_flow_sensor_min_duration() &&
         time_since_newest_pulse > (this->fswm100_->get_flow_sensor_min_duration() / 2)) {
       // but there has been no IR activity within the min duration x the multiplier, so we may have a problem
       if (millis() - this->last_ir_activity_time_ >
@@ -230,6 +234,8 @@ void FlowSensor::loop() {
         // reset the fault counter, as we have had IR activity within the allowed time
         this->inactivity_fault_counter_ = 0;
       }
+      // either way, reset the pending flag (the correlation check has succeeded or failed)
+      this->flow_pulse_correlation_pending_ = false;
     }
   }
 

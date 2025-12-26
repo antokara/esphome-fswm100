@@ -371,6 +371,11 @@ class FlowSensor : public sensor::Sensor {
    * in a row, to consider the sensor as faulty.
    */
   int inactivity_fault_counter_threshold_{3};
+
+  /**
+   * @brief for diagnostics, if true, a flow/pulse correlation check is pending.
+   */
+  bool flow_pulse_correlation_pending_{false};
 };
 
 }  // namespace fswm100
