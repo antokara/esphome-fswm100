@@ -25,6 +25,7 @@ from esphome.const import (
     ICON_PULSE,
     ICON_TIMELAPSE,
     ICON_WATER,
+    ICON_FAN,
     UNIT_EMPTY,
     UNIT_SECOND,
 )
@@ -46,6 +47,7 @@ GALLONS_PER_MINUTE = "gal/min"
 UNIT_PSI = "psi"
 
 # configuration keys
+CONF_FLOW_IR="flow_ir"
 CONF_PULSE = "pulse"
 CONF_GPIO_PIN_KEY = "gpio_pin"
 CONF_MIN_VOLTAGE = "min_voltage"
@@ -80,6 +82,7 @@ CONF_BLUE = "blue"
 
 # diagnostic keys
 DIAG_FLOW_PROBLEM = "flow_problem"
+DIAG_FLOW_IR_PROBLEM = "flow_ir_problem"
 DIAG_PULSE_PROBLEM = "pulse_problem"
 DIAG_PRESSURE_PROBLEM = "pressure_problem"
 
@@ -95,6 +98,7 @@ FSWM100Component = fswm100_ns.class_("FSWM100", cg.Component)
 PulseSensor = fswm100_ns.class_("PulseSensor", binary_sensor.BinarySensor)
 PressureSensor = fswm100_ns.class_("PressureSensor", sensor.Sensor)
 PressureTestSensor = fswm100_ns.class_("PressureTestSensor", sensor.Sensor)
+FlowIrSensor = fswm100_ns.class_("FlowIrSensor", binary_sensor.BinarySensor)
 FlowSensor = fswm100_ns.class_("FlowSensor", sensor.Sensor)
 PressureSensorCalibration = fswm100_ns.class_(
     "PressureSensorCalibration", number.Number, cg.Component
@@ -129,11 +133,8 @@ CONFIG_SCHEMA = cv.Schema(
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(FlowSensor),
-                cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
                 cv.Optional(CONF_MIN_VOLUME, default=0.07): cv.float_,
                 cv.Optional(CONF_MAX_VOLUME, default=15.0): cv.float_,
-                cv.Optional(CONF_MIN_VOLTAGE, default=2.0): cv.float_,
-                cv.Optional(CONF_MAX_VOLTAGE, default=3.0): cv.float_,
                 cv.Optional(CONF_RATE_TIME, default=60.0): cv.float_,
                 cv.Optional(
                     CONF_FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER, default=1.25
@@ -141,7 +142,6 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(
                     CONF_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER, default=3.0
                 ): cv.float_,
-                cv.Optional(CONF_DEBUG_PUBLISH_INTERVAL_MS, default=30000): cv.int_,
                 cv.Optional(
                     CONF_INACTIVITY_FAULT_COUNTER_THRESHOLD, default=3
                 ): cv.int_,
@@ -163,6 +163,18 @@ CONFIG_SCHEMA = cv.Schema(
                         ),
                     }
                 ),
+            }
+        ),
+        # Flow IR Sensor
+        cv.Required(CONF_FLOW_IR): binary_sensor.binary_sensor_schema(
+            FlowIrSensor,            icon=ICON_FAN,            device_class=DEVICE_CLASS_EMPTY,
+        ).extend(
+            {
+                cv.GenerateID(): cv.declare_id(FlowIrSensor),
+                cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
+                cv.Optional(CONF_MIN_VOLTAGE, default=2.0): cv.float_,
+                cv.Optional(CONF_MAX_VOLTAGE, default=3.0): cv.float_,
+                cv.Optional(CONF_DEBUG_PUBLISH_INTERVAL_MS, default=30000): cv.int_,
                 # ads1115 properties
                 cv.Required(CONF_MULTIPLEXER): cv.enum(MUX, upper=True, space="_"),
                 cv.Optional(CONF_GAIN): cv.enum(GAIN, string=True),
@@ -375,20 +387,12 @@ async def to_code(config):
         cg.add(
             flowSensor.setup(
                 filters_factory,
-                flow_config[CONF_EFFECTIVE_NOISE_FLOOR],
-                flow_config[CONF_MIN_VOLTAGE],
-                flow_config[CONF_MAX_VOLTAGE],
                 flow_config[CONF_MIN_VOLUME],
                 flow_config[CONF_MAX_VOLUME],
                 flow_config[CONF_RATE_TIME],
                 flow_config[CONF_FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER],
                 flow_config[CONF_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER],
-                flow_config[CONF_DEBUG_PUBLISH_INTERVAL_MS],
                 flow_config[CONF_INACTIVITY_FAULT_COUNTER_THRESHOLD],
-                flow_config[CONF_MULTIPLEXER],
-                flow_config[CONF_GAIN],
-                flow_config[CONF_SAMPLE_RATE],
-                flow_config[CONF_RESOLUTION],
             )
         )
         # flow active duration configuration
@@ -409,6 +413,30 @@ async def to_code(config):
             # set the FlowSensorMinDuration class instance reference
             # to the FSWM100 class instance
             cg.add(fswm100.set_flow_sensor_min_duration(flowSensorMinDuration))
+
+    # Flow IR
+    if flow_ir_config := config.get(CONF_FLOW_IR):
+        # create an instance of our custom Sensor "FlowIrSensor" class
+        # passing the FSWM100 class instance to its constructor
+        flowIrSensor = cg.new_Pvariable(flow_ir_config[CONF_ID], fswm100)
+        # register the sensor class instance
+        await binary_sensor.register_binary_sensor(flowIrSensor, flow_ir_config)
+        # set the FlowIrSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_flow_ir_sensor(flowIrSensor))
+        # setup the "flowIrSensor" class instance, passing it the config
+        cg.add(
+            flowIrSensor.setup(
+                flow_ir_config[CONF_EFFECTIVE_NOISE_FLOOR],
+                flow_ir_config[CONF_MIN_VOLTAGE],
+                flow_ir_config[CONF_MAX_VOLTAGE],
+                flow_ir_config[CONF_DEBUG_PUBLISH_INTERVAL_MS],
+                flow_ir_config[CONF_MULTIPLEXER],
+                flow_ir_config[CONF_GAIN],
+                flow_ir_config[CONF_SAMPLE_RATE],
+                flow_ir_config[CONF_RESOLUTION],
+            )
+        )
 
     # Pressure
     if pressure_config := config.get(CONF_PRESSURE):

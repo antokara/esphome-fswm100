@@ -2,7 +2,6 @@
 
 #include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
-#include "esphome/components/ads1115/ads1115.h"
 
 namespace esphome {
 namespace fswm100 {
@@ -14,12 +13,8 @@ namespace fswm100 {
 class FSWM100;
 
 /**
- * @brief the flow sensor class that reads the IR fluctuations
- *        from the ADS1115 in tandem with the pulse sensor and
+ * @brief the flow sensor class that reads various sensors (IR, pulse) and
  *        converts that to a flow rate, which it publishes.
- *
- *        It uses the ADS1115 multiplexer, gain, sample rate and resolution
- *        to read the IR fluctuations.
  *
  *        It also calculates the flow rate based on the time since the last pulse sensor state change,
  *        the rate time and the pulse rate volume.
@@ -34,31 +29,13 @@ class FlowSensor : public sensor::Sensor {
   /**
    * setup the flow sensor
    */
-  void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float effective_noise_floor,
-             float min_voltage, float max_voltage, float min_volume, float max_volume, float rate_time,
-             float flow_rate_time_between_pulses_multiplier, float fault_time_since_activity_multiplier,
-             uint32_t debug_publish_interval_ms, int inactivity_fault_counter_threshold,
-             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
-             ads1115::ADS1115Resolution resolution);
+  void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float min_volume, float max_volume,
+             float rate_time, float flow_rate_time_between_pulses_multiplier,
+             float fault_time_since_activity_multiplier, int inactivity_fault_counter_threshold);
 
   /**
    * @brief get the state of the flow sensor
-   *
-   *  - Black Surface/Low reflection leads to
-   *    decreased phototransistor conductivity,
-   *    causing the output voltage to be higher, closer to Vcc (4.9V raw).
-   *
-   *  - White Surface/High reflection leads to
-   *    increased phototransistor conductivity,
-   *    causing the output voltage to be lower, closer to GND (0.1V raw).
-   *
-   * The precision we can achieve with our circuit
-   * (power supply, ADS1115 and the TCR5000) is about 0.05V.
-   * This means that any voltage flactuation below 0.05V
-   * should be ignored...
-   *
-   * @return float the voltage read from the ADS1115 channel
-   *               that corresponds to the flow sensor.
+   * @return the flow rate
    */
   float get_state();
 
@@ -157,100 +134,11 @@ class FlowSensor : public sensor::Sensor {
   FSWM100 *fswm100_{nullptr};
 
   /**
-   * @brief ADS1115 multiplexer
-   */
-  ads1115::ADS1115Multiplexer multiplexer_;
-  /**
-   * @brief ADS1115 gain
-   */
-  ads1115::ADS1115Gain gain_;
-  /**
-   * @brief ADS1115 sample rate
-   */
-  ads1115::ADS1115Samplerate sample_rate_;
-  /**
-   * @brief ADS1115 resolution
-   */
-  ads1115::ADS1115Resolution resolution_;
-
-  /**
    * @brief to be called when there's active flow.
    *        it could be when it just switched to active or
    *        when it's sustained active flow.
    */
   void active();
-
-  /**
-   * @brief the last sensor state
-   */
-  float last_sensor_state_{0};
-
-  /**
-   * @brief the max state delta value,
-   *        since the last debug state publish
-   */
-  float debug_state_delta_max_{0.0f};
-
-  /**
-   * @brief the min state value,
-   *        since the last debug state publish.
-   *        useful to determine expected/normal range of voltage.
-   *
-   *  @example 2.5059
-   */
-  float debug_state_min_{0.0f};
-
-  /**
-   * @brief the max state value,
-   *        since the last debug state publish
-   *        useful to determine expected/normal range of voltage.
-   *
-   * @example 2.6359
-   */
-  float debug_state_max_{0.0f};
-
-  /**
-   * @brief counts of how many times
-   * within the last debug state period
-   * the state went from under the noise floor,
-   * to above the noise floor.
-   */
-  int debug_state_active_counts_{0};
-
-  /**
-   * @brief the previous state used in the
-   * debug state counts calculation.
-   *
-   * (true if it was above the noise floor,
-   * false if it was below the noise floor)
-   */
-  bool debug_state_active_counts_previous_{false};
-
-  /**
-   * @brief the last time we published a debug state
-   */
-  uint32_t last_debug_state_time_{0};
-
-  /**
-   * @brief voltage fluctuations less than, or equal to this value
-   *        will be ignored, as noise.
-   *        This is used to filter out noise from the flow sensor.
-   */
-  float effective_noise_floor_{0.0f};
-
-  /**
-   * @brief The minimum IR voltage that is considered valid.
-   *        Below this value, the sensor is considered to be faulty or
-   *        should be replaced because it may have reached its end of life.
-   */
-  float min_voltage_{2.3f};
-
-  /**
-   * @brief The maximum IR voltage that is considered valid.
-   *        Above this value, the sensor is considered to be faulty or
-   *        should be replaced because it may have reached its end of life.
-   */
-  float max_voltage_{2.8f};
 
   /**
    * @brief the minimum flow volume the water meter can detect
@@ -275,6 +163,11 @@ class FlowSensor : public sensor::Sensor {
    * @example for a gal/min water meter, this should be set to 60.0
    */
   float rate_time_{60.0f};
+
+  /**
+   * @brief the last flow IR sensor state
+   */
+  bool last_ir_sensor_state_{false};
 
   /**
    * @brief the last time the flow was active (not switched to active).
@@ -353,12 +246,6 @@ class FlowSensor : public sensor::Sensor {
    *        Therefore, we need to give it some extra time before we declare it faulty.
    */
   float fault_time_since_activity_multiplier_{3.0f};
-
-  /**
-   * @brief The interval in milliseconds to publish the debug state meta information
-   *        of the flow sensor.
-   */
-  uint32_t debug_publish_interval_ms_{30000};
 
   /**
    * @brief the current number of inactivity faults

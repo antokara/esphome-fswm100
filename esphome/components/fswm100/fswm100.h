@@ -10,6 +10,7 @@
 #include "pressure_sensor_calibration.h"
 #include "pressure_sensor_test.h"
 #include "flow_sensor.h"
+#include "flow_ir_sensor.h"
 #include "flow_sensor_min_duration.h"
 #include "flow_sensor_problem_sensor.h"
 #include "pulse_sensor_problem_sensor.h"
@@ -65,6 +66,14 @@ class FSWM100 : public Component, public EntityBase {
    * @param flow_sensor
    */
   void set_flow_sensor(FlowSensor *flow_sensor);
+
+  /**
+   * @brief Sets the flow ir sensor object.
+   * @see __init__.py
+   *
+   * @param flow_ir_sensor
+   */
+  void set_flow_ir_sensor(FlowIrSensor *flow_ir_sensor);
 
   /**
    * @brief Set the pulse sensor object
@@ -167,6 +176,11 @@ class FSWM100 : public Component, public EntityBase {
    * @brief returns the flow sensor rate time in seconds
    */
   float get_flow_sensor_rate_time();
+
+  /**
+   * @brief returns the flow ir sensor state (e.g. IR active/inactive)
+   */
+  bool get_flow_ir_sensor_state();
 
   /**
    * @brief returns the last time (in milliseconds since boot)
@@ -298,6 +312,12 @@ class FSWM100 : public Component, public EntityBase {
    *
    */
   FlowSensor *flow_sensor_{nullptr};
+
+  /**
+   * @brief the flow ir sensor
+   *
+   */
+  FlowIrSensor *flow_ir_sensor_{nullptr};
 
   /**
    * @brief the pulse sensor

@@ -12,6 +12,7 @@ static const uint32_t RESTORE_STATE_VERSION = 0x113EA6ADUL;
 void FSWM100::set_ads1115(ads1115::ADS1115Component *ads1115) { this->ads1115_ = ads1115; }
 ads1115::ADS1115Component *FSWM100::get_ads1115() { return this->ads1115_; }
 void FSWM100::set_flow_sensor(FlowSensor *flow_sensor) { this->flow_sensor_ = flow_sensor; }
+void FSWM100::set_flow_ir_sensor(FlowIrSensor *flow_ir_sensor) { this->flow_ir_sensor_ = flow_ir_sensor; }
 void FSWM100::set_pulse_sensor(PulseSensor *pulse_sensor) { this->pulse_sensor_ = pulse_sensor; }
 void FSWM100::set_pressure_sensor(PressureSensor *pressure_sensor) { this->pressure_sensor_ = pressure_sensor; }
 void FSWM100::set_pressure_test_sensor(PressureTestSensor *pressure_test_sensor) {
@@ -109,6 +110,7 @@ uint32_t FSWM100::get_flow_sensor_last_switched_to_active_time() {
 uint32_t FSWM100::get_flow_sensor_last_switched_to_inactive_time() {
   return this->flow_sensor_->get_last_switched_to_inactive_time();
 }
+bool FSWM100::get_flow_ir_sensor_state() { return this->flow_ir_sensor_->state; }
 bool FSWM100::get_pressure_sensor_test_flag() { return this->pressure_sensor_test_->state; }
 bool FSWM100::get_pulse_sensor() { return this->pulse_sensor_->state; }
 float FSWM100::get_pulse_rate_volume() { return this->pulse_sensor_->get_rate_volume(); }
@@ -189,6 +191,7 @@ void FSWM100::loop() {
   save_state_pending_check_();
 
   this->pulse_sensor_->loop();
+  this->flow_ir_sensor_->loop();
   this->flow_sensor_->loop();
   this->pressure_sensor_->loop();
   this->flow_sensor_problem_sensor_->loop();
@@ -210,6 +213,12 @@ void FSWM100::loop() {
     this->flow_sensor_problem_sensor_->publish_state(true);
     this->has_fault_ = true;
   }
+  // TODO: add the sensor
+  // if (this->flow_ir_sensor_->has_fault() && this->flow_ir_sensor_problem_sensor_->state != true) {
+  //   ESP_LOGE(TAG, "Flow IR Sensor has an internal fault!");
+  //   this->flow_ir_sensor_problem_sensor_->publish_state(true);
+  //   this->has_fault_ = true;
+  // }
   if (this->pressure_sensor_->has_fault() && this->pressure_sensor_problem_sensor_->state != true) {
     ESP_LOGE(TAG, "Pressure Sensor has an internal fault!");
     this->pressure_sensor_problem_sensor_->publish_state(true);
