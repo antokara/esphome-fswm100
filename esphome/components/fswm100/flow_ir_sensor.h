@@ -38,6 +38,15 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
              ads1115::ADS1115Resolution resolution);
 
   /**
+   * @brief to be called in the loop() method of the parent component
+   * it checks if the state has changed and if it should be published.
+   * if yes, it publishes the state.
+   */
+  void loop();
+
+  void dump_config();
+
+  /**
    * @brief get the state of the flow sensor
    *
    *  - Black Surface/Low reflection leads to
@@ -57,15 +66,6 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
    *               that corresponds to the flow sensor.
    */
   float get_state();
-
-  /**
-   * @brief to be called in the loop() method of the parent component
-   * it checks if the state has changed and if it should be published.
-   * if yes, it publishes the state.
-   */
-  void loop();
-
-  void dump_config();
 
   /**
    * @brief attempt to publish the IR active/inactive state.

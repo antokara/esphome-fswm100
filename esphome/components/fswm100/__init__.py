@@ -167,7 +167,7 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         # Flow IR Sensor
         cv.Required(CONF_FLOW_IR): binary_sensor.binary_sensor_schema(
-            FlowIrSensor,            icon=ICON_FAN,            device_class=DEVICE_CLASS_EMPTY,
+            FlowIrSensor, icon=ICON_FAN, device_class=DEVICE_CLASS_EMPTY
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(FlowIrSensor),
@@ -364,6 +364,30 @@ async def to_code(config):
             )
         )
 
+    # Flow IR
+    if flow_ir_config := config.get(CONF_FLOW_IR):
+        # create an instance of our custom Sensor "FlowIrSensor" class
+        # passing the FSWM100 class instance to its constructor
+        flowIrSensor = cg.new_Pvariable(flow_ir_config[CONF_ID], fswm100)
+        # register the sensor class instance
+        await binary_sensor.register_binary_sensor(flowIrSensor, flow_ir_config)
+        # set the FlowIrSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_flow_ir_sensor(flowIrSensor))
+        # setup the "flowIrSensor" class instance, passing it the config
+        cg.add(
+            flowIrSensor.setup(
+                flow_ir_config[CONF_EFFECTIVE_NOISE_FLOOR],
+                flow_ir_config[CONF_MIN_VOLTAGE],
+                flow_ir_config[CONF_MAX_VOLTAGE],
+                flow_ir_config[CONF_DEBUG_PUBLISH_INTERVAL_MS],
+                flow_ir_config[CONF_MULTIPLEXER],
+                flow_ir_config[CONF_GAIN],
+                flow_ir_config[CONF_SAMPLE_RATE],
+                flow_ir_config[CONF_RESOLUTION],
+            )
+        )
+        
     # Flow
     if flow_config := config.get(CONF_FLOW):
         # create an instance of our custom Sensor "FlowSensor" class
@@ -413,30 +437,6 @@ async def to_code(config):
             # set the FlowSensorMinDuration class instance reference
             # to the FSWM100 class instance
             cg.add(fswm100.set_flow_sensor_min_duration(flowSensorMinDuration))
-
-    # Flow IR
-    if flow_ir_config := config.get(CONF_FLOW_IR):
-        # create an instance of our custom Sensor "FlowIrSensor" class
-        # passing the FSWM100 class instance to its constructor
-        flowIrSensor = cg.new_Pvariable(flow_ir_config[CONF_ID], fswm100)
-        # register the sensor class instance
-        await binary_sensor.register_binary_sensor(flowIrSensor, flow_ir_config)
-        # set the FlowIrSensor class instance reference
-        # to the FSWM100 class instance
-        cg.add(fswm100.set_flow_ir_sensor(flowIrSensor))
-        # setup the "flowIrSensor" class instance, passing it the config
-        cg.add(
-            flowIrSensor.setup(
-                flow_ir_config[CONF_EFFECTIVE_NOISE_FLOOR],
-                flow_ir_config[CONF_MIN_VOLTAGE],
-                flow_ir_config[CONF_MAX_VOLTAGE],
-                flow_ir_config[CONF_DEBUG_PUBLISH_INTERVAL_MS],
-                flow_ir_config[CONF_MULTIPLEXER],
-                flow_ir_config[CONF_GAIN],
-                flow_ir_config[CONF_SAMPLE_RATE],
-                flow_ir_config[CONF_RESOLUTION],
-            )
-        )
 
     # Pressure
     if pressure_config := config.get(CONF_PRESSURE):

@@ -19,6 +19,7 @@
 1. `esphome --version`
 1. `esphome wizard my-test-device-wesp32-eth.yaml`
 1. `esphome config my-test-device-wesp32-eth.yaml`
+1. `esphome clean my-test-device-wesp32-eth.yaml` (if it fails to find a new class, etc.)
 1. `esphome compile my-test-device-wesp32-eth.yaml`
 1. `esphome upload my-test-device-wesp32-eth.yaml`
 
