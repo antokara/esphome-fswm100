@@ -9,14 +9,14 @@ FlowSensor::FlowSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
 void FlowSensor::setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float min_volume,
                        float max_volume, float rate_time, float flow_rate_time_between_pulses_multiplier,
-                       float fault_time_since_activity_multiplier, int inactivity_fault_counter_threshold) {
+                       float fault_time_since_flow_ir_activity_multiplier, int inactivity_fault_counter_threshold) {
   ESP_LOGCONFIG(TAG, "FlowSensor setup start.");
   this->filters_factory_ = filters_factory;
   this->min_volume_ = min_volume;
   this->max_volume_ = max_volume;
   this->rate_time_ = rate_time;
   this->flow_rate_time_between_pulses_multiplier_ = flow_rate_time_between_pulses_multiplier;
-  this->fault_time_since_activity_multiplier_ = fault_time_since_activity_multiplier;
+  this->fault_time_since_flow_ir_activity_multiplier_ = fault_time_since_flow_ir_activity_multiplier;
   this->inactivity_fault_counter_threshold_ = inactivity_fault_counter_threshold;
   // initialize values...
   this->publish(0, true);
@@ -29,7 +29,8 @@ void FlowSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  max volume:", this->max_volume_);
   ESP_LOGCONFIG(TAG, "  rate time:", this->rate_time_);
   ESP_LOGCONFIG(TAG, "  flow rate time between pulses multiplier:", this->flow_rate_time_between_pulses_multiplier_);
-  ESP_LOGCONFIG(TAG, "  fault time since activity multiplier:", this->fault_time_since_activity_multiplier_);
+  ESP_LOGCONFIG(TAG,
+                "  fault time since flow IR activity multiplier:", this->fault_time_since_flow_ir_activity_multiplier_);
   ESP_LOGCONFIG(TAG, "  inactivity fault counter threshold:", this->inactivity_fault_counter_threshold_);
 }
 
@@ -101,9 +102,8 @@ void FlowSensor::loop() {
     this->last_pulse_sensor_state_ = pulse_sensor_state;
     this->oldest_pulse_sensor_active_time_ = this->newest_pulse_sensor_active_time_;
     this->newest_pulse_sensor_active_time_ = millis();
-
   } else if (new_flow_ir_sensor_state != this->last_ir_sensor_state_ && new_flow_ir_sensor_state) {
-    // active due to IR movement
+    // active due to Flow IR activity
     ESP_LOGV(TAG, "Flow: active due to Flow IR");
     this->active();
     this->last_ir_sensor_state_ = new_flow_ir_sensor_state;
@@ -117,20 +117,40 @@ void FlowSensor::loop() {
       this->last_switched_to_inactive_time_ = millis();
       this->flow_pulse_correlation_pending_ = false;
     }
-
   } else if (this->state > 0) {
     // active but not yet timed out
+
+    // publish the updated flow rate
     this->publish(this->calculate_active_flow());
 
-    // diagnostics: if we have gotten a pulse lately, within the min duration but not too soon that
-    //              maybe the IR hasn't picked it up yet (it's possible)
+    /** diagnostics:
+     *      if we have gotten a pulse lately, within the min duration but not too soon that
+     *      maybe the IR hasn't picked it up yet (it's possible).
+     *
+     * example 1:
+     *          min duration = 30 seconds
+     *          IR activity at t = 0 seconds
+     *          pulse received at t = 60 seconds
+     *          time now is t = 76 seconds
+     *          fault_time_since_flow_ir_activity_multiplier_ = 3.0
+     *
+     *                         (mininum duration)                (fault_time_since_flow_ir_activity)
+     *          0              30sec            60sec    75sec   90sec          120sec         150sec
+     *          |--------------|----------------|--------|-------|--------------|--------------|
+     *          ^ IR activity
+     *                                          ^ pulse received
+     *                                                     ^ now, check for fault
+     *                                                     all good, since the IR was last active
+     *                                                     within the min duration x multiplier (90sec)
+     *
+     */
     uint32_t time_since_newest_pulse = abs(long(millis() - this->newest_pulse_sensor_active_time_));
     if (!this->has_fault_ && this->flow_pulse_correlation_pending_ &&
         time_since_newest_pulse < this->fswm100_->get_flow_sensor_min_duration() &&
         time_since_newest_pulse > (this->fswm100_->get_flow_sensor_min_duration() / 2)) {
       // but there has been no IR activity within the min duration x the multiplier, so we may have a problem
       if (millis() - this->last_ir_activity_time_ >
-          this->fswm100_->get_flow_sensor_min_duration() * this->fault_time_since_activity_multiplier_) {
+          this->fswm100_->get_flow_sensor_min_duration() * this->fault_time_since_flow_ir_activity_multiplier_) {
         // increase the inactivity fault counter and log a warning
         this->inactivity_fault_counter_++;
         ESP_LOGW(TAG, "'%s': inactivity fault counter: %d", this->get_name().c_str(), this->inactivity_fault_counter_);

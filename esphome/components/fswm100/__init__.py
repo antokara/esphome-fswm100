@@ -62,7 +62,7 @@ CONF_FLOW_CORRELATION_FAULT_COUNTER_THRESHOLD = (
 CONF_FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER = (
     "flow_rate_time_between_pulses_multiplier"
 )
-CONF_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER = "fault_time_since_activity_multiplier"
+CONF_FAULT_TIME_SINCE_FLOW_IR_ACTIVITY_MULTIPLIER = "fault_time_since_flow_ir_activity_multiplier"
 CONF_FAULT_FLOW_TIMEOUT_MULTIPLIER = "fault_flow_timeout_multiplier"
 CONF_INACTIVITY_FAULT_COUNTER_THRESHOLD = "inactivity_fault_counter_threshold"
 CONF_DEBUG_PUBLISH_INTERVAL_MS = "debug_publish_interval_ms"
@@ -144,7 +144,7 @@ CONFIG_SCHEMA = cv.Schema(
                     CONF_FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER, default=1.25
                 ): cv.float_,
                 cv.Optional(
-                    CONF_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER, default=3.0
+                    CONF_FAULT_TIME_SINCE_FLOW_IR_ACTIVITY_MULTIPLIER, default=3.0
                 ): cv.float_,
                 cv.Optional(
                     CONF_INACTIVITY_FAULT_COUNTER_THRESHOLD, default=3
@@ -432,7 +432,7 @@ async def to_code(config):
                 flow_config[CONF_MAX_VOLUME],
                 flow_config[CONF_RATE_TIME],
                 flow_config[CONF_FLOW_RATE_TIME_BETWEEN_PULSES_MULTIPLIER],
-                flow_config[CONF_FAULT_TIME_SINCE_ACTIVITY_MULTIPLIER],
+                flow_config[CONF_FAULT_TIME_SINCE_FLOW_IR_ACTIVITY_MULTIPLIER],
                 flow_config[CONF_INACTIVITY_FAULT_COUNTER_THRESHOLD],
             )
         )

@@ -64,12 +64,14 @@ fswm100:
     rate_time: 60.0
     # multiplier applied to the time between pulses
     # to determine if the flow rate should be re-calculated
-    # and avoid spikes in the flow rate
+    # and avoid spikes in the flow rate.
+    # this adds buffer time between pulses before
+    # recalculating the flow rate.
     flow_rate_time_between_pulses_multiplier: 1.25
     # The multiplier applied to the time since last activity
     # to determine if the IR sensor is faulty (stuck on active),
     # when there is a pulse sensor toggle.
-    fault_time_since_activity_multiplier: 3.0
+    fault_time_since_flow_ir_activity_multiplier: 3.0
     # the number of IR inactivity faults that must happen
     # in a row, to consider the IR sensor as faulty
     inactivity_fault_counter_threshold: 3

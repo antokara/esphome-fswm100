@@ -31,7 +31,7 @@ class FlowSensor : public sensor::Sensor {
    */
   void setup(const std::function<std::vector<sensor::Filter *>()> &filters_factory, float min_volume, float max_volume,
              float rate_time, float flow_rate_time_between_pulses_multiplier,
-             float fault_time_since_activity_multiplier, int inactivity_fault_counter_threshold);
+             float fault_time_since_flow_ir_activity_multiplier, int inactivity_fault_counter_threshold);
 
   /**
    * @brief get the state of the flow sensor
@@ -245,7 +245,7 @@ class FlowSensor : public sensor::Sensor {
    *
    *        Therefore, we need to give it some extra time before we declare it faulty.
    */
-  float fault_time_since_activity_multiplier_{3.0f};
+  float fault_time_since_flow_ir_activity_multiplier_{3.0f};
 
   /**
    * @brief the current number of inactivity faults
