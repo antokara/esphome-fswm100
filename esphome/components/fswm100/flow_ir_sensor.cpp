@@ -7,7 +7,7 @@ namespace fswm100 {
 
 FlowIrSensor::FlowIrSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void FlowIrSensor::setup(float effective_noise_floor, float min_voltage, float max_voltage,
+void FlowIrSensor::setup(float effective_noise_floor, float latch_multiplier, float min_voltage, float max_voltage,
                          uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer,
                          ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
                          ads1115::ADS1115Resolution resolution) {
@@ -110,7 +110,8 @@ void FlowIrSensor::loop() {
     this->publish(true);
     this->last_sensor_state_ = new_sensor_state;
     this->last_ir_activity_time_ = millis();
-  } else if (millis() - this->last_ir_activity_time_ > this->fswm100_->get_flow_sensor_min_duration() * 0.3) {
+  } else if (millis() - this->last_ir_activity_time_ >
+             this->fswm100_->get_flow_sensor_min_duration() * this->latch_multiplier_) {
     // inactive due to no IR movement for the min duration
     if (this->state > 0) {
       // just switched to inactive

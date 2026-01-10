@@ -83,6 +83,9 @@ fswm100:
     effective_noise_floor: 0.05
     min_voltage: 2.0
     max_voltage: 3.0
+    # the multiplier applied to the min_duration
+    # to determine the latching (on) time period for the IR sensor
+    latch_multiplier: 1.2
     # The interval in milliseconds to publish the debug state meta information
     # of the flow sensor.
     debug_publish_interval_ms: 30000

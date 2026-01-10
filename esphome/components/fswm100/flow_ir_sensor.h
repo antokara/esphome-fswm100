@@ -33,9 +33,9 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   /**
    * setup the flow ir sensor
    */
-  void setup(float effective_noise_floor, float min_voltage, float max_voltage, uint32_t debug_publish_interval_ms,
-             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
-             ads1115::ADS1115Resolution resolution);
+  void setup(float effective_noise_floor, float latch_multiplier, float min_voltage, float max_voltage,
+             uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
+             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief to be called in the loop() method of the parent component
@@ -119,6 +119,13 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
    * @brief the last sensor state
    */
   float last_sensor_state_{0};
+
+  /**
+   * @brief the latch multiplier,
+   *        applied to the flow sensor min duration
+   *        to determine the latching (on) time period for the IR sensor
+   */
+  float latch_multiplier_{0.3f};
 
   /**
    * @brief the max state delta value,
