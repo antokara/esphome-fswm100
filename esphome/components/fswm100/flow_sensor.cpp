@@ -49,8 +49,6 @@ void FlowSensor::active() {
     this->last_switched_to_active_time_ = this->last_active_time_;
   }
   this->publish(this->calculate_active_flow());
-  // for diagnostics, mark that a flow/pulse correlation check is pending
-  this->flow_pulse_correlation_pending_ = true;
 }
 
 float FlowSensor::calculate_active_flow() {
@@ -103,14 +101,19 @@ void FlowSensor::loop() {
     this->last_pulse_sensor_state_ = pulse_sensor_state;
     this->oldest_pulse_sensor_active_time_ = this->newest_pulse_sensor_active_time_;
     this->newest_pulse_sensor_active_time_ = millis();
-  } else if (flow_ir_sensor_state != this->last_ir_sensor_state_ && flow_ir_sensor_state) {
-    // active due to Flow IR activity
-    ESP_LOGV(TAG, "Flow: active due to Flow IR");
+    // for diagnostics, mark that a flow/pulse correlation check is pending
+    this->flow_pulse_correlation_pending_ = true;
+  } else if (flow_ir_sensor_state) {
+    // active Flow IR (could be new or sustained)
     this->active();
     this->last_ir_activity_time_ = millis();
-    this->last_ir_sensor_state_ = flow_ir_sensor_state;
-  } else if (!flow_ir_sensor_state &&
-             millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
+
+    // active due to new Flow IR activity
+    if (flow_ir_sensor_state != this->last_ir_sensor_state_) {
+      ESP_LOGV(TAG, "Flow: active due to new Flow IR");
+      this->last_ir_sensor_state_ = flow_ir_sensor_state;
+    }
+  } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
     // inactive. no pulse or IR and timed out
     if (this->state > 0) {
       // just switched to inactive
@@ -121,7 +124,7 @@ void FlowSensor::loop() {
       this->last_ir_sensor_state_ = false;
     }
   } else if (this->state > 0) {
-    // active but not yet timed out
+    // active, not yet timed out but no new/current activity on pulse/IR
 
     // publish the updated flow rate
     this->publish(this->calculate_active_flow());
