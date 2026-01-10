@@ -93,16 +93,8 @@ void FlowSensor::publish(float flow, bool immediate) {
 }
 
 void FlowSensor::loop() {
-  bool flow_ir_sensor_state = this->fswm100_->get_flow_ir_sensor_state();
+  bool flow_ir_sensor_state = this->fswm100_->get_flow_ir_sensor_raw_state();
   bool pulse_sensor_state = this->fswm100_->get_pulse_sensor();
-
-  // update the last IR activity time
-  // when/while it is currently active because it can be latched on and not change state
-  // even though there is IR activity for a long time.
-  if (flow_ir_sensor_state) {
-    this->last_ir_activity_time_ = millis();
-    this->last_active_time_ = millis();
-  }
 
   if (pulse_sensor_state != this->last_pulse_sensor_state_ && pulse_sensor_state) {
     // active due to new pulse
@@ -115,6 +107,7 @@ void FlowSensor::loop() {
     // active due to Flow IR activity
     ESP_LOGV(TAG, "Flow: active due to Flow IR");
     this->active();
+    this->last_ir_activity_time_ = millis();
     this->last_ir_sensor_state_ = flow_ir_sensor_state;
   } else if (!flow_ir_sensor_state &&
              millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {

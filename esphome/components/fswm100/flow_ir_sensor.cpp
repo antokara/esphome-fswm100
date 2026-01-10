@@ -7,7 +7,7 @@ namespace fswm100 {
 
 FlowIrSensor::FlowIrSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void FlowIrSensor::setup(float effective_noise_floor, int latch_ms, float min_voltage, float max_voltage,
+void FlowIrSensor::setup(float effective_noise_floor, float min_voltage, float max_voltage,
                          uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer,
                          ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
                          ads1115::ADS1115Resolution resolution) {
@@ -29,7 +29,6 @@ void FlowIrSensor::setup(float effective_noise_floor, int latch_ms, float min_vo
 void FlowIrSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "FlowIrSensor:");
   ESP_LOGCONFIG(TAG, "  effective noise floor:", this->effective_noise_floor_);
-  ESP_LOGCONFIG(TAG, "  latch ms:", this->latch_ms_);
   ESP_LOGCONFIG(TAG, "  min voltage:", this->min_voltage_);
   ESP_LOGCONFIG(TAG, "  max voltage:", this->max_voltage_);
   ESP_LOGCONFIG(TAG, "  debug publish interval ms:", this->debug_publish_interval_ms_);
@@ -43,6 +42,8 @@ void FlowIrSensor::dump_config() {
 bool FlowIrSensor::has_fault() { return this->has_fault_; }
 
 void FlowIrSensor::publish(bool ir_active) { this->publish_state(ir_active); }
+
+bool FlowIrSensor::get_raw_state() { return this->raw_state_; }
 
 float FlowIrSensor::get_state() {
   float new_sensor_state = abs(this->fswm100_->get_ads1115()->request_measurement(
@@ -97,27 +98,24 @@ void FlowIrSensor::loop() {
     this->debug_state_max_ = new_sensor_state;
   }
 
-  if (state_delta > this->effective_noise_floor_) {
+  // determine if IR movement was detected (above the noise floor)
+  this->raw_state_ = state_delta > this->effective_noise_floor_;
+  if (raw_state_) {
     // has the state changed enough to publish?
     if (this->last_sensor_state_ == 0) {
       // first time we read the sensor, or it was 0 before
       ESP_LOGD(TAG, "Flow IR: first reading voltage %.4f", new_sensor_state);
       this->last_sensor_state_ = new_sensor_state;
-      this->last_ir_activity_time_ = millis();
       return;  // no need to publish, as we just started
     }
     // active due to IR movement
     ESP_LOGV(TAG, "Flow IR: active due to IR voltage %.4f delta", state_delta);
     this->publish(true);
     this->last_sensor_state_ = new_sensor_state;
-    this->last_ir_activity_time_ = millis();
-  } else if (millis() - this->last_ir_activity_time_ > this->latch_ms_) {
-    // inactive due to no IR movement after the latch duration
-    if (this->state > 0) {
-      // just switched to inactive
-      ESP_LOGD(TAG, "Flow IR: inactive");
-      this->publish(false);
-    }
+  } else if (this->state > 0) {
+    // just switched to inactive
+    ESP_LOGD(TAG, "Flow IR: inactive");
+    this->publish(false);
   }
 
   // publish debug state meta info every FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS

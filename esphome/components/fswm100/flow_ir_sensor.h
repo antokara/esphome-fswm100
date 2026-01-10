@@ -33,9 +33,9 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   /**
    * setup the flow ir sensor
    */
-  void setup(float effective_noise_floor, int latch_ms, float min_voltage, float max_voltage,
-             uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
-             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
+  void setup(float effective_noise_floor, float min_voltage, float max_voltage, uint32_t debug_publish_interval_ms,
+             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
+             ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief to be called in the loop() method of the parent component
@@ -46,6 +46,27 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
 
   void dump_config();
 
+  /**
+   * @brief attempt to publish the IR active/inactive state.
+   * @param ir_active IR active (true) or inactive (false)
+   */
+  void publish(bool ir_active);
+
+  /**
+   * @brief if true, the sensor has a self detected fault.
+   *        those are faults that can be determined in isolation.
+   *        e.g. out of range values, etc. but does not include
+   *        faults the require readings/timings from other sensors.
+   *        if false, the sensor as far as it knows, is working fine.
+   */
+  bool has_fault();
+
+  /**
+   * @brief returns the raw state (unaffected by filters)
+   */
+  bool get_raw_state();
+
+ private:
   /**
    * @brief get the state of the flow sensor
    *
@@ -67,22 +88,6 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
    */
   float get_state();
 
-  /**
-   * @brief attempt to publish the IR active/inactive state.
-   * @param ir_active IR active (true) or inactive (false)
-   */
-  void publish(bool ir_active);
-
-  /**
-   * @brief if true, the sensor has a self detected fault.
-   *        those are faults that can be determined in isolation.
-   *        e.g. out of range values, etc. but does not include
-   *        faults the require readings/timings from other sensors.
-   *        if false, the sensor as far as it knows, is working fine.
-   */
-  bool has_fault();
-
- private:
   /**
    * @brief if true, the sensor has a self detected fault.
    *        those are faults that can be determined in isolation.
@@ -116,20 +121,14 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   ads1115::ADS1115Resolution resolution_;
 
   /**
+   * @brief raw state (unaffected by filters)
+   */
+  bool raw_state_{false};
+
+  /**
    * @brief the last sensor state
    */
   float last_sensor_state_{0};
-
-  /**
-   * @brief The milliseconds that the IR sensor will stay on
-   *        after the last activity detected.
-   *
-   *        The higher the number, the more likely the sensor
-   *        will stay on continuously and avoid excessive toggling
-   *        but it will also provide a less granular signal for when
-   *        there's actual IR movement detected.
-   */
-  int latch_ms_{3000};
 
   /**
    * @brief the max state delta value,
@@ -197,11 +196,6 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
    *        should be replaced because it may have reached its end of life.
    */
   float max_voltage_{2.8f};
-
-  /**
-   * @brief the last time we had any IR activity above the noise floor.
-   */
-  uint32_t last_ir_activity_time_{0};
 
   /**
    * @brief The interval in milliseconds to publish the debug state meta information

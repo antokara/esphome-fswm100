@@ -113,7 +113,7 @@ uint32_t FSWM100::get_flow_sensor_last_switched_to_active_time() {
 uint32_t FSWM100::get_flow_sensor_last_switched_to_inactive_time() {
   return this->flow_sensor_->get_last_switched_to_inactive_time();
 }
-bool FSWM100::get_flow_ir_sensor_state() { return this->flow_ir_sensor_->state; }
+bool FSWM100::get_flow_ir_sensor_raw_state() { return this->flow_ir_sensor_->get_raw_state(); }
 bool FSWM100::get_pressure_sensor_test_flag() { return this->pressure_sensor_test_->state; }
 bool FSWM100::get_pulse_sensor() { return this->pulse_sensor_->state; }
 float FSWM100::get_pulse_rate_volume() { return this->pulse_sensor_->get_rate_volume(); }

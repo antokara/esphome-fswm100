@@ -67,7 +67,6 @@ CONF_FAULT_TIME_SINCE_FLOW_IR_ACTIVITY_MULTIPLIER = "fault_time_since_flow_ir_ac
 CONF_FAULT_FLOW_TIMEOUT_MULTIPLIER = "fault_flow_timeout_multiplier"
 CONF_INACTIVITY_FAULT_COUNTER_THRESHOLD = "inactivity_fault_counter_threshold"
 CONF_DEBUG_PUBLISH_INTERVAL_MS = "debug_publish_interval_ms"
-CONF_LATCH_MS = "latch_ms"
 CONF_CALIBRATION = "calibration"
 CONF_TEST = "test"
 CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
@@ -177,7 +176,6 @@ CONFIG_SCHEMA = cv.Schema(
             {
                 cv.GenerateID(): cv.declare_id(FlowIrSensor),
                 cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
-                cv.Optional(CONF_LATCH_MS, default=3000): cv.int_,
                 cv.Optional(CONF_MIN_VOLTAGE, default=2.0): cv.float_,
                 cv.Optional(CONF_MAX_VOLTAGE, default=3.0): cv.float_,
                 cv.Optional(CONF_DEBUG_PUBLISH_INTERVAL_MS, default=30000): cv.int_,
@@ -395,7 +393,6 @@ async def to_code(config):
         cg.add(
             flowIrSensor.setup(
                 flow_ir_config[CONF_EFFECTIVE_NOISE_FLOOR],
-                flow_ir_config[CONF_LATCH_MS],
                 flow_ir_config[CONF_MIN_VOLTAGE],
                 flow_ir_config[CONF_MAX_VOLTAGE],
                 flow_ir_config[CONF_DEBUG_PUBLISH_INTERVAL_MS],

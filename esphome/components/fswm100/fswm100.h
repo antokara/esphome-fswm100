@@ -187,9 +187,9 @@ class FSWM100 : public Component, public EntityBase {
   float get_flow_sensor_rate_time();
 
   /**
-   * @brief returns the flow ir sensor state (e.g. IR active/inactive)
+   * @brief returns the flow ir sensor raw state (e.g. IR active/inactive unaffected by filters)
    */
-  bool get_flow_ir_sensor_state();
+  bool get_flow_ir_sensor_raw_state();
 
   /**
    * @brief returns the last time (in milliseconds since boot)
