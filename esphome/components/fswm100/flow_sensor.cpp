@@ -108,7 +108,8 @@ void FlowSensor::loop() {
     this->active();
     this->last_ir_sensor_state_ = new_flow_ir_sensor_state;
     this->last_ir_activity_time_ = millis();
-  } else if (millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
+  } else if (!new_flow_ir_sensor_state &&
+             millis() - this->last_active_time_ > this->fswm100_->get_flow_sensor_min_duration()) {
     // inactive. no pulse or IR and timed out
     if (this->state > 0) {
       // just switched to inactive

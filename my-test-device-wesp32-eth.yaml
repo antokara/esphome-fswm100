@@ -82,9 +82,11 @@ fswm100:
   flow_ir:
     name: Water Flow IR Sensor
     # in volts
+    #  effective_noise_floor: 0.0009-0.022 idle
+    #  effective_noise_floor: 0.0300-0.120 flow
     effective_noise_floor: 0.05
     min_voltage: 2.0
-    max_voltage: 3.0
+    max_voltage: 3.4
     # the multiplier applied to the min_duration
     # to determine the latching (on) time period for the IR sensor
     latch_multiplier: 0.3
