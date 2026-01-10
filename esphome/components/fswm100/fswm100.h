@@ -13,6 +13,7 @@
 #include "flow_ir_sensor.h"
 #include "flow_sensor_min_duration.h"
 #include "flow_sensor_problem_sensor.h"
+#include "flow_ir_sensor_problem_sensor.h"
 #include "pulse_sensor_problem_sensor.h"
 #include "pressure_sensor_problem_sensor.h"
 
@@ -130,6 +131,14 @@ class FSWM100 : public Component, public EntityBase {
    * @param flow_sensor_problem_sensor
    */
   void set_flow_problem_sensor(FlowSensorProblemSensor *flow_sensor_problem_sensor);
+
+  /**
+   * @brief sets the flow IR sensor problem sensor object
+   *  @see __init__.py
+   *
+   * @param flow_ir_sensor_problem_sensor
+   */
+  void set_flow_ir_problem_sensor(FlowIrSensorProblemSensor *flow_ir_sensor_problem_sensor);
 
   /**
    * @brief sets the pulse sensor problem sensor object
@@ -356,6 +365,11 @@ class FSWM100 : public Component, public EntityBase {
    * @brief the flow sensor problem sensor
    */
   FlowSensorProblemSensor *flow_sensor_problem_sensor_{nullptr};
+
+  /**
+   * @brief the flow IR sensor problem sensor
+   */
+  FlowIrSensorProblemSensor *flow_ir_sensor_problem_sensor_{nullptr};
 
   /**
    * @brief the pulse sensor problem sensor

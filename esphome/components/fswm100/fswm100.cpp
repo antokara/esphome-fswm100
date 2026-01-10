@@ -30,6 +30,9 @@ void FSWM100::set_pressure_sensor_test(PressureSensorTest *pressure_sensor_test)
 void FSWM100::set_flow_problem_sensor(FlowSensorProblemSensor *flow_sensor_problem_sensor) {
   this->flow_sensor_problem_sensor_ = flow_sensor_problem_sensor;
 }
+void FSWM100::set_flow_ir_problem_sensor(FlowIrSensorProblemSensor *flow_ir_sensor_problem_sensor) {
+  this->flow_ir_sensor_problem_sensor_ = flow_ir_sensor_problem_sensor;
+}
 void FSWM100::set_pulse_problem_sensor(PulseSensorProblemSensor *pulse_sensor_problem_sensor) {
   this->pulse_sensor_problem_sensor_ = pulse_sensor_problem_sensor;
 }
@@ -213,12 +216,11 @@ void FSWM100::loop() {
     this->flow_sensor_problem_sensor_->publish_state(true);
     this->has_fault_ = true;
   }
-  // TODO: add the sensor
-  // if (this->flow_ir_sensor_->has_fault() && this->flow_ir_sensor_problem_sensor_->state != true) {
-  //   ESP_LOGE(TAG, "Flow IR Sensor has an internal fault!");
-  //   this->flow_ir_sensor_problem_sensor_->publish_state(true);
-  //   this->has_fault_ = true;
-  // }
+  if (this->flow_ir_sensor_->has_fault() && this->flow_ir_sensor_problem_sensor_->state != true) {
+    ESP_LOGE(TAG, "Flow IR Sensor has an internal fault!");
+    this->flow_ir_sensor_problem_sensor_->publish_state(true);
+    this->has_fault_ = true;
+  }
   if (this->pressure_sensor_->has_fault() && this->pressure_sensor_problem_sensor_->state != true) {
     ESP_LOGE(TAG, "Pressure Sensor has an internal fault!");
     this->pressure_sensor_problem_sensor_->publish_state(true);

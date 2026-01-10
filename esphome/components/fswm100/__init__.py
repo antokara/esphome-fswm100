@@ -113,6 +113,9 @@ FlowSensorMinDuration = fswm100_ns.class_(
 FlowSensorProblemSensor = fswm100_ns.class_(
     "FlowSensorProblemSensor", binary_sensor.BinarySensor
 )
+FlowIrSensorProblemSensor = fswm100_ns.class_(
+    "FlowIrSensorProblemSensor", binary_sensor.BinarySensor
+)
 PulseSensorProblemSensor = fswm100_ns.class_(
     "PulseSensorProblemSensor", binary_sensor.BinarySensor
 )
@@ -292,6 +295,17 @@ CONFIG_SCHEMA = cv.Schema(
             },
         ): binary_sensor.binary_sensor_schema(
             FlowSensorProblemSensor,
+            icon=ICON_ALERT_CIRCLE,
+            device_class=DEVICE_CLASS_PROBLEM,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ),
+        cv.Optional(
+            DIAG_FLOW_IR_PROBLEM,
+            default={
+                CONF_NAME: "Flow IR Sensor Problem",
+            },
+        ): binary_sensor.binary_sensor_schema(
+            FlowIrSensorProblemSensor,
             icon=ICON_ALERT_CIRCLE,
             device_class=DEVICE_CLASS_PROBLEM,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
@@ -537,6 +551,19 @@ async def to_code(config):
         cg.add(fswm100.set_flow_problem_sensor(flowProblemSensor))
         # setup the "FlowSensorProblemSensor" class instance, passing it the config
         cg.add(flowProblemSensor.setup())
+    if diag_ir_flow_problem_config := config.get(DIAG_FLOW_IR_PROBLEM):
+        # create an instance of our custom BinarySensor "FlowIrSensorProblemSensor" class
+        # passing the FSWM100 class instance to its constructor
+        flowIrProblemSensor = cg.new_Pvariable(diag_ir_flow_problem_config[CONF_ID], fswm100)
+        # register the sensor class instance
+        await binary_sensor.register_binary_sensor(
+            flowIrProblemSensor, diag_ir_flow_problem_config
+        )
+        # set the FlowIrSensorProblemSensor class instance reference
+        # to the FSWM100 class instance
+        cg.add(fswm100.set_flow_ir_problem_sensor(flowIrProblemSensor))
+        # setup the "FlowIrSensorProblemSensor" class instance, passing it the config
+        cg.add(flowIrProblemSensor.setup())
     if diag_pulse_problem_config := config.get(DIAG_PULSE_PROBLEM):
         # create an instance of our custom BinarySensor "PulseSensorProblemSensor" class
         # passing the FSWM100 class instance to its constructor
