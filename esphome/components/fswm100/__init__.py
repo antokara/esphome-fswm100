@@ -169,9 +169,9 @@ CONFIG_SCHEMA = cv.Schema(
                 ),
             }
         ),
-        # Flow IR Sensor
+        # Flow IR Sensor (diagnostic sensor)
         cv.Required(CONF_FLOW_IR): binary_sensor.binary_sensor_schema(
-            FlowIrSensor, icon=ICON_FAN, device_class=DEVICE_CLASS_EMPTY
+            FlowIrSensor, icon=ICON_FAN, device_class=DEVICE_CLASS_EMPTY, entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(FlowIrSensor),
