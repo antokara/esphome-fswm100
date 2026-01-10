@@ -100,7 +100,7 @@ void FlowIrSensor::loop() {
 
   // determine if IR movement was detected (above the noise floor)
   this->raw_state_ = state_delta > this->effective_noise_floor_;
-  if (raw_state_) {
+  if (this->raw_state_) {
     // has the state changed enough to publish?
     if (this->last_sensor_state_ == 0) {
       // first time we read the sensor, or it was 0 before
@@ -112,7 +112,7 @@ void FlowIrSensor::loop() {
     ESP_LOGV(TAG, "Flow IR: active due to IR voltage %.4f delta", state_delta);
     this->publish(true);
     this->last_sensor_state_ = new_sensor_state;
-  } else if (this->state > 0) {
+  } else if (this->raw_state_ > 0) {
     // just switched to inactive
     ESP_LOGD(TAG, "Flow IR: inactive");
     this->publish(false);
