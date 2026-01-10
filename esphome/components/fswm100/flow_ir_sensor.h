@@ -33,7 +33,7 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   /**
    * setup the flow ir sensor
    */
-  void setup(float effective_noise_floor, float latch_multiplier, float min_voltage, float max_voltage,
+  void setup(float effective_noise_floor, int latch_ms, float min_voltage, float max_voltage,
              uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
              ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
@@ -121,11 +121,15 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   float last_sensor_state_{0};
 
   /**
-   * @brief the latch multiplier,
-   *        applied to the flow sensor min duration
-   *        to determine the latching (on) time period for the IR sensor
+   * @brief The milliseconds that the IR sensor will stay on
+   *        after the last activity detected.
+   *
+   *        The higher the number, the more likely the sensor
+   *        will stay on continuously and avoid excessive toggling
+   *        but it will also provide a less granular signal for when
+   *        there's actual IR movement detected.
    */
-  float latch_multiplier_{0.3f};
+  int latch_ms_{3000};
 
   /**
    * @brief the max state delta value,
