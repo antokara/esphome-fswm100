@@ -115,7 +115,7 @@ void FlowIrSensor::loop() {
     // inactive due to no IR movement for the min duration
     if (this->state > 0) {
       // just switched to inactive
-      ESP_LOGD(TAG, "Flow IR: switched to inactive");
+      ESP_LOGD(TAG, "Flow IR: inactive");
       this->publish(false);
     }
   }
