@@ -47,7 +47,7 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   void dump_config();
 
   /**
-   * @brief attempt to publish the IR active/inactive state.
+   * @brief sets the raw_state_ and attempts to publish the IR active/inactive state.
    * @param ir_active IR active (true) or inactive (false)
    */
   void publish(bool ir_active);

@@ -41,7 +41,10 @@ void FlowIrSensor::dump_config() {
 
 bool FlowIrSensor::has_fault() { return this->has_fault_; }
 
-void FlowIrSensor::publish(bool ir_active) { this->publish_state(ir_active); }
+void FlowIrSensor::publish(bool ir_active) {
+  this->raw_state_ = ir_active;
+  this->publish_state(ir_active);
+}
 
 bool FlowIrSensor::get_raw_state() { return this->raw_state_; }
 
@@ -99,8 +102,7 @@ void FlowIrSensor::loop() {
   }
 
   // determine if IR movement was detected (above the noise floor)
-  this->raw_state_ = state_delta > this->effective_noise_floor_;
-  if (this->raw_state_) {
+  if (state_delta > this->effective_noise_floor_) {
     // has the state changed enough to publish?
     if (this->last_sensor_state_ == 0) {
       // first time we read the sensor, or it was 0 before
@@ -114,7 +116,7 @@ void FlowIrSensor::loop() {
     this->last_sensor_state_ = new_sensor_state;
   } else if (this->raw_state_ > 0) {
     // just switched to inactive
-    ESP_LOGD(TAG, "Flow IR: inactive");
+    ESP_LOGV(TAG, "Flow IR: inactive");
     this->publish(false);
   }
 
