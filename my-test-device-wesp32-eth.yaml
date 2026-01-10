@@ -95,6 +95,10 @@ fswm100:
     gain: 6.144
     sample_rate: 860
     resolution: 16_BITS
+    # prevent excessive toggling of the sensor
+    # (just for reporting purposes. it does not affect flow detection)
+    filters:
+      - delayed_off: 10sec
   pulse:
     name: Water Meter Pulse
     rate_volume: 1
