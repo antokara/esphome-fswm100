@@ -102,7 +102,7 @@ void FlowSensor::loop() {
     this->oldest_pulse_sensor_active_time_ = this->newest_pulse_sensor_active_time_;
     this->newest_pulse_sensor_active_time_ = millis();
     // for diagnostics, mark that a flow/pulse correlation check is pending
-    this->flow_pulse_correlation_pending_ = true;
+    this->diagnostics_flow_correlation_pending_ = true;
   } else if (flow_ir_sensor_state) {
     // active Flow IR (could be new or sustained)
     this->active();
@@ -120,7 +120,7 @@ void FlowSensor::loop() {
       ESP_LOGD(TAG, "Flow: switched to inactive");
       this->publish(0);
       this->last_switched_to_inactive_time_ = millis();
-      this->flow_pulse_correlation_pending_ = false;
+      this->diagnostics_flow_correlation_pending_ = false;
       this->last_ir_sensor_state_ = false;
     }
   } else if (this->state > 0) {
@@ -128,65 +128,57 @@ void FlowSensor::loop() {
 
     // publish the updated flow rate
     this->publish(this->calculate_active_flow());
-
-    /** diagnostics:
-     *      if we have gotten a pulse lately, within the min duration but not too soon that
-     *      maybe the IR hasn't picked it up yet (it's possible).
-     *
-     * example 1:
-     *          min duration = 30 seconds
-     *          IR activity at t = 0 seconds
-     *          pulse received at t = 60 seconds
-     *          time now is t = 76 seconds
-     *          fault_time_since_flow_ir_activity_multiplier_ = 3.0
-     *
-     *                         (mininum duration)                (fault_time_since_flow_ir_activity)
-     *          0              30sec            60sec    75sec   90sec          120sec         150sec
-     *          |--------------|----------------|--------|-------|--------------|--------------|
-     *          ^ IR activity
-     *                                          ^ pulse received
-     *                                                     ^ now, check for fault
-     *                                                     all good, since the IR was last active
-     *                                                     within the min duration x multiplier (90sec)
-     *
-     */
-    uint32_t time_since_newest_pulse = abs(long(millis() - this->newest_pulse_sensor_active_time_));
-    if (!this->has_fault_ && this->flow_pulse_correlation_pending_ &&
-        time_since_newest_pulse < this->fswm100_->get_flow_sensor_min_duration() &&
-        time_since_newest_pulse > (this->fswm100_->get_flow_sensor_min_duration() / 2)) {
-      // but there has been no IR activity within the min duration x the multiplier, so we may have a problem
-      if (millis() - this->last_ir_activity_time_ >
-          this->fswm100_->get_flow_sensor_min_duration() * this->fault_time_since_flow_ir_activity_multiplier_) {
-        // increase the inactivity fault counter and log a warning
-        this->inactivity_fault_counter_++;
-        ESP_LOGW(TAG, "'%s': inactivity fault counter: %d", this->get_name().c_str(), this->inactivity_fault_counter_);
-
-        // if we have reached the threshold, we have a fault
-        if (this->inactivity_fault_counter_ >= this->inactivity_fault_counter_threshold_) {
-          ESP_LOGW(
-              TAG,
-              "'%s': No IR activity has been detected, while the Pulse appears to have been toggled. "
-              "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
-              "positive).",
-              this->get_name().c_str());
-          this->fswm100_->add_fault(
-              "No IR activity has been detected, while the Pulse appears to have been toggled. "
-              "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
-              "positive).");
-          this->has_fault_ = true;
-        }
-      } else {
-        // reset the fault counter, as we have had IR activity within the allowed time
-        this->inactivity_fault_counter_ = 0;
-      }
-      // either way, reset the pending flag (the correlation check has succeeded or failed)
-      this->flow_pulse_correlation_pending_ = false;
-    }
   }
+
+  // always check for a pending flow correlation
+  this->check_diagnostics_flow_correlation();
 
   // update if it just switched (to false)
   if (!pulse_sensor_state && pulse_sensor_state != this->last_pulse_sensor_state_) {
     this->last_pulse_sensor_state_ = pulse_sensor_state;
+  }
+}
+
+void FlowSensor::check_diagnostics_flow_correlation() {
+  // skip the check if there's already a fault or there's no correlation check pending
+  if (!this->has_fault_ && !this->diagnostics_flow_correlation_pending_) {
+    return;
+  }
+
+  /*
+    Ensure the time now, is after some time since a new pulse was received.
+    It cant' be right after a new pulse but it shouldn't be too late either.
+  */
+  uint32_t time_since_newest_pulse = abs(long(millis() - this->newest_pulse_sensor_active_time_));
+  if (time_since_newest_pulse < this->fswm100_->get_flow_sensor_min_duration() &&
+      time_since_newest_pulse > (this->fswm100_->get_flow_sensor_min_duration() / 2)) {
+    // but there has been no IR activity within the min duration x the multiplier, so we may have a problem
+    if (millis() - this->last_ir_activity_time_ >
+        this->fswm100_->get_flow_sensor_min_duration() * this->fault_time_since_flow_ir_activity_multiplier_) {
+      // increase the inactivity fault counter and log a warning
+      this->inactivity_fault_counter_++;
+      ESP_LOGW(TAG, "'%s': inactivity fault counter: %d", this->get_name().c_str(), this->inactivity_fault_counter_);
+
+      // if we have reached the threshold, we have a fault
+      if (this->inactivity_fault_counter_ >= this->inactivity_fault_counter_threshold_) {
+        ESP_LOGW(
+            TAG,
+            "'%s': No IR activity has been detected, while the Pulse appears to have been toggled. "
+            "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
+            "positive).",
+            this->get_name().c_str());
+        this->fswm100_->add_fault(
+            "No IR activity has been detected, while the Pulse appears to have been toggled. "
+            "Either the IR is having problems (false negative), or the pulse sensor is not working properly (false "
+            "positive).");
+        this->has_fault_ = true;
+      }
+    } else {
+      // reset the fault counter, as we have had IR activity within the allowed time
+      this->inactivity_fault_counter_ = 0;
+    }
+    // either way, reset the pending flag (the correlation check has succeeded or failed)
+    this->diagnostics_flow_correlation_pending_ = false;
   }
 }
 

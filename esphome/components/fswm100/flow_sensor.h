@@ -134,11 +134,11 @@ class FlowSensor : public sensor::Sensor {
   FSWM100 *fswm100_{nullptr};
 
   /**
-   * @brief to be called when there's active flow.
-   *        it could be when it just switched to active or
-   *        when it's sustained active flow.
+   *  A function object that knows how to create a new set of filters
+   * e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new
+   * esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
    */
-  void active();
+  std::function<std::vector<sensor::Filter *>()> filters_factory_;
 
   /**
    * @brief the minimum flow volume the water meter can detect
@@ -165,7 +165,46 @@ class FlowSensor : public sensor::Sensor {
   float rate_time_{60.0f};
 
   /**
-   * @brief the last flow IR sensor state
+   * @brief to be called when there's active flow.
+   *        it could be when it just switched to active or
+   *        when it's sustained active flow.
+   */
+  void active();
+
+  /**
+   * @brief for diagnostics, if true, a flow/pulse correlation check is pending.
+   *        it must be set to true, only when there's a new pulse. (that's our "trigger")
+   *        it must be reset to false, when:
+   *          - there's no flow (since the period of no flow could exceed the correlation window)
+   *          - the correlation check was performed (no matter if it succeeded or failed)
+   */
+  bool diagnostics_flow_correlation_pending_{false};
+
+  /**
+   * @brief diagnostics: checks for pulse/IR correlation and sets the has_fault_ to true accordingly.
+   *        It must be called on each loop iteration.
+   *
+   * @example 1
+   *          min duration = 30 seconds
+   *          IR activity at t = 0 seconds
+   *          pulse received at t = 60 seconds
+   *          time now is t = 76 seconds
+   *          fault_time_since_flow_ir_activity_multiplier_ = 3.0
+   *
+   *                         (mininum duration)                (fault_time_since_flow_ir_activity)
+   *          0              30sec            60sec    75sec   90sec          120sec         150sec
+   *          |--------------|----------------|--------|-------|--------------|--------------|
+   *          ^ IR activity
+   *                                          ^ pulse received
+   *                                                     ^ now, check for fault
+   *                                                     all good, since the IR was last active
+   *                                                     within the min duration x multiplier (90sec)
+   *
+   */
+  void check_diagnostics_flow_correlation();
+
+  /**
+   * @brief the last flow IR sensor (raw) state
    */
   bool last_ir_sensor_state_{false};
 
@@ -219,13 +258,6 @@ class FlowSensor : public sensor::Sensor {
   uint32_t last_ir_activity_time_{0};
 
   /**
-   *  A function object that knows how to create a new set of filters
-   * e.g. []() -> std::vector<esphome::sensor::Filter *> { return { new
-   * esphome::sensor::SlidingWindowMovingAverageFilter(15, 5, 1), new esphome::sensor::OffsetFilter(10.0) }; }
-   */
-  std::function<std::vector<sensor::Filter *>()> filters_factory_;
-
-  /**
    * @brief The multiplier applied to the time between pulses
    *        to determine if the flow rate should be re-calculated.
    *
@@ -258,11 +290,6 @@ class FlowSensor : public sensor::Sensor {
    * in a row, to consider the sensor as faulty.
    */
   int inactivity_fault_counter_threshold_{3};
-
-  /**
-   * @brief for diagnostics, if true, a flow/pulse correlation check is pending.
-   */
-  bool flow_pulse_correlation_pending_{false};
 };
 
 }  // namespace fswm100
