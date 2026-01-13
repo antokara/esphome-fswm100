@@ -64,7 +64,7 @@ float FlowIrSensor::get_state() {
             static_cast<int>(this->multiplexer_), new_sensor_state);
 
   // diagnostics: check if the voltage is within the expected range
-  if (!this->has_fault_ && new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_) {
+  if (!this->has_fault_ && (new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_)) {
     ESP_LOGW(TAG, "'%s': voltage out of range: %.4f V", this->get_name().c_str(), new_sensor_state);
     this->fswm100_->add_fault("Flow IR sensor voltage out of range: " + std::to_string(new_sensor_state) + " V");
     this->has_fault_ = true;
