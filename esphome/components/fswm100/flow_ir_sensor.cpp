@@ -31,8 +31,14 @@ void FlowIrSensor::setup(float effective_noise_floor, float min_voltage, float m
       for max voltage 3.5V, when the sensor is old/less sensitive:
         f = 0.1 / (3.5 - 1) = 0.04V
 
-    TODO: consider instead of using max voltage, use the average max voltage over time,
+    TODO: Consider instead of using max voltage, using the max voltage over time,
           to better reflect the actual sensor sensitivity.
+
+          The k, c constants should be configurable.
+
+          The defined max, should be for error detection and maybe for the initial noise floor calculation.
+          The actual max, should be used for the continious noise floor calculation, every time the
+          actual max voltage is updated.
   */
   const float k = 0.1f;
   const float c = 1.0f;
