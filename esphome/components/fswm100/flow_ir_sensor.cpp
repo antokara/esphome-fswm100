@@ -12,7 +12,31 @@ void FlowIrSensor::setup(float effective_noise_floor, float min_voltage, float m
                          ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
                          ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowIrSensor setup start.");
-  this->effective_noise_floor_ = effective_noise_floor;
+
+  // TODO: add configuration variables
+  // this->effective_noise_floor_ = effective_noise_floor;
+  /*
+    calculate the effective noise floor, using the inverse curve:
+      f = k / (m - c)
+    where:
+      f = effective noise floor
+      k = constant (e.g. 0.1)
+      m = max voltage (e.g. 3.0V or 3.5V)
+      c = constant offset (e.g. 1)
+
+    example:
+      for max voltage 3.0V, when the sensor is new/sensitive:
+        f = 0.1 / (3.0 - 1) = 0.05V
+
+      for max voltage 3.5V, when the sensor is old/less sensitive:
+        f = 0.1 / (3.5 - 1) = 0.04V
+
+    TODO: consider instead of using max voltage, use the average max voltage over time,
+          to better reflect the actual sensor sensitivity.
+  */
+  const float k = 0.1f;
+  const float c = 1.0f;
+  this->effective_noise_floor_ = k / (max_voltage - c);
   this->min_voltage_ = min_voltage;
   this->max_voltage_ = max_voltage;
   this->debug_publish_interval_ms_ = debug_publish_interval_ms;
