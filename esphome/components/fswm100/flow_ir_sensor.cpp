@@ -155,13 +155,17 @@ void FlowIrSensor::loop() {
   // publish debug state meta info every FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS
   if (millis() - this->last_debug_state_time_ > this->debug_publish_interval_ms_) {
     if (this->state == 0) {
-      ESP_LOGD(TAG, "Flow IR: inactive due to IR voltage %.4f state_delta_max, counts: %d, min: %.4f, max: %.4f",
+      ESP_LOGD(TAG,
+               "Flow IR: inactive due to IR voltage %.4f state_delta_max, counts: %d, min: %.4f, max: %.4f, effective "
+               "noise floor: %.4f V",
                this->debug_state_delta_max_, this->debug_state_active_counts_, this->debug_state_min_,
-               this->debug_state_max_);
+               this->debug_state_max_, this->effective_noise_floor_);
     } else {
-      ESP_LOGD(TAG, "Flow IR: active due to IR voltage %.4f state_delta_max, counts: %d, min: %.4f, max: %.4f",
+      ESP_LOGD(TAG,
+               "Flow IR: active due to IR voltage %.4f state_delta_max, counts: %d, min: %.4f, max: %.4f, effective "
+               "noise floor: %.4f V",
                this->debug_state_delta_max_, this->debug_state_active_counts_, this->debug_state_min_,
-               this->debug_state_max_);
+               this->debug_state_max_, this->effective_noise_floor_);
     }
     // reset
     this->last_debug_state_time_ = millis();
