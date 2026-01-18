@@ -142,7 +142,8 @@ void FlowIrSensor::loop() {
       return;  // no need to publish, as we just started
     }
     // active due to IR movement
-    ESP_LOGV(TAG, "Flow IR: active due to IR voltage %.4f delta", state_delta);
+    ESP_LOGV(TAG, "Flow IR: active due to IR voltage %.4f delta > %.4f effective noise floor", state_delta,
+             this->effective_noise_floor_);
     this->publish(true);
     this->last_sensor_state_ = new_sensor_state;
   } else if (this->raw_state_ > 0) {
