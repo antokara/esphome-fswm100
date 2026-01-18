@@ -150,13 +150,13 @@ void FlowIrSensor::loop() {
     this->last_sensor_state_ = new_sensor_state;
   } else if (this->raw_state_) {
     // just switched to inactive
-    ESP_LOGD(TAG, "Flow IR: inactive");
+    ESP_LOGV(TAG, "Flow IR: inactive");
     this->publish(false);
   }
 
   // publish debug state meta info every FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS
   if (millis() - this->last_debug_state_time_ > this->debug_publish_interval_ms_) {
-    if (!this->raw_state_) {
+    if (!this->state) {
       ESP_LOGD(TAG,
                "Flow IR: inactive due to IR voltage %.4f state_delta_max, counts: %d, min: %.4f, max: %.4f, effective "
                "noise floor: %.4f V",
