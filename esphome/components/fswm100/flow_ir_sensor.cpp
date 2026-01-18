@@ -156,7 +156,7 @@ void FlowIrSensor::loop() {
 
   // publish debug state meta info every FLOW_SENSOR_DEBUG_PUBLISH_INTERVAL_MS
   if (millis() - this->last_debug_state_time_ > this->debug_publish_interval_ms_) {
-    if (this->state == 0) {
+    if (!this->raw_state_) {
       ESP_LOGD(TAG,
                "Flow IR: inactive due to IR voltage %.4f state_delta_max, counts: %d, min: %.4f, max: %.4f, effective "
                "noise floor: %.4f V",
