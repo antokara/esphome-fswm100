@@ -33,9 +33,9 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   /**
    * setup the flow ir sensor
    */
-  void setup(float effective_noise_floor, float min_voltage, float max_voltage, uint32_t debug_publish_interval_ms,
-             ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
-             ads1115::ADS1115Resolution resolution);
+  void setup(float noise_inverse_curve_k_, float noise_inverse_curve_c_, float min_voltage, float max_voltage,
+             uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer, ads1115::ADS1115Gain gain,
+             ads1115::ADS1115Samplerate sample_rate, ads1115::ADS1115Resolution resolution);
 
   /**
    * @brief to be called in the loop() method of the parent component
@@ -177,11 +177,63 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   uint32_t last_debug_state_time_{0};
 
   /**
+   * @brief the inverse curve k parameter
+   *        used to calculate the effective noise floor
+   *
+   * @example with m 3.0V, k 0.1, c 1.0, when the sensor is new/sensitive:
+   *          f = 0.1 / (3.0 - 1) = 0.05V
+   *          with m 3.0V, k 0.1, c 1.5:
+   *          f = 0.1 / (3.0 - 1.5) = 0.066V
+   *          with m 3.0V, k 0.1, c 0.5:
+   *          f = 0.1 / (3.0 - 0.5) = 0.04V
+   */
+  float noise_inverse_curve_k_{0.1f};
+
+  /**
+   * @brief the inverse curve c parameter
+   *        used to calculate the effective noise floor
+   * @example with m 3.0V, k 0.1, c 1.0, when the sensor is new/sensitive:
+   *          f = 0.1 / (3.0 - 1) = 0.05V
+   *          with m 3.0V, k 0.1, c 1.5:
+   *          f = 0.1 / (3.0 - 1.5) = 0.066V
+   *          with m 3.0V, k 0.1, c 0.5:
+   *          f = 0.1 / (3.0 - 0.5) = 0.04V
+   */
+  float noise_inverse_curve_c_{1.0f};
+
+  /**
+   * @brief the max voltage recorded over time
+   *        used to calculate the effective noise floor.
+   *
+   *        This is different from max_voltage_, which is a fixed threshold
+   *        above which the sensor is considered faulty.
+   *
+   *        The max_voltage_recorded_ should be within the min_voltage_ and max_voltage_ range.
+   *
+   * @example 2.9359V
+   */
+  float max_voltage_recorded_{0.0f};
+
+  /**
    * @brief voltage fluctuations less than, or equal to this value
    *        will be ignored, as noise.
    *        This is used to filter out noise from the flow sensor.
+   *
+   *        We calculate the effective noise floor, using the inverse curve:
+   *          f = k / (m - c)
+   *        where:
+   *          f = effective noise floor. [effective_noise_floor_]
+   *          k = constant/strength. Scaling factor (e.g. 0.1). [noise_inverse_curve_k_]
+   *          m = max voltage (e.g. 3.0V or 3.5V). [max_voltage_recorded_]
+   *          c = limit/shift. Horizonal shift (e.g. 1). [noise_inverse_curve_c_]
    */
   float effective_noise_floor_{0.0f};
+
+  /**
+   * @brief calculates the effective noise floor
+   * @param max_voltage the max voltage to use in the calculation
+   */
+  void calculate_effective_noise_floor(float max_voltage);
 
   /**
    * @brief The minimum IR voltage that is considered valid.

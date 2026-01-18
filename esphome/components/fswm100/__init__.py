@@ -70,6 +70,8 @@ CONF_DEBUG_PUBLISH_INTERVAL_MS = "debug_publish_interval_ms"
 CONF_CALIBRATION = "calibration"
 CONF_TEST = "test"
 CONF_EFFECTIVE_NOISE_FLOOR = "effective_noise_floor"
+CONF_NOISE_INVERSE_CURVE_K = "noise_inverse_curve_k"
+CONF_NOISE_INVERSE_CURVE_C = "noise_inverse_curve_c"
 CONF_MIN_DURATION = "min_duration"
 CONF_MIN_VOLUME = "min_volume"
 CONF_MAX_VOLUME = "max_volume"
@@ -175,7 +177,8 @@ CONFIG_SCHEMA = cv.Schema(
         ).extend(
             {
                 cv.GenerateID(): cv.declare_id(FlowIrSensor),
-                cv.Optional(CONF_EFFECTIVE_NOISE_FLOOR, default=0.05): cv.float_,
+                cv.Optional(CONF_NOISE_INVERSE_CURVE_K, default=0.1): cv.float_,
+                cv.Optional(CONF_NOISE_INVERSE_CURVE_C, default=1.0): cv.float_,
                 cv.Optional(CONF_MIN_VOLTAGE, default=2.0): cv.float_,
                 cv.Optional(CONF_MAX_VOLTAGE, default=3.0): cv.float_,
                 cv.Optional(CONF_DEBUG_PUBLISH_INTERVAL_MS, default=30000): cv.int_,
@@ -392,7 +395,8 @@ async def to_code(config):
         # setup the "flowIrSensor" class instance, passing it the config
         cg.add(
             flowIrSensor.setup(
-                flow_ir_config[CONF_EFFECTIVE_NOISE_FLOOR],
+                flow_ir_config[CONF_NOISE_INVERSE_CURVE_K],
+                flow_ir_config[CONF_NOISE_INVERSE_CURVE_C],
                 flow_ir_config[CONF_MIN_VOLTAGE],
                 flow_ir_config[CONF_MAX_VOLTAGE],
                 flow_ir_config[CONF_DEBUG_PUBLISH_INTERVAL_MS],

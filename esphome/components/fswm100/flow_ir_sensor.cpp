@@ -7,45 +7,17 @@ namespace fswm100 {
 
 FlowIrSensor::FlowIrSensor(FSWM100 *fswm100) { fswm100_ = fswm100; };
 
-void FlowIrSensor::setup(float effective_noise_floor, float min_voltage, float max_voltage,
-                         uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer,
+void FlowIrSensor::setup(float noise_inverse_curve_k_, float noise_inverse_curve_c_, float min_voltage,
+                         float max_voltage, uint32_t debug_publish_interval_ms, ads1115::ADS1115Multiplexer multiplexer,
                          ads1115::ADS1115Gain gain, ads1115::ADS1115Samplerate sample_rate,
                          ads1115::ADS1115Resolution resolution) {
   ESP_LOGCONFIG(TAG, "FlowIrSensor setup start.");
-
-  // TODO: add configuration variables
-  // this->effective_noise_floor_ = effective_noise_floor;
-  /*
-    calculate the effective noise floor, using the inverse curve:
-      f = k / (m - c)
-    where:
-      f = effective noise floor
-      k = constant (e.g. 0.1)
-      m = max voltage (e.g. 3.0V or 3.5V)
-      c = constant offset (e.g. 1)
-
-    example:
-      for max voltage 3.0V, when the sensor is new/sensitive:
-        f = 0.1 / (3.0 - 1) = 0.05V
-
-      for max voltage 3.5V, when the sensor is old/less sensitive:
-        f = 0.1 / (3.5 - 1) = 0.04V
-
-    TODO: Consider instead of using max voltage, using the max voltage over time,
-          to better reflect the actual sensor sensitivity.
-
-          The k, c constants should be configurable.
-
-          The defined max, should be for error detection and maybe for the initial noise floor calculation.
-          The actual max, should be used for the continious noise floor calculation, every time the
-          actual max voltage is updated.
-  */
-  const float k = 0.1f;
-  const float c = 1.0f;
-  this->effective_noise_floor_ = k / (max_voltage - c);
+  this->noise_inverse_curve_k_ = noise_inverse_curve_k_;
+  this->noise_inverse_curve_c_ = noise_inverse_curve_c_;
   this->min_voltage_ = min_voltage;
   this->max_voltage_ = max_voltage;
   this->debug_publish_interval_ms_ = debug_publish_interval_ms;
+  this->calculate_effective_noise_floor(this->max_voltage_);
   // ADS1115
   this->multiplexer_ = multiplexer;
   this->gain_ = gain;
@@ -58,7 +30,8 @@ void FlowIrSensor::setup(float effective_noise_floor, float min_voltage, float m
 
 void FlowIrSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "FlowIrSensor:");
-  ESP_LOGCONFIG(TAG, "  effective noise floor:", this->effective_noise_floor_);
+  ESP_LOGCONFIG(TAG, "  noise inverse curve k:", this->noise_inverse_curve_k_);
+  ESP_LOGCONFIG(TAG, "  noise inverse curve c:", this->noise_inverse_curve_c_);
   ESP_LOGCONFIG(TAG, "  min voltage:", this->min_voltage_);
   ESP_LOGCONFIG(TAG, "  max voltage:", this->max_voltage_);
   ESP_LOGCONFIG(TAG, "  debug publish interval ms:", this->debug_publish_interval_ms_);
@@ -70,6 +43,27 @@ void FlowIrSensor::dump_config() {
 }
 
 bool FlowIrSensor::has_fault() { return this->has_fault_; }
+
+void FlowIrSensor::calculate_effective_noise_floor(float max_voltage) {
+  // f = k / (m - c)
+  // where:
+  //   f = effective noise floor. [effective_noise_floor_]
+  //   k = constant/strength. Scaling factor (e.g. 0.1). [noise_inverse_curve_k_]
+  //   m = max voltage (e.g. 3.0V or 3.5V). [max_voltage_recorded_]
+  //   c = limit/shift. Horizonal shift (e.g. 1). [noise_inverse_curve_c_]
+  float mc = max_voltage - this->noise_inverse_curve_c_;
+  if (mc <= 0) {
+    ESP_LOGE(TAG, "'%s': cannot calculate effective noise floor, division by zero.", this->get_name().c_str());
+    this->fswm100_->add_fault("Failed to read from ADS1115 channel for flow sensor. Result was NaN.");
+    this->has_fault_ = true;
+    this->effective_noise_floor_ = 0.0f;
+    return;
+  }
+
+  this->effective_noise_floor_ = this->noise_inverse_curve_k_ / mc;
+  ESP_LOGD(TAG, "'%s': calculated effective noise floor: %.4f V (max voltage: %.4f V)", this->get_name().c_str(),
+           this->effective_noise_floor_, max_voltage);
+}
 
 void FlowIrSensor::publish(bool ir_active) {
   this->raw_state_ = ir_active;
@@ -92,6 +86,13 @@ float FlowIrSensor::get_state() {
 
   ESP_LOGVV(TAG, "'%s': Read voltage from ADS1115 channel %d: %.4f V", this->get_name().c_str(),
             static_cast<int>(this->multiplexer_), new_sensor_state);
+
+  // check if the max voltage recorded needs to be updated and
+  // the effective noise floor recalculated
+  if (new_sensor_state > this->max_voltage_recorded_) {
+    this->max_voltage_recorded_ = new_sensor_state;
+    this->calculate_effective_noise_floor(this->max_voltage_recorded_);
+  }
 
   // diagnostics: check if the voltage is within the expected range
   if (!this->has_fault_ && (new_sensor_state < this->min_voltage_ || new_sensor_state > this->max_voltage_)) {

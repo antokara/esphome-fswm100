@@ -81,12 +81,11 @@ fswm100:
       - heartbeat: 20s
   flow_ir:
     name: Water Flow IR Sensor
+    noise_inverse_curve_k: 0.1
+    noise_inverse_curve_c: 1.0
     # in volts
-    #  effective_noise_floor: 0.0009-0.022 idle
-    #  effective_noise_floor: 0.0300-0.120 flow
-    effective_noise_floor: 0.05
     min_voltage: 2.0
-    max_voltage: 3.4
+    max_voltage: 3.5
     # The interval in milliseconds to publish the debug state meta information
     # of the flow sensor.
     debug_publish_interval_ms: 30000
