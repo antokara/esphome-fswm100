@@ -91,8 +91,9 @@ float FlowIrSensor::get_state() {
 
   // check if the max voltage recorded needs to be updated and
   // the effective noise floor recalculated
-  if (this->round_to_decimal_places(new_sensor_state, 2) > this->max_voltage_recorded_) {
-    this->max_voltage_recorded_ = new_sensor_state;
+  float rounded_new_sensor_state = this->round_to_decimal_places(new_sensor_state, 2);
+  if (rounded_new_sensor_state > this->max_voltage_recorded_) {
+    this->max_voltage_recorded_ = rounded_new_sensor_state;
     this->calculate_effective_noise_floor(this->max_voltage_recorded_);
   }
 
