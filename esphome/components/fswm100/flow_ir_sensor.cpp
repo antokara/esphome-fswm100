@@ -1,6 +1,8 @@
 #include "esphome/core/log.h"
 #include "fswm100.h"
 #include "flow_ir_sensor.h"
+#include <iostream>
+#include <cmath>
 
 namespace esphome {
 namespace fswm100 {
@@ -89,7 +91,7 @@ float FlowIrSensor::get_state() {
 
   // check if the max voltage recorded needs to be updated and
   // the effective noise floor recalculated
-  if (new_sensor_state > this->max_voltage_recorded_) {
+  if (this->round_to_decimal_places(new_sensor_state, 2) > this->max_voltage_recorded_) {
     this->max_voltage_recorded_ = new_sensor_state;
     this->calculate_effective_noise_floor(this->max_voltage_recorded_);
   }
@@ -102,6 +104,12 @@ float FlowIrSensor::get_state() {
   }
 
   return new_sensor_state;
+}
+
+float FlowIrSensor::round_to_decimal_places(float value, int decimal_places) {
+  const float multiplier = std::pow(10.0, decimal_places);
+  // Multiply by 10^n, round to nearest integer, then divide back
+  return std::round(value * multiplier) / multiplier;
 }
 
 void FlowIrSensor::loop() {

@@ -236,6 +236,14 @@ class FlowIrSensor : public binary_sensor::BinarySensor {
   void calculate_effective_noise_floor(float max_voltage);
 
   /**
+   * @brief rounds a float value to the specified number of decimal places
+   * @param value the value to round
+   * @param decimal_places the number of decimal places to round to
+   * @return float the rounded value
+   */
+  float round_to_decimal_places(float value, int decimal_places);
+
+  /**
    * @brief The minimum IR voltage that is considered valid.
    *        Below this value, the sensor is considered to be faulty or
    *        should be replaced because it may have reached its end of life.
