@@ -148,7 +148,7 @@ void FlowIrSensor::loop() {
     this->last_sensor_state_ = new_sensor_state;
   } else if (this->raw_state_ > 0) {
     // just switched to inactive
-    ESP_LOGV(TAG, "Flow IR: inactive");
+    ESP_LOGD(TAG, "Flow IR: inactive");
     this->publish(false);
   }
 
