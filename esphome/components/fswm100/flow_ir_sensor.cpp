@@ -91,9 +91,8 @@ float FlowIrSensor::get_state() {
 
   // check if the max voltage recorded needs to be updated and
   // the effective noise floor recalculated
-  float rounded_new_sensor_state = this->round_to_decimal_places(new_sensor_state, 2);
-  if (rounded_new_sensor_state > this->max_voltage_recorded_) {
-    this->max_voltage_recorded_ = rounded_new_sensor_state;
+  if (new_sensor_state > this->max_voltage_recorded_) {
+    this->max_voltage_recorded_ = new_sensor_state;
     this->calculate_effective_noise_floor(this->max_voltage_recorded_);
   }
 
@@ -105,12 +104,6 @@ float FlowIrSensor::get_state() {
   }
 
   return new_sensor_state;
-}
-
-float FlowIrSensor::round_to_decimal_places(float value, int decimal_places) {
-  const float multiplier = std::pow(10.0, decimal_places);
-  // Multiply by 10^n, round to nearest integer, then divide back
-  return std::round(value * multiplier) / multiplier;
 }
 
 void FlowIrSensor::loop() {
@@ -155,7 +148,7 @@ void FlowIrSensor::loop() {
              this->effective_noise_floor_);
     this->publish(true);
     this->last_sensor_state_ = new_sensor_state;
-  } else if (this->raw_state_ > 0) {
+  } else if (this->raw_state_) {
     // just switched to inactive
     ESP_LOGD(TAG, "Flow IR: inactive");
     this->publish(false);
