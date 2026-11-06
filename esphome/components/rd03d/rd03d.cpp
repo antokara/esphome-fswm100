@@ -1,10 +1,14 @@
 #include "rd03d.h"
+#include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
+
+#include <cinttypes>
 #include <cmath>
+#include <numbers>
 
 namespace esphome::rd03d {
 
-static const char *const TAG = "rd03d";
+ESPHOME_LOG_TAG(TAG, "rd03d");
 
 // Delay before sending configuration commands to allow radar to initialize
 static constexpr uint32_t SETUP_TIMEOUT_MS = 100;
@@ -21,14 +25,26 @@ static constexpr uint8_t CMD_FRAME_FOOTER[] = {0x04, 0x03, 0x02, 0x01};
 static constexpr uint16_t CMD_SINGLE_TARGET = 0x0080;
 static constexpr uint16_t CMD_MULTI_TARGET = 0x0090;
 
+// Speed sentinel values (cm/s) - radar outputs these when no valid Doppler measurement
+// FMCW radars detect motion via Doppler shift; targets with these speeds are likely noise
+static constexpr int16_t SPEED_SENTINEL_248 = 248;
+static constexpr int16_t SPEED_SENTINEL_256 = 256;
+
 // Decode coordinate/speed value from RD-03D format
 // Per datasheet: MSB=1 means positive, MSB=0 means negative
 static constexpr int16_t decode_value(uint8_t low_byte, uint8_t high_byte) {
-  int16_t value = ((high_byte & 0x7F) << 8) | low_byte;
+  int16_t value = encode_uint16(high_byte & 0x7F, low_byte);
   if ((high_byte & 0x80) == 0) {
     value = -value;
   }
   return value;
+}
+
+// Check if speed value indicates a valid Doppler measurement
+// Zero, ±248, or ±256 cm/s are sentinel values from the radar firmware
+static constexpr bool is_speed_valid(int16_t speed) {
+  int16_t abs_speed = speed < 0 ? -speed : speed;
+  return speed != 0 && abs_speed != SPEED_SENTINEL_248 && abs_speed != SPEED_SENTINEL_256;
 }
 
 void RD03DComponent::setup() {
@@ -39,11 +55,12 @@ void RD03DComponent::setup() {
 void RD03DComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "RD-03D:");
   if (this->tracking_mode_.has_value()) {
-    ESP_LOGCONFIG(TAG, "  Tracking Mode: %s",
-                  *this->tracking_mode_ == TrackingMode::SINGLE_TARGET ? "single" : "multi");
+    ESP_LOGCONFIG(
+        TAG, "  Tracking Mode: %s",
+        *this->tracking_mode_ == TrackingMode::SINGLE_TARGET ? LOG_STR_LITERAL("single") : LOG_STR_LITERAL("multi"));
   }
   if (this->throttle_ > 0) {
-    ESP_LOGCONFIG(TAG, "  Throttle: %ums", this->throttle_);
+    ESP_LOGCONFIG(TAG, "  Throttle: %" PRIu32 "ms", this->throttle_);
   }
 #ifdef USE_SENSOR
   LOG_SENSOR("  ", "Target Count", this->target_count_sensor_);
@@ -68,8 +85,7 @@ void RD03DComponent::dump_config() {
 }
 
 void RD03DComponent::loop() {
-  while (this->available()) {
-    uint8_t byte = this->read();
+  this->read_available([this](uint8_t byte) {
     ESP_LOGVV(TAG, "Received byte: 0x%02X, buffer_pos: %d", byte, this->buffer_pos_);
 
     // Check if we're looking for frame header
@@ -83,7 +99,7 @@ void RD03DComponent::loop() {
       } else {
         this->buffer_pos_ = 0;
       }
-      continue;
+      return;
     }
 
     // Accumulate data bytes
@@ -100,7 +116,7 @@ void RD03DComponent::loop() {
       }
       this->buffer_pos_ = 0;
     }
-  }
+  });
 }
 
 void RD03DComponent::process_frame_() {
@@ -120,7 +136,7 @@ void RD03DComponent::process_frame_() {
     // Header is 4 bytes, each target is 8 bytes
     uint8_t offset = FRAME_HEADER_SIZE + (i * TARGET_DATA_SIZE);
 
-    // Extract raw bytes for this target
+    // Extract raw bytes for this target (per datasheet Table 5-2: X, Y, Speed, Resolution)
     uint8_t x_low = this->buffer_[offset + 0];
     uint8_t x_high = this->buffer_[offset + 1];
     uint8_t y_low = this->buffer_[offset + 2];
@@ -134,10 +150,14 @@ void RD03DComponent::process_frame_() {
     int16_t x = decode_value(x_low, x_high);
     int16_t y = decode_value(y_low, y_high);
     int16_t speed = decode_value(speed_low, speed_high);
-    uint16_t resolution = (res_high << 8) | res_low;
+    uint16_t resolution = encode_uint16(res_high, res_low);
 
-    // Check if target is present (non-zero coordinates)
-    bool target_present = (x != 0 || y != 0);
+    // Check if target is present
+    // Requires non-zero coordinates AND valid speed (not a sentinel value)
+    // FMCW radars detect motion via Doppler; sentinel speed indicates no real target
+    bool has_position = (x != 0 || y != 0);
+    bool has_valid_speed = is_speed_valid(speed);
+    bool target_present = has_position && has_valid_speed;
     if (target_present) {
       target_count++;
     }
@@ -147,63 +167,53 @@ void RD03DComponent::process_frame_() {
 #endif
 
 #ifdef USE_BINARY_SENSOR
-    if (this->target_presence_[i] != nullptr) {
-      this->target_presence_[i]->publish_state(target_present);
-    }
+    PUBLISH_STATE(this->target_presence_[i], target_present);
 #endif
   }
 
 #ifdef USE_SENSOR
-  if (this->target_count_sensor_ != nullptr) {
-    this->target_count_sensor_->publish_state(target_count);
-  }
+  PUBLISH_STATE(this->target_count_sensor_, target_count);
 #endif
 
 #ifdef USE_BINARY_SENSOR
-  if (this->target_binary_sensor_ != nullptr) {
-    this->target_binary_sensor_->publish_state(target_count > 0);
-  }
+  PUBLISH_STATE(this->target_binary_sensor_, target_count > 0);
 #endif
 }
 
 #ifdef USE_SENSOR
 void RD03DComponent::publish_target_(uint8_t target_num, int16_t x, int16_t y, int16_t speed, uint16_t resolution) {
   TargetSensor &target = this->targets_[target_num];
+  bool valid = is_speed_valid(speed);
 
-  // Publish X coordinate (mm)
-  if (target.x != nullptr) {
-    target.x->publish_state(x);
-  }
+  // Publish X coordinate (mm) - NaN if target invalid
+  PUBLISH_STATE(target.x, valid ? static_cast<float>(x) : NAN);
 
-  // Publish Y coordinate (mm)
-  if (target.y != nullptr) {
-    target.y->publish_state(y);
-  }
+  // Publish Y coordinate (mm) - NaN if target invalid
+  PUBLISH_STATE(target.y, valid ? static_cast<float>(y) : NAN);
 
-  // Publish speed (convert from cm/s to mm/s)
-  if (target.speed != nullptr) {
-    target.speed->publish_state(static_cast<float>(speed) * 10.0f);
-  }
+  // Publish speed (convert from cm/s to mm/s) - NaN if target invalid
+  PUBLISH_STATE(target.speed, valid ? static_cast<float>(speed) * 10.0f : NAN);
 
   // Publish resolution (mm)
-  if (target.resolution != nullptr) {
-    target.resolution->publish_state(resolution);
-  }
+  PUBLISH_STATE(target.resolution, resolution);
 
-  // Calculate and publish distance (mm)
+  // Calculate and publish distance (mm) - NaN if target invalid
   if (target.distance != nullptr) {
-    float distance = std::hypot(static_cast<float>(x), static_cast<float>(y));
-    target.distance->publish_state(distance);
+    if (valid) {
+      target.distance->publish_state(std::hypot(static_cast<float>(x), static_cast<float>(y)));
+    } else {
+      target.distance->publish_state(NAN);
+    }
   }
 
-  // Calculate and publish angle (degrees)
+  // Calculate and publish angle (degrees) - NaN if target invalid
   // Angle is measured from the Y axis (radar forward direction)
   if (target.angle != nullptr) {
-    if (x == 0 && y == 0) {
-      target.angle->publish_state(0);
-    } else {
-      float angle = std::atan2(static_cast<float>(x), static_cast<float>(y)) * 180.0f / M_PI;
+    if (valid) {
+      float angle = std::atan2(static_cast<float>(x), static_cast<float>(y)) * 180.0f / std::numbers::pi_v<float>;
       target.angle->publish_state(angle);
+    } else {
+      target.angle->publish_state(NAN);
     }
   }
 }

@@ -9,23 +9,66 @@ ESPHOME_COMPONENT_PATTERN = re.compile(r"esphome::([a-zA-Z0-9_]+)::")
 # Maps standard section names to their various platform-specific variants
 # Note: Order matters! More specific patterns (.bss) must come before general ones (.dram)
 # because ESP-IDF uses names like ".dram0.bss" which would match ".dram" otherwise
+#
+# Platform-specific sections:
+# - ESP8266/ESP32: .iram*, .dram*
+# - LibreTiny RTL87xx: .xip.code_* (flash), .ram.code_* (RAM)
+# - LibreTiny BK7231: .itcm.code (fast RAM), .vectors (interrupt vectors)
+# - LibreTiny LN882X: .flash_text, .flash_copy* (flash code)
+# - Zephyr/nRF52: text, rodata, datas, bss (no leading dots)
 SECTION_MAPPING = {
-    ".text": frozenset([".text", ".iram"]),
-    ".rodata": frozenset([".rodata"]),
-    ".bss": frozenset([".bss"]),  # Must be before .data to catch ".dram0.bss"
-    ".data": frozenset([".data", ".dram"]),
-}
-
-# Section to ComponentMemory attribute mapping
-# Maps section names to the attribute name in ComponentMemory dataclass
-SECTION_TO_ATTR = {
-    ".text": "text_size",
-    ".rodata": "rodata_size",
-    ".data": "data_size",
-    ".bss": "bss_size",
+    ".text": frozenset(
+        [
+            ".text",
+            ".iram",
+            # LibreTiny RTL87xx XIP (eXecute In Place) flash code
+            ".xip.code",
+            # LibreTiny RTL87xx RAM code
+            ".ram.code_text",
+            # LibreTiny BK7231 fast RAM code and vectors
+            ".itcm.code",
+            ".vectors",
+            # LibreTiny LN882X flash code
+            ".flash_text",
+            ".flash_copy",
+            # Zephyr/nRF52 sections (no leading dots)
+            "text",
+            "rom_start",
+        ]
+    ),
+    ".rodata": frozenset(
+        [
+            ".rodata",
+            # LibreTiny RTL87xx read-only data in RAM
+            ".ram.code_rodata",
+            # Zephyr/nRF52 sections (no leading dots)
+            "rodata",
+        ]
+    ),
+    # .bss patterns - must be before .data to catch ".dram0.bss"
+    ".bss": frozenset(
+        [
+            ".bss",
+            # LibreTiny LN882X BSS
+            ".bss_ram",
+            # Zephyr/nRF52 sections (no leading dots)
+            "bss",
+            "noinit",
+        ]
+    ),
+    ".data": frozenset(
+        [
+            ".data",
+            ".dram",
+            # Zephyr/nRF52 sections (no leading dots)
+            "datas",
+        ]
+    ),
 }
 
 # Component identification rules
+# In SYMBOL_PATTERNS and DEMANGLED_PATTERNS a pattern matches anywhere in the name,
+# or only at the start when it begins with "^"; other tables are plain substrings.
 # Symbol patterns: patterns found in raw symbol names
 SYMBOL_PATTERNS = {
     "freertos": [
@@ -215,7 +258,7 @@ SYMBOL_PATTERNS = {
     "ipv6_stack": ["nd6_", "ip6_", "mld6_", "icmp6_", "icmp6_input"],
     # Order matters! More specific categories must come before general ones.
     # mdns must come before bluetooth to avoid "_mdns_disable_pcb" matching "ble_" pattern
-    "mdns_lib": ["mdns"],
+    "mdns_lib": ["mdns", "packet$"],
     # memory_mgmt must come before wifi_stack to catch mmu_hal_* symbols
     "memory_mgmt": [
         "mem_",
@@ -233,7 +276,7 @@ SYMBOL_PATTERNS = {
     ],
     # Bluetooth categories must come BEFORE wifi_stack to avoid misclassification
     # Many BLE symbols contain patterns like "ble_" that would otherwise match wifi patterns
-    "bluetooth_rom": ["r_ble", "r_lld", "r_llc", "r_llm"],
+    "bluetooth_rom": ["^r_ble", "^r_lld", "^r_llc", "^r_llm"],
     "bluedroid_bt": [
         "bluedroid",
         "btc_",
@@ -367,7 +410,6 @@ SYMBOL_PATTERNS = {
     ],
     "arduino_core": [
         "pinMode",
-        "resetPins",
         "millis",
         "micros",
         "delay(",  # More specific - Arduino delay function with parenthesis
@@ -463,7 +505,9 @@ SYMBOL_PATTERNS = {
         "__FUNCTION__$",
         "DAYS_IN_MONTH",
         "_DAYS_BEFORE_MONTH",
-        "CSWTCH$",
+        # Note: CSWTCH$ symbols are GCC switch table lookup tables.
+        # They are attributed to their source object files via _analyze_cswtch_symbols()
+        # rather than being lumped into libc.
         "dst$",
         "sulp",
         "_strtol_l",  # String to long with locale
@@ -698,7 +742,7 @@ SYMBOL_PATTERNS = {
         "strftime",
     ],
     "console_io": ["console_", "uart_tx", "uart_rx", "puts", "putchar", "getchar"],
-    "rom_functions": ["r_", "rom_"],
+    "rom_functions": ["^r_", "^rom_", "^esp_rom_"],
     "compiler_runtime": [
         "__divdi3",
         "__udivdi3",
@@ -751,7 +795,6 @@ SYMBOL_PATTERNS = {
         "s_dp",
         "s_ni",
         "s_reg_dump",
-        "packet$",
         "d_mult_table",
         "K",
         "fcstab",

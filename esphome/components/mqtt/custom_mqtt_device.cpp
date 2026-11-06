@@ -6,19 +6,20 @@
 
 namespace esphome::mqtt {
 
-static const char *const TAG = "mqtt.custom";
+ESPHOME_LOG_TAG(TAG, "mqtt.custom");
 
 bool CustomMQTTDevice::publish(const std::string &topic, const std::string &payload, uint8_t qos, bool retain) {
   return global_mqtt_client->publish(topic, payload, qos, retain);
 }
 bool CustomMQTTDevice::publish(const std::string &topic, float value, int8_t number_decimals) {
-  auto str = value_accuracy_to_string(value, number_decimals);
-  return this->publish(topic, str);
+  char buf[VALUE_ACCURACY_MAX_LEN];
+  size_t len = value_accuracy_to_buf(buf, value, number_decimals);
+  return global_mqtt_client->publish(topic, buf, len);
 }
 bool CustomMQTTDevice::publish(const std::string &topic, int value) {
   char buffer[24];
-  sprintf(buffer, "%d", value);
-  return this->publish(topic, buffer);
+  size_t len = buf_append_printf(buffer, sizeof(buffer), 0, "%d", value);
+  return global_mqtt_client->publish(topic, buffer, len);
 }
 bool CustomMQTTDevice::publish_json(const std::string &topic, const json::json_build_t &f, uint8_t qos, bool retain) {
   return global_mqtt_client->publish_json(topic, f, qos, retain);

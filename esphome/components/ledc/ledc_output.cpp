@@ -1,10 +1,15 @@
 #include "ledc_output.h"
+#include "ledc_duty.h"
 #include "esphome/core/log.h"
 
 #ifdef USE_ESP32
 
+#include <driver/gpio.h>
 #include <driver/ledc.h>
 #include <cinttypes>
+#include <esp_idf_version.h>
+#include <esp_private/periph_ctrl.h>
+#include <hal/ledc_ll.h>
 
 #define CLOCK_FREQUENCY 80e6f
 
@@ -16,10 +21,10 @@
 
 static const uint8_t SETUP_ATTEMPT_COUNT_MAX = 5;
 
-namespace esphome {
-namespace ledc {
+namespace esphome::ledc {
 
-static const char *const TAG = "ledc.output";
+ESPHOME_LOG_TAG(TAG, "ledc.output");
+static bool ledc_peripheral_reset_done = false;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 static const int MAX_RES_BITS = LEDC_TIMER_BIT_MAX - 1;
 #if SOC_LEDC_SUPPORT_HS_MODE
@@ -30,6 +35,51 @@ inline ledc_mode_t get_speed_mode(uint8_t channel) { return channel < 8 ? LEDC_H
 // See
 // https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/api-reference/peripherals/ledc.html#functionality-overview
 inline ledc_mode_t get_speed_mode(uint8_t) { return LEDC_LOW_SPEED_MODE; }
+#endif
+
+#if defined(USE_LEDC_DITHERING) || !defined(SOC_LEDC_SUPPORT_FADE_STOP)
+static inline ledc_dev_t *ledc_get_hw() {
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 1, 0)
+  return LEDC_LL_GET_HW(0);
+#else
+  return LEDC_LL_GET_HW();
+#endif
+}
+#endif
+
+#ifdef USE_LEDC_DITHERING
+static void ledc_set_duty_fixed_point(ledc_mode_t speed_mode, ledc_channel_t chan_num, uint32_t duty) {
+  auto *hw = ledc_get_hw();
+  // Match each target's ledc_ll_set_duty_int_part(), but retain the four fractional bits.
+#if defined(USE_ESP32_VARIANT_ESP32C5) || defined(USE_ESP32_VARIANT_ESP32C61) || defined(USE_ESP32_VARIANT_ESP32P4) || \
+    defined(USE_ESP32_VARIANT_ESP32S31)
+  hw->channel_group[speed_mode].channel[chan_num].duty_init.duty = duty;
+#else
+  hw->channel_group[speed_mode].channel[chan_num].duty.duty = duty;
+#endif
+}
+#endif
+
+#if !defined(SOC_LEDC_SUPPORT_FADE_STOP)
+// Classic ESP32 (currently the only target without SOC_LEDC_SUPPORT_FADE_STOP) can block in
+// ledc_ll_set_duty_start() while duty_start is set. We check the same conf1.duty_start bit here
+// to defer updates and avoid entering IDF's unbounded wait loop.
+//
+// This intentionally depends on the classic ESP32 LEDC register layout used by IDF's own LL HAL.
+// If another target without SOC_LEDC_SUPPORT_FADE_STOP is introduced, revisit this helper.
+static_assert(
+#if defined(CONFIG_IDF_TARGET_ESP32)
+    true,
+#else
+    false,
+#endif
+    "LEDC duty_start pending check assumes classic ESP32 register layout; "
+    "re-evaluate for this target");
+
+static bool ledc_duty_update_pending(ledc_mode_t speed_mode, ledc_channel_t chan_num) {
+  auto *hw = ledc_get_hw();
+  return hw->channel_group[speed_mode].channel[chan_num].conf1.duty_start != 0;
+}
 #endif
 
 float ledc_max_frequency_for_bit_depth(uint8_t bit_depth) {
@@ -56,7 +106,8 @@ optional<uint8_t> ledc_bit_depth_for_frequency(float frequency) {
 
 esp_err_t configure_timer_frequency(ledc_mode_t speed_mode, ledc_timer_t timer_num, ledc_channel_t chan_num,
                                     uint8_t channel, uint8_t &bit_depth, float frequency) {
-  bit_depth = *ledc_bit_depth_for_frequency(frequency);
+  auto bit_depth_opt = ledc_bit_depth_for_frequency(frequency);
+  bit_depth = bit_depth_opt.value_or(0);
   if (bit_depth < 1) {
     ESP_LOGE(TAG, "Frequency %f can't be achieved with any bit depth", frequency);
   }
@@ -75,6 +126,9 @@ esp_err_t configure_timer_frequency(ledc_mode_t speed_mode, ledc_timer_t timer_n
     init_result = ledc_timer_config(&timer_conf);
     if (init_result != ESP_OK) {
       ESP_LOGW(TAG, "Unable to initialize timer with frequency %.1f and bit depth of %u", frequency, bit_depth);
+      if (bit_depth <= 1) {
+        break;
+      }
       // try again with a lower bit depth
       timer_conf.duty_resolution = static_cast<ledc_timer_bit_t>(--bit_depth);
     }
@@ -98,24 +152,86 @@ void LEDCOutput::write_state(float state) {
     state = 1.0f - state;
 
   this->duty_ = state;
-  const uint32_t max_duty = (uint32_t(1) << this->bit_depth_) - 1;
-  const float duty_rounded = roundf(state * max_duty);
-  auto duty = static_cast<uint32_t>(duty_rounded);
+  this->write_duty_();
+}
+
+void LEDCOutput::loop() { this->write_duty_(); }
+
+void LEDCOutput::write_duty_() {
+  uint8_t fractional_bits = 0;
+#ifdef USE_LEDC_DITHERING
+  fractional_bits = this->dithering_ ? 4 : 0;
+#endif
+  const uint32_t max_duty = full_scale_ticks(this->bit_depth_, fractional_bits);
+  const uint32_t duty = duty_to_ticks(this->duty_, this->bit_depth_, fractional_bits);
+  if (duty == this->last_duty_) {
+    this->status_clear_warning();
+    this->disable_loop();
+    return;
+  }
+
   ESP_LOGV(TAG, "Setting duty: %" PRIu32 " on channel %u", duty, this->channel_);
   auto speed_mode = get_speed_mode(this->channel_);
   auto chan_num = static_cast<ledc_channel_t>(this->channel_ % 8);
   int hpoint = ledc_angle_to_htop(this->phase_angle_, this->bit_depth_);
+  esp_err_t err;
   if (duty == max_duty) {
-    ledc_stop(speed_mode, chan_num, 1);
-  } else if (duty == 0) {
-    ledc_stop(speed_mode, chan_num, 0);
+    err = ledc_stop(speed_mode, chan_num, 1);
   } else {
-    ledc_set_duty_with_hpoint(speed_mode, chan_num, duty, hpoint);
-    ledc_update_duty(speed_mode, chan_num);
+#if !defined(SOC_LEDC_SUPPORT_FADE_STOP)
+    if (ledc_duty_update_pending(speed_mode, chan_num)) {
+      ESP_LOGV(TAG, "Deferring duty update on channel %u while previous duty_start is still set", this->channel_);
+      this->enable_loop();
+      return;
+    }
+#endif
+    // Zero takes this path too, not ledc_stop(): the update applies at the next PWM cycle,
+    // so the last servo pulse is not truncated into what the servo reads as a new position.
+    err = ledc_set_duty_with_hpoint(speed_mode, chan_num, duty >> fractional_bits, hpoint);
+#ifdef USE_LEDC_DITHERING
+    if (err == ESP_OK && this->dithering_) {
+      // IDF's integer setter clears the fractional bits. Restore them before latching the update.
+      ledc_set_duty_fixed_point(speed_mode, chan_num, duty);
+    }
+#endif
+    if (err == ESP_OK)
+      err = ledc_update_duty(speed_mode, chan_num);
   }
+  if (err != ESP_OK) {
+    if (!this->status_has_warning()) {
+      ESP_LOGW(TAG, "Setting duty on channel %u failed: %s", this->channel_, esp_err_to_name(err));
+    }
+    this->status_set_warning();
+    this->enable_loop();
+    return;
+  }
+  this->last_duty_ = duty;
+  this->status_clear_warning();
+  this->disable_loop();
 }
 
 void LEDCOutput::setup() {
+  this->disable_loop();
+  if (!ledc_peripheral_reset_done) {
+    ESP_LOGV(TAG, "Resetting LEDC peripheral to clear stale state after reboot");
+    // Skip under clang-tidy: the inlined HAL MMIO writes trip clang-analyzer-core.FixedAddressDereference
+#if !defined(CLANG_TIDY)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 1, 0)
+    PERIPH_RCC_ATOMIC() { ledc_ll_reset_register(0); }
+#elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0) || \
+    (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) && !defined(__PERIPH_CTRL_ALLOW_LEGACY_API))
+    // Also on the targets whose periph_module_reset() is an empty stub in ESP-IDF 5.x (P4, C5, C61, H4)
+    PERIPH_RCC_ATOMIC() {
+      ledc_ll_enable_reset_reg(true);
+      ledc_ll_enable_reset_reg(false);
+    }
+#else
+    periph_module_reset(PERIPH_LEDC_MODULE);
+#endif
+#endif
+    ledc_peripheral_reset_done = true;
+  }
+
   auto speed_mode = get_speed_mode(this->channel_);
   auto timer_num = static_cast<ledc_timer_t>((this->channel_ % 8) / 2);
   auto chan_num = static_cast<ledc_channel_t>(this->channel_ % 8);
@@ -130,18 +246,20 @@ void LEDCOutput::setup() {
   }
   int hpoint = ledc_angle_to_htop(this->phase_angle_, this->bit_depth_);
 
-  ESP_LOGV(TAG,
-           "Configured frequency %f with a bit depth of %u bits\n"
-           "Angle of %.1f° results in hpoint %u",
-           this->frequency_, this->bit_depth_, this->phase_angle_, hpoint);
+  ESP_LOGV(TAG, "Configured frequency %f with bit depth %u, angle %.1f° hpoint %u", this->frequency_, this->bit_depth_,
+           this->phase_angle_, hpoint);
 
   ledc_channel_config_t chan_conf{};
-  chan_conf.gpio_num = this->pin_->get_pin();
+  chan_conf.gpio_num = static_cast<gpio_num_t>(this->pin_->get_pin());
   chan_conf.speed_mode = speed_mode;
   chan_conf.channel = chan_num;
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(6, 0, 0)
   chan_conf.intr_type = LEDC_INTR_DISABLE;
+#endif
   chan_conf.timer_sel = timer_num;
-  chan_conf.duty = this->inverted_ == this->pin_->is_inverted() ? 0 : (1U << this->bit_depth_);
+  // Cache the physical off level before any runtime frequency change can reapply it.
+  this->duty_ = this->inverted_ == this->pin_->is_inverted() ? 0.0f : 1.0f;
+  chan_conf.duty = this->duty_ == 0.0f ? 0 : (1U << this->bit_depth_);
   chan_conf.hpoint = hpoint;
   ledc_channel_config(&chan_conf);
   this->initialized_ = true;
@@ -156,6 +274,9 @@ void LEDCOutput::dump_config() {
                 "  Phase angle: %.1f°\n"
                 "  Bit depth: %u",
                 this->channel_, this->frequency_, this->phase_angle_, this->bit_depth_);
+#ifdef USE_LEDC_DITHERING
+  ESP_LOGCONFIG(TAG, "  Hardware dithering: %u fractional bits", this->dithering_ ? 4 : 0);
+#endif
   LOG_PIN("  Pin ", this->pin_);
   ESP_LOGV(TAG,
            "  Max frequency for bit depth: %f\n"
@@ -205,12 +326,12 @@ void LEDCOutput::update_frequency(float frequency) {
   this->status_clear_error();
 
   // re-apply duty
-  this->write_state(this->duty_);
+  this->last_duty_ = UINT32_MAX;
+  this->write_duty_();
 }
 
 uint8_t next_ledc_channel = 0;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-}  // namespace ledc
-}  // namespace esphome
+}  // namespace esphome::ledc
 
 #endif

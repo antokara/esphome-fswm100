@@ -11,10 +11,12 @@ from esphome.const import (
     CONF_SSID,
     ENTITY_CATEGORY_DIAGNOSTIC,
 )
+from esphome.types import ConfigType
 
 DEPENDENCIES = ["wifi"]
 
 wifi_info_ns = cg.esphome_ns.namespace("wifi_info")
+_request_ip_sensor_slot = cg.slot_counter("WIFI_INFO_IP_SENSOR_COUNT")
 IPAddressWiFiInfo = wifi_info_ns.class_(
     "IPAddressWiFiInfo", text_sensor.TextSensor, cg.Component
 )
@@ -69,41 +71,50 @@ CONFIG_SCHEMA = cv.Schema(
     }
 )
 
-# Keys that require WiFi listeners
-_NETWORK_INFO_KEYS = {
-    CONF_SSID,
-    CONF_BSSID,
-    CONF_IP_ADDRESS,
-    CONF_DNS_ADDRESS,
-    CONF_SCAN_RESULTS,
-    CONF_POWER_SAVE_MODE,
-}
 
-
-async def setup_conf(config, key):
+async def setup_conf(config: ConfigType, key: str) -> None:
     if key in config:
         conf = config[key]
         var = await text_sensor.new_text_sensor(conf)
         await cg.register_component(var, conf)
 
 
-async def to_code(config):
-    # Request WiFi listeners for any sensor that needs them
-    if _NETWORK_INFO_KEYS.intersection(config):
-        wifi.request_wifi_listeners()
+async def to_code(config: ConfigType) -> None:
+    # Request specific WiFi listeners based on which sensors are configured
+    # Each sensor needs its own listener slot - call request for EACH sensor
+
+    # SSID and BSSID use WiFiConnectStateListener
+    for key in (CONF_SSID, CONF_BSSID):
+        if key in config:
+            wifi.request_wifi_connect_state_listener()
+
+    # IP address and DNS use WiFiIPStateListener
+    for key in (CONF_IP_ADDRESS, CONF_DNS_ADDRESS):
+        if key in config:
+            wifi.request_wifi_ip_state_listener()
+
+    # Scan results use WiFiScanResultsListener
+    if CONF_SCAN_RESULTS in config:
+        wifi.request_wifi_scan_results_listener()
+        wifi.request_wifi_scan_results()
+
+    # Power save mode uses WiFiPowerSaveListener
+    if CONF_POWER_SAVE_MODE in config:
+        wifi.request_wifi_power_save_listener()
 
     await setup_conf(config, CONF_SSID)
     await setup_conf(config, CONF_BSSID)
     await setup_conf(config, CONF_MAC_ADDRESS)
-    if CONF_SCAN_RESULTS in config:
-        await setup_conf(config, CONF_SCAN_RESULTS)
-        wifi.request_wifi_scan_results()
+    await setup_conf(config, CONF_SCAN_RESULTS)
     await setup_conf(config, CONF_DNS_ADDRESS)
     await setup_conf(config, CONF_POWER_SAVE_MODE)
     if conf := config.get(CONF_IP_ADDRESS):
         wifi_info = await text_sensor.new_text_sensor(config[CONF_IP_ADDRESS])
         await cg.register_component(wifi_info, config[CONF_IP_ADDRESS])
-        for x in range(5):
-            if sensor_conf := conf.get(f"address_{x}"):
-                sens = await text_sensor.new_text_sensor(sensor_conf)
-                cg.add(wifi_info.add_ip_sensors(x, sens))
+        indexes = [x for x in range(5) if f"address_{x}" in conf]
+        # One shared array size: the largest highest index of any entry, so add_ip_sensors(x) stays in range
+        for _ in range(max(indexes, default=-1) + 1):
+            _request_ip_sensor_slot(str(wifi_info))
+        for x in indexes:
+            sens = await text_sensor.new_text_sensor(conf[f"address_{x}"])
+            cg.add(wifi_info.add_ip_sensors(x, sens))

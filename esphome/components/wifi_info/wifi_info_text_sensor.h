@@ -3,27 +3,32 @@
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/string_ref.h"
-#include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/wifi/wifi_component.h"
-#ifdef USE_WIFI
+#if defined(USE_WIFI) && defined(USE_TEXT_SENSOR)
+#include "esphome/components/text_sensor/text_sensor.h"
 #include <array>
 #include <span>
 
 namespace esphome::wifi_info {
 
-#ifdef USE_WIFI_LISTENERS
+#ifdef USE_WIFI_IP_STATE_LISTENERS
 class IPAddressWiFiInfo final : public Component, public text_sensor::TextSensor, public wifi::WiFiIPStateListener {
  public:
   void setup() override;
   void dump_config() override;
+#ifdef WIFI_INFO_IP_SENSOR_COUNT
   void add_ip_sensors(uint8_t index, text_sensor::TextSensor *s) { this->ip_sensors_[index] = s; }
+#endif
 
   // WiFiIPStateListener interface
   void on_ip_state(const network::IPAddresses &ips, const network::IPAddress &dns1,
                    const network::IPAddress &dns2) override;
 
  protected:
-  std::array<text_sensor::TextSensor *, 5> ip_sensors_;
+#ifdef WIFI_INFO_IP_SENSOR_COUNT
+  // Sized to the highest configured address_N
+  std::array<text_sensor::TextSensor *, WIFI_INFO_IP_SENSOR_COUNT> ip_sensors_{};
+#endif
 };
 
 class DNSAddressWifiInfo final : public Component, public text_sensor::TextSensor, public wifi::WiFiIPStateListener {
@@ -35,7 +40,9 @@ class DNSAddressWifiInfo final : public Component, public text_sensor::TextSenso
   void on_ip_state(const network::IPAddresses &ips, const network::IPAddress &dns1,
                    const network::IPAddress &dns2) override;
 };
+#endif  // USE_WIFI_IP_STATE_LISTENERS
 
+#ifdef USE_WIFI_SCAN_RESULTS_LISTENERS
 class ScanResultsWiFiInfo final : public Component,
                                   public text_sensor::TextSensor,
                                   public wifi::WiFiScanResultsListener {
@@ -47,7 +54,9 @@ class ScanResultsWiFiInfo final : public Component,
   // WiFiScanResultsListener interface
   void on_wifi_scan_results(const wifi::wifi_scan_vector_t<wifi::WiFiScanResult> &results) override;
 };
+#endif  // USE_WIFI_SCAN_RESULTS_LISTENERS
 
+#ifdef USE_WIFI_CONNECT_STATE_LISTENERS
 class SSIDWiFiInfo final : public Component, public text_sensor::TextSensor, public wifi::WiFiConnectStateListener {
  public:
   void setup() override;
@@ -65,7 +74,9 @@ class BSSIDWiFiInfo final : public Component, public text_sensor::TextSensor, pu
   // WiFiConnectStateListener interface
   void on_wifi_connect_state(StringRef ssid, std::span<const uint8_t, 6> bssid) override;
 };
+#endif  // USE_WIFI_CONNECT_STATE_LISTENERS
 
+#ifdef USE_WIFI_POWER_SAVE_LISTENERS
 class PowerSaveModeWiFiInfo final : public Component,
                                     public text_sensor::TextSensor,
                                     public wifi::WiFiPowerSaveListener {
@@ -76,12 +87,12 @@ class PowerSaveModeWiFiInfo final : public Component,
   // WiFiPowerSaveListener interface
   void on_wifi_power_save(wifi::WiFiPowerSaveMode mode) override;
 };
-#endif
+#endif  // USE_WIFI_POWER_SAVE_LISTENERS
 
 class MacAddressWifiInfo final : public Component, public text_sensor::TextSensor {
  public:
   void setup() override {
-    char mac_s[18];
+    char mac_s[MAC_ADDRESS_PRETTY_BUFFER_SIZE];
     this->publish_state(get_mac_address_pretty_into_buffer(mac_s));
   }
   void dump_config() override;

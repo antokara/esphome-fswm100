@@ -155,44 +155,38 @@ class BLEEvent {
   void release() {
     switch (this->type_) {
       case GAP:
-        // GAP events don't have heap allocations
+        // GAP events never have heap allocations
         break;
       case GATTC:
-        // Param is now stored inline, only delete heap data if it was heap-allocated
         if (!this->event_.gattc.is_inline && this->event_.gattc.data.heap_data != nullptr) {
           delete[] this->event_.gattc.data.heap_data;
+          this->event_.gattc.data.heap_data = nullptr;
         }
-        // Clear critical fields to prevent issues if type changes
-        this->event_.gattc.is_inline = false;
-        this->event_.gattc.data.heap_data = nullptr;
         break;
       case GATTS:
-        // Param is now stored inline, only delete heap data if it was heap-allocated
         if (!this->event_.gatts.is_inline && this->event_.gatts.data.heap_data != nullptr) {
           delete[] this->event_.gatts.data.heap_data;
+          this->event_.gatts.data.heap_data = nullptr;
         }
-        // Clear critical fields to prevent issues if type changes
-        this->event_.gatts.is_inline = false;
-        this->event_.gatts.data.heap_data = nullptr;
         break;
     }
   }
 
   // Load new event data for reuse (replaces previous event data)
+  // Note: release() is NOT called here because EventPool::release() already
+  // calls event->release() before returning to the free list. Every event
+  // from allocate() is already in a clean state.
   void load_gap_event(esp_gap_ble_cb_event_t e, esp_ble_gap_cb_param_t *p) {
-    this->release();
     this->type_ = GAP;
     this->init_gap_data_(e, p);
   }
 
   void load_gattc_event(esp_gattc_cb_event_t e, esp_gatt_if_t i, esp_ble_gattc_cb_param_t *p) {
-    this->release();
     this->type_ = GATTC;
     this->init_gattc_data_(e, i, p);
   }
 
   void load_gatts_event(esp_gatts_cb_event_t e, esp_gatt_if_t i, esp_ble_gatts_cb_param_t *p) {
-    this->release();
     this->type_ = GATTS;
     this->init_gatts_data_(e, i, p);
   }
@@ -213,13 +207,13 @@ class BLEEvent {
         StatusOnlyData scan_complete;  // 1 byte
         // Advertising complete events all have same structure
         // Used by: esp32_ble_beacon, esp32_ble server components
-        // ADV_DATA_SET, SCAN_RSP_DATA_SET, ADV_DATA_RAW_SET, ADV_START, ADV_STOP
+        // ADV_DATA_SET, SCAN_RSP_DATA_SET, ADV_DATA_RAW_SET, SCAN_RSP_DATA_RAW_SET, ADV_START, ADV_STOP
         StatusOnlyData adv_complete;  // 1 byte
         // RSSI complete event
         // Used by: ble_client (ble_rssi_sensor component)
         RSSICompleteData read_rssi_complete;  // 8 bytes
         // Security events - we store the full security union
-        // Used by: ble_client (automation), bluetooth_proxy, esp32_ble_client
+        // Used by: ble_client (automation), bluetooth_proxy, esp32_ble_client, esp32_ble_server
         esp_ble_sec_t security;  // Variable size, but fits within scan_result size
       };
     } gap;  // 80 bytes total
@@ -330,6 +324,9 @@ class BLEEvent {
       case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:  // Used by: esp32_ble_beacon
         this->event_.gap.adv_complete.status = p->adv_data_raw_cmpl.status;
         break;
+      case ESP_GAP_BLE_SCAN_RSP_DATA_RAW_SET_COMPLETE_EVT:  // Used by: raw advertisers with scan response
+        this->event_.gap.adv_complete.status = p->scan_rsp_data_raw_cmpl.status;
+        break;
       case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:  // Used by: esp32_ble_beacon
         this->event_.gap.adv_complete.status = p->adv_start_cmpl.status;
         break;
@@ -346,12 +343,12 @@ class BLEEvent {
         break;
 
       // Security events - copy the entire security union
-      // Used by: ble_client, bluetooth_proxy, esp32_ble_client
-      case ESP_GAP_BLE_AUTH_CMPL_EVT:      // Used by: bluetooth_proxy, esp32_ble_client
-      case ESP_GAP_BLE_SEC_REQ_EVT:        // Used by: esp32_ble_client
-      case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:  // Used by: ble_client automation
-      case ESP_GAP_BLE_PASSKEY_REQ_EVT:    // Used by: ble_client automation
-      case ESP_GAP_BLE_NC_REQ_EVT:         // Used by: ble_client automation
+      // Used by: ble_client, bluetooth_proxy, esp32_ble_client, esp32_ble_server
+      case ESP_GAP_BLE_AUTH_CMPL_EVT:      // Used by: bluetooth_proxy, esp32_ble_client, esp32_ble_server
+      case ESP_GAP_BLE_SEC_REQ_EVT:        // Used by: esp32_ble_client, esp32_ble_server
+      case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:  // Used by: ble_client, esp32_ble_server automations
+      case ESP_GAP_BLE_PASSKEY_REQ_EVT:    // Used by: ble_client, esp32_ble_server automations
+      case ESP_GAP_BLE_NC_REQ_EVT:         // Used by: ble_client, esp32_ble_server automations
         memcpy(&this->event_.gap.security, &p->ble_security, sizeof(esp_ble_sec_t));
         break;
 

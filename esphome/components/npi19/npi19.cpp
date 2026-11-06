@@ -3,10 +3,9 @@
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
-namespace esphome {
-namespace npi19 {
+namespace esphome::npi19 {
 
-static const char *const TAG = "npi19";
+ESPHOME_LOG_TAG(TAG, "npi19");
 
 static const uint8_t READ_COMMAND = 0xAC;
 
@@ -29,8 +28,6 @@ void NPI19Component::dump_config() {
   LOG_SENSOR("  ", "Temperature", this->temperature_sensor_);
 }
 
-float NPI19Component::get_setup_priority() const { return setup_priority::DATA; }
-
 i2c::ErrorCode NPI19Component::read_(uint16_t &raw_temperature, uint16_t &raw_pressure) {
   // initiate data read from device
   i2c::ErrorCode w_err = write(&READ_COMMAND, sizeof(READ_COMMAND));
@@ -47,10 +44,10 @@ i2c::ErrorCode NPI19Component::read_(uint16_t &raw_temperature, uint16_t &raw_pr
   }
 
   // extract top 6 bits of first byte and all bits of second byte for pressure
-  raw_pressure = ((response[0] & 0x3F) << 8) | response[1];
+  raw_pressure = encode_uint16(response[0] & 0x3F, response[1]);
 
   // extract all bytes of 3rd byte and top 3 bits of fourth byte for temperature
-  raw_temperature = (response[2] << 3) | ((response[3] & 0xE0) >> 5);
+  raw_temperature = encode_uint16(response[2], response[3]) >> 5;
 
   return i2c::ERROR_OK;
 }
@@ -95,13 +92,10 @@ void NPI19Component::update() {
 
   ESP_LOGD(TAG, "Got raw pressure=%d, temperature=%.1f°C", raw_pressure, temperature);
 
-  if (this->temperature_sensor_ != nullptr)
-    this->temperature_sensor_->publish_state(temperature);
-  if (this->raw_pressure_sensor_ != nullptr)
-    this->raw_pressure_sensor_->publish_state(raw_pressure);
+  PUBLISH_STATE(this->temperature_sensor_, temperature);
+  PUBLISH_STATE(this->raw_pressure_sensor_, raw_pressure);
 
   this->status_clear_warning();
 }
 
-}  // namespace npi19
-}  // namespace esphome
+}  // namespace esphome::npi19

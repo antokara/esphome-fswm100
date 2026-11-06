@@ -1,10 +1,12 @@
 #pragma once
 
+#include "esphome/core/defines.h"
+#ifdef USE_TEXT_SENSOR_FILTER
+
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 
-namespace esphome {
-namespace text_sensor {
+namespace esphome::text_sensor {
 
 class TextSensor;
 
@@ -17,21 +19,20 @@ class Filter {
  public:
   /** This will be called every time the filter receives a new value.
    *
-   * It can return an empty optional to indicate that the filter chain
-   * should stop, otherwise the value in the filter will be passed down
-   * the chain.
+   * Modify the value in place. Return false to stop the filter chain
+   * (value will not be published), or true to continue.
    *
-   * @param value The new value.
-   * @return An optional string, the new value that should be pushed out.
+   * @param value The value to filter (modified in place).
+   * @return True to continue the filter chain, false to stop.
    */
-  virtual optional<std::string> new_value(std::string value) = 0;
+  virtual bool new_value(std::string &value) = 0;
 
   /// Initialize this filter, please note this can be called more than once.
   virtual void initialize(TextSensor *parent, Filter *next);
 
-  void input(const std::string &value);
+  void input(std::string value);
 
-  void output(const std::string &value);
+  void output(std::string &value);
 
  protected:
   friend TextSensor;
@@ -45,15 +46,14 @@ using lambda_filter_t = std::function<optional<std::string>(std::string)>;
 /** This class allows for creation of simple template filters.
  *
  * The constructor accepts a lambda of the form std::string -> optional<std::string>.
- * It will be called with each new value in the filter chain and returns the modified
- * value that shall be passed down the filter chain. Returning an empty Optional
- * means that the value shall be discarded.
+ * Return a modified string to continue the chain, or return {} to stop
+ * (value will not be published).
  */
 class LambdaFilter : public Filter {
  public:
   explicit LambdaFilter(lambda_filter_t lambda_filter);
 
-  optional<std::string> new_value(std::string value) override;
+  bool new_value(std::string &value) override;
 
   const lambda_filter_t &get_lambda_filter() const;
   void set_lambda_filter(const lambda_filter_t &lambda_filter);
@@ -71,7 +71,14 @@ class StatelessLambdaFilter : public Filter {
  public:
   explicit StatelessLambdaFilter(optional<std::string> (*lambda_filter)(std::string)) : lambda_filter_(lambda_filter) {}
 
-  optional<std::string> new_value(std::string value) override { return this->lambda_filter_(value); }
+  bool new_value(std::string &value) override {
+    auto result = this->lambda_filter_(value);
+    if (result.has_value()) {
+      value = std::move(*result);
+      return true;
+    }
+    return false;
+  }
 
  protected:
   optional<std::string> (*lambda_filter_)(std::string);
@@ -80,20 +87,20 @@ class StatelessLambdaFilter : public Filter {
 /// A simple filter that converts all text to uppercase
 class ToUpperFilter : public Filter {
  public:
-  optional<std::string> new_value(std::string value) override;
+  bool new_value(std::string &value) override;
 };
 
 /// A simple filter that converts all text to lowercase
 class ToLowerFilter : public Filter {
  public:
-  optional<std::string> new_value(std::string value) override;
+  bool new_value(std::string &value) override;
 };
 
 /// A simple filter that adds a string to the end of another string
 class AppendFilter : public Filter {
  public:
   explicit AppendFilter(const char *suffix) : suffix_(suffix) {}
-  optional<std::string> new_value(std::string value) override;
+  bool new_value(std::string &value) override;
 
  protected:
   const char *suffix_;
@@ -103,7 +110,7 @@ class AppendFilter : public Filter {
 class PrependFilter : public Filter {
  public:
   explicit PrependFilter(const char *prefix) : prefix_(prefix) {}
-  optional<std::string> new_value(std::string value) override;
+  bool new_value(std::string &value) override;
 
  protected:
   const char *prefix_;
@@ -114,14 +121,16 @@ struct Substitution {
   const char *to;
 };
 
-/// A simple filter that replaces a substring with another substring
+/// A simple filter that replaces a substring with another substring.
+/// `substitutions` is a codegen table in flash, shared by filters with the same list and
+/// ended by an entry whose `from` is nullptr, so no count is stored.
 class SubstituteFilter : public Filter {
  public:
-  explicit SubstituteFilter(const std::initializer_list<Substitution> &substitutions);
-  optional<std::string> new_value(std::string value) override;
+  explicit SubstituteFilter(const Substitution *substitutions) : substitutions_(substitutions) {}
+  bool new_value(std::string &value) override;
 
  protected:
-  FixedVector<Substitution> substitutions_;
+  const Substitution *substitutions_;
 };
 
 /** A filter that maps values from one set to another
@@ -147,15 +156,95 @@ class SubstituteFilter : public Filter {
  * - Faster for typical ESPHome usage (2-10 mappings common, 20+ rare)
  *
  * Break-even point: ~35-40 mappings, but ESPHome configs rarely exceed 20
+ *
+ * `mappings` is a codegen table in flash, shared by filters with the same list and ended by
+ * an entry whose `from` is nullptr, so no count is stored.
  */
 class MapFilter : public Filter {
  public:
-  explicit MapFilter(const std::initializer_list<Substitution> &mappings);
-  optional<std::string> new_value(std::string value) override;
+  explicit MapFilter(const Substitution *mappings) : mappings_(mappings) {}
+  bool new_value(std::string &value) override;
 
  protected:
-  FixedVector<Substitution> mappings_;
+  const Substitution *mappings_;
 };
 
-}  // namespace text_sensor
-}  // namespace esphome
+/// Drops a value that comes sooner than `min_time_between_inputs` after the last one let through.
+class ThrottleFilter : public Filter {
+ public:
+  explicit ThrottleFilter(uint32_t min_time_between_inputs) : min_time_between_inputs_(min_time_between_inputs) {}
+  bool new_value(std::string &value) override;
+
+ protected:
+  uint32_t last_input_{0};
+  uint32_t min_time_between_inputs_;
+};
+
+/// Same as ThrottleFilter, but a value in `prioritized` always passes. `prioritized` is a codegen table
+/// in flash, shared by filters with the same list and ended by nullptr.
+class ThrottleWithPriorityFilter : public ThrottleFilter {
+ public:
+  ThrottleWithPriorityFilter(uint32_t min_time_between_inputs, const char *const *prioritized)
+      : ThrottleFilter(min_time_between_inputs), prioritized_(prioritized) {}
+  bool new_value(std::string &value) override;
+
+ protected:
+  const char *const *prioritized_;
+};
+
+/// Passes every value on and, once none has come for `time_period`, sends one value again. A Component rather than
+/// a scheduler timeout for the reason given on the sensor's TimeoutFilterBase: it re-arms on every value.
+class TimeoutFilterBase : public Filter, public Component {
+ public:
+  bool new_value(std::string &value) override;
+  void loop() override;
+  float get_setup_priority() const override { return setup_priority::HARDWARE; }
+
+ protected:
+  explicit TimeoutFilterBase(uint32_t time_period) : time_period_(time_period) { this->disable_loop(); }
+  /// Sends `text`; never moves a stored string on, so it keeps its buffer.
+  void send_(const char *text, size_t len);
+  virtual void send_timeout_value() = 0;
+
+  uint32_t time_period_;
+  uint32_t timeout_start_time_{0};
+};
+
+/// Sends the last value again.
+class TimeoutFilterLast : public TimeoutFilterBase {
+ public:
+  explicit TimeoutFilterLast(uint32_t time_period) : TimeoutFilterBase(time_period) {}
+  bool new_value(std::string &value) override;
+
+ protected:
+  void send_timeout_value() override { this->send_(this->last_.data(), this->last_.size()); }
+  std::string last_;
+};
+
+/// Codegen use only: `timeout` (value `last`) followed by `throttle_with_priority` with the same period, as one
+/// object. Output matches the two filter chain exactly.
+class TimeoutThrottleFilter : public TimeoutFilterLast {
+ public:
+  TimeoutThrottleFilter(uint32_t time_period, const char *const *prioritized)
+      : TimeoutFilterLast(time_period), prioritized_(prioritized) {}
+  bool new_value(std::string &value) override;
+
+ protected:
+  void send_timeout_value() override;
+  const char *const *prioritized_;
+  uint32_t last_input_{0};  // When the throttle stage last let a value through
+};
+
+/// Sends the configured text.
+class TimeoutFilterConfigured : public TimeoutFilterBase {
+ public:
+  TimeoutFilterConfigured(uint32_t time_period, const char *value) : TimeoutFilterBase(time_period), value_(value) {}
+
+ protected:
+  void send_timeout_value() override { this->send_(this->value_, strlen(this->value_)); }
+  const char *value_;
+};
+
+}  // namespace esphome::text_sensor
+
+#endif  // USE_TEXT_SENSOR_FILTER

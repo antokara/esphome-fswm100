@@ -1,10 +1,9 @@
 #include "duty_time_sensor.h"
 #include "esphome/core/hal.h"
 
-namespace esphome {
-namespace duty_time_sensor {
+namespace esphome::duty_time_sensor {
 
-static const char *const TAG = "duty_time_sensor";
+ESPHOME_LOG_TAG(TAG, "duty_time_sensor");
 
 #ifdef USE_BINARY_SENSOR
 void DutyTimeSensor::set_sensor(binary_sensor::BinarySensor *const sensor) {
@@ -41,7 +40,7 @@ void DutyTimeSensor::setup() {
   uint32_t seconds = 0;
 
   if (this->restore_) {
-    this->pref_ = global_preferences->make_preference<uint32_t>(this->get_preference_hash());
+    this->pref_ = this->make_entity_preference<uint32_t>();
     this->pref_.load(&seconds);
   }
 
@@ -71,10 +70,7 @@ void DutyTimeSensor::process_state_(const bool state) {
       this->last_time_ = ms;  // temporary store ms correction only
       this->last_state_ = false;
 
-      if (this->last_duty_time_sensor_ != nullptr) {
-        const uint32_t turn_on_ms = now - this->edge_time_;
-        this->last_duty_time_sensor_->publish_state(turn_on_ms * 1e-3f);
-      }
+      PUBLISH_STATE(this->last_duty_time_sensor_, (now - this->edge_time_) * 1e-3f);
     }
 
   } else if (state) {
@@ -103,5 +99,4 @@ void DutyTimeSensor::dump_config() {
   LOG_SENSOR("  ", "Last Duty Time Sensor:", this->last_duty_time_sensor_);
 }
 
-}  // namespace duty_time_sensor
-}  // namespace esphome
+}  // namespace esphome::duty_time_sensor

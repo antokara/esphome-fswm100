@@ -2,6 +2,8 @@
 
 #ifdef USE_ESP32
 
+#include <algorithm>
+
 #include "esphome/core/defines.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/helpers.h"
@@ -11,8 +13,7 @@
 #include "esp_crt_bundle.h"
 #endif
 
-namespace esphome {
-namespace audio {
+namespace esphome::audio {
 
 static const uint32_t READ_WRITE_TIMEOUT_MS = 20;
 
@@ -20,10 +21,13 @@ static const uint32_t CONNECTION_TIMEOUT_MS = 5000;
 static const uint8_t MAX_FETCHING_HEADER_ATTEMPTS = 6;
 
 static const size_t HTTP_STREAM_BUFFER_SIZE = 2048;
+// esp_http_client_read() blocks until it fills the request; small requests deliver a phrase tail before a pause ends
+static constexpr size_t HTTP_READ_MAX_BYTES = 1024;
+static constexpr int HTTP_BODY_TIMEOUT_MS = 100;
 
 static const uint8_t MAX_REDIRECTIONS = 5;
 
-static const char *const TAG = "audio_reader";
+ESPHOME_LOG_TAG(TAG, "audio_reader");
 
 // Some common HTTP status codes - borrowed from http_request component accessed 20241224
 enum HttpStatus {
@@ -55,10 +59,13 @@ enum HttpStatus {
 
 AudioReader::~AudioReader() { this->cleanup_connection_(); }
 
-esp_err_t AudioReader::add_sink(const std::weak_ptr<RingBuffer> &output_ring_buffer) {
+esp_err_t AudioReader::add_sink(const std::weak_ptr<ring_buffer::RingBuffer> &output_ring_buffer) {
   if (current_audio_file_ != nullptr) {
     // A transfer buffer isn't ncessary for a local file
     this->file_ring_buffer_ = output_ring_buffer.lock();
+    if (this->file_ring_buffer_ == nullptr) {
+      return ESP_ERR_INVALID_STATE;
+    }
     return ESP_OK;
   }
 
@@ -70,7 +77,7 @@ esp_err_t AudioReader::add_sink(const std::weak_ptr<RingBuffer> &output_ring_buf
   return ESP_ERR_INVALID_STATE;
 }
 
-esp_err_t AudioReader::start(AudioFile *audio_file, AudioFileType &file_type) {
+esp_err_t AudioReader::start(const AudioFile *audio_file, AudioFileType &file_type) {
   file_type = AudioFileType::NONE;
 
   this->current_audio_file_ = audio_file;
@@ -185,23 +192,8 @@ esp_err_t AudioReader::start(const std::string &uri, AudioFileType &file_type) {
       return err;
     }
 
-    std::string url_string = str_lower_case(url);
-
-    if (str_endswith(url_string, ".wav")) {
-      file_type = AudioFileType::WAV;
-    }
-#ifdef USE_AUDIO_MP3_SUPPORT
-    else if (str_endswith(url_string, ".mp3")) {
-      file_type = AudioFileType::MP3;
-    }
-#endif
-#ifdef USE_AUDIO_FLAC_SUPPORT
-    else if (str_endswith(url_string, ".flac")) {
-      file_type = AudioFileType::FLAC;
-    }
-#endif
-    else {
-      file_type = AudioFileType::NONE;
+    file_type = detect_audio_file_type(nullptr, url);
+    if (file_type == AudioFileType::NONE) {
       this->cleanup_connection_();
       return ESP_ERR_NOT_SUPPORTED;
     }
@@ -209,10 +201,18 @@ esp_err_t AudioReader::start(const std::string &uri, AudioFileType &file_type) {
     file_type = this->audio_file_type_;
   }
 
+  // Keep the longer timeout for connection, headers, and redirects.
+  err = esp_http_client_set_timeout_ms(this->client_, HTTP_BODY_TIMEOUT_MS);
+  if (err != ESP_OK) {
+    this->cleanup_connection_();
+    return err;
+  }
+
   this->last_data_read_ms_ = millis();
 
   this->output_transfer_buffer_ = AudioSinkTransferBuffer::create(this->buffer_size_);
   if (this->output_transfer_buffer_ == nullptr) {
+    this->cleanup_connection_();
     return ESP_ERR_NO_MEM;
   }
 
@@ -229,24 +229,6 @@ AudioReaderState AudioReader::read() {
   return AudioReaderState::FAILED;
 }
 
-AudioFileType AudioReader::get_audio_type(const char *content_type) {
-#ifdef USE_AUDIO_MP3_SUPPORT
-  if (strcasecmp(content_type, "mp3") == 0 || strcasecmp(content_type, "audio/mp3") == 0 ||
-      strcasecmp(content_type, "audio/mpeg") == 0) {
-    return AudioFileType::MP3;
-  }
-#endif
-  if (strcasecmp(content_type, "audio/wav") == 0) {
-    return AudioFileType::WAV;
-  }
-#ifdef USE_AUDIO_FLAC_SUPPORT
-  if (strcasecmp(content_type, "audio/flac") == 0 || strcasecmp(content_type, "audio/x-flac") == 0) {
-    return AudioFileType::FLAC;
-  }
-#endif
-  return AudioFileType::NONE;
-}
-
 esp_err_t AudioReader::http_event_handler(esp_http_client_event_t *evt) {
   // Based on https://github.com/maroc81/WeatherLily/tree/main/main/net accessed 20241224
   AudioReader *this_reader = (AudioReader *) evt->user_data;
@@ -254,7 +236,7 @@ esp_err_t AudioReader::http_event_handler(esp_http_client_event_t *evt) {
   switch (evt->event_id) {
     case HTTP_EVENT_ON_HEADER:
       if (strcasecmp(evt->header_key, "Content-Type") == 0) {
-        this_reader->audio_file_type_ = get_audio_type(evt->header_value);
+        this_reader->audio_file_type_ = detect_audio_file_type(evt->header_value, nullptr);
       }
       break;
     default:
@@ -285,8 +267,9 @@ AudioReaderState AudioReader::http_read_() {
       return AudioReaderState::FINISHED;
     }
   } else if (this->output_transfer_buffer_->free() > 0) {
-    int received_len = esp_http_client_read(this->client_, (char *) this->output_transfer_buffer_->get_buffer_end(),
-                                            this->output_transfer_buffer_->free());
+    size_t read_size = std::min(this->output_transfer_buffer_->free(), HTTP_READ_MAX_BYTES);
+    int received_len =
+        esp_http_client_read(this->client_, (char *) this->output_transfer_buffer_->get_buffer_end(), read_size);
 
     if (received_len > 0) {
       this->output_transfer_buffer_->increase_buffer_length(received_len);
@@ -309,6 +292,9 @@ AudioReaderState AudioReader::http_read_() {
 
       delay(READ_WRITE_TIMEOUT_MS);
     }
+  } else {
+    // A full buffer means the consumer is behind, not that the server went quiet
+    this->last_data_read_ms_ = millis();
   }
 
   return AudioReaderState::READING;
@@ -322,7 +308,6 @@ void AudioReader::cleanup_connection_() {
   }
 }
 
-}  // namespace audio
-}  // namespace esphome
+}  // namespace esphome::audio
 
 #endif

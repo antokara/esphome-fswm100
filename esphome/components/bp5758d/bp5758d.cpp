@@ -1,10 +1,9 @@
 #include "bp5758d.h"
 #include "esphome/core/log.h"
 
-namespace esphome {
-namespace bp5758d {
+namespace esphome::bp5758d {
 
-static const char *const TAG = "bp5758d";
+ESPHOME_LOG_TAG(TAG, "bp5758d");
 
 static const uint8_t BP5758D_MODEL_ID = 0b10000000;
 static const uint8_t BP5758D_ADDR_STANDBY = 0b00000000;
@@ -26,8 +25,6 @@ void BP5758D::setup() {
   this->clock_pin_->setup();
   this->clock_pin_->digital_write(false);
   delayMicroseconds(BP5758D_DELAY);
-  this->channel_current_.resize(5, 0);
-  this->pwm_amounts_.resize(5, 0);
 }
 void BP5758D::dump_config() {
   ESP_LOGCONFIG(TAG, "BP5758D:");
@@ -118,7 +115,6 @@ uint8_t BP5758D::correct_current_level_bits_(uint8_t current) {
 void BP5758D::set_channel_value_(uint8_t channel, uint16_t value) {
   if (this->pwm_amounts_[channel] != value) {
     this->update_ = true;
-    this->update_channel_ = channel;
   }
   this->pwm_amounts_[channel] = value;
 }
@@ -164,5 +160,4 @@ void BP5758D::write_buffer_(uint8_t *buffer, uint8_t size) {
   delayMicroseconds(BP5758D_DELAY);
 }
 
-}  // namespace bp5758d
-}  // namespace esphome
+}  // namespace esphome::bp5758d

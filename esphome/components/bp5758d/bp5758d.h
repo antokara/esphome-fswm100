@@ -4,11 +4,11 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/output/float_output.h"
 #include <vector>
+#include <array>
 
-namespace esphome {
-namespace bp5758d {
+namespace esphome::bp5758d {
 
-class BP5758D : public Component {
+class BP5758D final : public Component {
  public:
   class Channel;
 
@@ -24,7 +24,7 @@ class BP5758D : public Component {
   /// Send new values if they were updated.
   void loop() override;
 
-  class Channel : public output::FloatOutput {
+  class Channel final : public output::FloatOutput {
    public:
     void set_parent(BP5758D *parent) { parent_ = parent; }
     void set_channel(uint8_t channel) { channel_ = channel; }
@@ -54,11 +54,9 @@ class BP5758D : public Component {
 
   GPIOPin *data_pin_;
   GPIOPin *clock_pin_;
-  uint8_t update_channel_;
-  std::vector<uint8_t> channel_current_;
-  std::vector<uint16_t> pwm_amounts_;
+  std::array<uint8_t, 5> channel_current_{};
+  std::array<uint16_t, 5> pwm_amounts_{};
   bool update_{true};
 };
 
-}  // namespace bp5758d
-}  // namespace esphome
+}  // namespace esphome::bp5758d

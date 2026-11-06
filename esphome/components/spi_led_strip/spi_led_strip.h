@@ -5,13 +5,12 @@
 #include "esphome/components/light/addressable_light.h"
 #include "esphome/components/spi/spi.h"
 
-namespace esphome {
-namespace spi_led_strip {
+namespace esphome::spi_led_strip {
 
-static const char *const TAG = "spi_led_strip";
-class SpiLedStrip : public light::AddressableLight,
-                    public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_HIGH, spi::CLOCK_PHASE_TRAILING,
-                                          spi::DATA_RATE_1MHZ> {
+ESPHOME_LOG_TAG(TAG, "spi_led_strip");
+class SpiLedStrip final : public light::AddressableLight,
+                          public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_HIGH,
+                                                spi::CLOCK_PHASE_TRAILING, spi::DATA_RATE_1MHZ> {
  public:
   SpiLedStrip(uint16_t num_leds);
   void setup() override;
@@ -25,16 +24,13 @@ class SpiLedStrip : public light::AddressableLight,
 
   void write_state(light::LightState *state) override;
 
-  void clear_effect_data() override { memset(this->effect_data_, 0, this->num_leds_ * sizeof(this->effect_data_[0])); }
+  void clear_effect_data() override { this->internal_accessor_.clear_effect_data(this->num_leds_); }
 
  protected:
-  light::ESPColorView get_view_internal(int32_t index) const override;
-
+  light::CorrectedBufferColorAccessor internal_accessor_{
+      nullptr, nullptr, {2, 1, 0, light::ChannelColors::RESERVED_WHITE}, &this->correction_};
   size_t buffer_size_{};
-  uint8_t *effect_data_{nullptr};
-  uint8_t *buf_{nullptr};
   uint16_t num_leds_;
 };
 
-}  // namespace spi_led_strip
-}  // namespace esphome
+}  // namespace esphome::spi_led_strip

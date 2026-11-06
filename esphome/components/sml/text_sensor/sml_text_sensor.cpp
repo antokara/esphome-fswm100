@@ -4,10 +4,9 @@
 #include "../sml_parser.h"
 #include <cinttypes>
 
-namespace esphome {
-namespace sml {
+namespace esphome::sml {
 
-static const char *const TAG = "sml_text_sensor";
+ESPHOME_LOG_TAG(TAG, "sml_text_sensor");
 
 SmlTextSensor::SmlTextSensor(std::string server_id, std::string obis_code, SmlType format)
     : SmlListener(std::move(server_id), std::move(obis_code)), format_(format) {}
@@ -24,11 +23,9 @@ void SmlTextSensor::publish_val(const ObisInfo &obis_info) {
     case SML_HEX: {
       // Buffer for "0x" + up to 32 bytes as hex + null
       char buf[67];
-      buf[0] = '0';
-      buf[1] = 'x';
-      // Max 32 bytes of data fit in remaining buffer ((65-1)/2)
+      // Max 32 bytes of data fit in buffer ((67-3)/2)
       size_t hex_bytes = std::min(obis_info.value.size(), size_t(32));
-      format_hex_to(buf + 2, sizeof(buf) - 2, obis_info.value.begin(), hex_bytes);
+      format_hex_prefixed_to(buf, obis_info.value.begin(), hex_bytes);
       publish_state(buf, 2 + hex_bytes * 2);
       break;
     }
@@ -51,6 +48,8 @@ void SmlTextSensor::publish_val(const ObisInfo &obis_info) {
       publish_state(reinterpret_cast<const char *>(obis_info.value.begin()), obis_info.value.size());
       break;
     }
+    default:
+      break;
   }
 }
 
@@ -62,5 +61,4 @@ void SmlTextSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "  OBIS Code: %s", this->obis_code.c_str());
 }
 
-}  // namespace sml
-}  // namespace esphome
+}  // namespace esphome::sml

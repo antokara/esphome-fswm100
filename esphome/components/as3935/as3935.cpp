@@ -1,10 +1,9 @@
 #include "as3935.h"
 #include "esphome/core/log.h"
 
-namespace esphome {
-namespace as3935 {
+namespace esphome::as3935 {
 
-static const char *const TAG = "as3935";
+ESPHOME_LOG_TAG(TAG, "as3935");
 
 void AS3935Component::setup() {
   this->irq_pin_->setup();
@@ -41,8 +40,6 @@ void AS3935Component::dump_config() {
 #endif
 }
 
-float AS3935Component::get_setup_priority() const { return setup_priority::DATA; }
-
 void AS3935Component::loop() {
   if (!this->irq_pin_->digital_read())
     return;
@@ -62,12 +59,10 @@ void AS3935Component::loop() {
 #endif
 #ifdef USE_SENSOR
     uint8_t distance = this->get_distance_to_storm_();
-    if (this->distance_sensor_ != nullptr)
-      this->distance_sensor_->publish_state(distance);
+    PUBLISH_STATE(this->distance_sensor_, distance);
 
     uint32_t energy = this->get_lightning_energy_();
-    if (this->energy_sensor_ != nullptr)
-      this->energy_sensor_->publish_state(energy);
+    PUBLISH_STATE(this->energy_sensor_, energy);
 #endif
   }
 }
@@ -309,9 +304,9 @@ void AS3935Component::tune_antenna() {
   uint8_t tune_val = this->read_capacitance();
   ESP_LOGI(TAG,
            "Starting antenna tuning\n"
-           "Division Ratio is set to: %d\n"
-           "Internal Capacitor is set to: %d\n"
-           "Displaying oscillator on INT pin. Measure its frequency - multiply value by Division Ratio",
+           "  Division Ratio is set to: %d\n"
+           "  Internal Capacitor is set to: %d\n"
+           "  Displaying oscillator on INT pin. Measure its frequency - multiply value by Division Ratio",
            div_ratio, tune_val);
   this->display_oscillator(true, ANTFREQ);
 }
@@ -322,5 +317,4 @@ uint8_t AS3935Component::read_register_(uint8_t reg, uint8_t mask) {
   return value;
 }
 
-}  // namespace as3935
-}  // namespace esphome
+}  // namespace esphome::as3935

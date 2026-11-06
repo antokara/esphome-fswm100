@@ -29,12 +29,14 @@ class HashBase {
   void get_hex(char *output) { format_hex_to(output, this->get_size() * 2 + 1, this->digest_, this->get_size()); }
 
   /// Compare the hash against a provided byte-encoded hash
-  bool equals_bytes(const uint8_t *expected) { return memcmp(this->digest_, expected, this->get_size()) == 0; }
+  bool equals_bytes(const uint8_t *expected) { return constant_time_equals(this->digest_, expected, this->get_size()); }
 
-  /// Compare the hash against a provided hex-encoded hash
+  /// Compare the hash against a provided hex-encoded hash of get_size() * 2 characters, which need not be
+  /// null-terminated
   bool equals_hex(const char *expected) {
     uint8_t parsed[32];  // Fixed size for max hash (SHA256 = 32 bytes)
-    if (!parse_hex(expected, parsed, this->get_size())) {
+    const size_t size = this->get_size();
+    if (parse_hex(expected, size * 2, parsed, size) != size * 2) {
       return false;
     }
     return this->equals_bytes(parsed);
@@ -44,7 +46,15 @@ class HashBase {
   virtual size_t get_size() const = 0;
 
  protected:
-  uint8_t digest_[32];  // Storage sized for max(MD5=16, SHA256=32) bytes
+// ESP32 variants with DMA-based hardware SHA (all except original ESP32) require 32-byte aligned buffers.
+// Original ESP32 uses a different hardware SHA implementation without DMA alignment requirements.
+// Other platforms (ESP8266, RP2040, LibreTiny) use software SHA and don't need alignment.
+// Storage sized for max(MD5=16, SHA256=32) bytes
+#if defined(USE_ESP32) && !defined(USE_ESP32_VARIANT_ESP32)
+  alignas(32) uint8_t digest_[32];
+#else
+  uint8_t digest_[32];
+#endif
 };
 
 }  // namespace esphome

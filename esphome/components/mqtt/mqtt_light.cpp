@@ -10,7 +10,7 @@
 #include "esphome/components/light/light_json_schema.h"
 namespace esphome::mqtt {
 
-static const char *const TAG = "mqtt.light";
+ESPHOME_LOG_TAG(TAG, "mqtt.light");
 
 using namespace esphome::light;
 
@@ -18,7 +18,7 @@ MQTT_COMPONENT_TYPE(MQTTJSONLightComponent, "light")
 const EntityBase *MQTTJSONLightComponent::get_entity() const { return this->state_; }
 
 void MQTTJSONLightComponent::setup() {
-  this->subscribe_json(this->get_command_topic_(), [this](const std::string &topic, JsonObject root) {
+  this->subscribe_json(this->command_topic_source_(), [this](const std::string &topic, JsonObject root) {
     LightCall call = this->state_->make_call();
     LightJSONSchema::parse_json(*this->state_, call, root);
     call.perform();
@@ -28,13 +28,14 @@ void MQTTJSONLightComponent::setup() {
 }
 
 void MQTTJSONLightComponent::on_light_remote_values_update() {
-  this->defer("send", [this]() { this->publish_state_(); });
+  this->defer(SEND_DEFER_ID, [this]() { this->publish_state_(); });
 }
 
 MQTTJSONLightComponent::MQTTJSONLightComponent(LightState *state) : state_(state) {}
 
 bool MQTTJSONLightComponent::publish_state_() {
-  return this->publish_json(this->get_state_topic_(), [this](JsonObject root) {
+  char topic_buf[MQTT_DEFAULT_TOPIC_MAX_LEN];
+  return this->publish_json(this->get_state_topic_to_(topic_buf), [this](JsonObject root) {
     // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks) false positive with ArduinoJson
     LightJSONSchema::dump_json(*this->state_, root);
   });
@@ -46,7 +47,6 @@ void MQTTJSONLightComponent::send_discovery(JsonObject root, mqtt::SendDiscovery
   root[ESPHOME_F("schema")] = ESPHOME_F("json");
   auto traits = this->state_->get_traits();
 
-  root[MQTT_COLOR_MODE] = true;
   // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks) false positive with ArduinoJson
   JsonArray color_modes = root[ESPHOME_F("supported_color_modes")].to<JsonArray>();
   if (traits.supports_color_mode(ColorMode::ON_OFF))
@@ -67,7 +67,6 @@ void MQTTJSONLightComponent::send_discovery(JsonObject root, mqtt::SendDiscovery
   if (traits.supports_color_mode(ColorMode::RGB_COLD_WARM_WHITE))
     color_modes.add(ESPHOME_F("rgbww"));
 
-  // legacy API
   if (traits.supports_color_capability(ColorCapability::BRIGHTNESS))
     root[ESPHOME_F("brightness")] = true;
 
@@ -80,16 +79,15 @@ void MQTTJSONLightComponent::send_discovery(JsonObject root, mqtt::SendDiscovery
   if (this->state_->supports_effects()) {
     root[ESPHOME_F("effect")] = true;
     JsonArray effect_list = root[MQTT_EFFECT_LIST].to<JsonArray>();
-    for (auto *effect : this->state_->get_effects())
-      effect_list.add(effect->get_name());
+    for (auto *effect : this->state_->get_effects()) {
+      // c_str() is safe as effect names are null-terminated strings from codegen
+      effect_list.add(effect->get_name().c_str());
+    }
     effect_list.add(ESPHOME_F("None"));
   }
 }
 bool MQTTJSONLightComponent::send_initial_state() { return this->publish_state_(); }
-void MQTTJSONLightComponent::dump_config() {
-  ESP_LOGCONFIG(TAG, "MQTT Light '%s':", this->state_->get_name().c_str());
-  LOG_MQTT_COMPONENT(true, true)
-}
+void MQTTJSONLightComponent::dump_config() { LOG_MQTT_COMPONENT(true, true); }
 
 }  // namespace esphome::mqtt
 
